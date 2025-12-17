@@ -7,7 +7,7 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 ![Express.js](https://img.shields.io/badge/Express.js-5.x-blue.svg)
 ![Baileys](https://img.shields.io/badge/Baileys-7.x-orange.svg)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-purple.svg)
-![License](https://img.shields.io/badge/License-ISC-yellow.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 ## ✨ Features
 
@@ -1230,7 +1230,7 @@ def get_groups(session_id):
 
 ## 📄 License
 
-This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
