@@ -288,93 +288,174 @@ class WhatsAppSession {
 
         // Messages upsert (new messages)
         this.socket.ev.on('messages.upsert', async (m) => {
-            const message = m.messages[0];
-            if (!message.key.fromMe && m.type === 'notify') {
-                console.log(`📩 [${this.sessionId}] New message from:`, message.key.remoteJid);
+            try {
+                // Validate messages array
+                if (!m?.messages || !Array.isArray(m.messages) || m.messages.length === 0) {
+                    return;
+                }
                 
-                // Auto-save media if present
-                await this._autoSaveMedia(message);
+                const message = m.messages[0];
                 
-                // Emit message to WebSocket
-                const formattedMessage = MessageFormatter.formatMessage(message);
-                wsManager.emitMessage(this.sessionId, formattedMessage);
+                // Validate message structure
+                if (!message || !message.key || !message.key.remoteJid) {
+                    console.log(`⚠️ [${this.sessionId}] Received invalid message structure, skipping`);
+                    return;
+                }
                 
-                // Send webhook
-                this._sendWebhook('message', formattedMessage);
-            } else if (message.key.fromMe && m.type === 'notify') {
-                // Message sent confirmation
-                const formattedMessage = MessageFormatter.formatMessage(message);
-                wsManager.emitMessageSent(this.sessionId, formattedMessage);
-                
-                // Send webhook
-                this._sendWebhook('message.sent', formattedMessage);
+                if (!message.key.fromMe && m.type === 'notify') {
+                    console.log(`📩 [${this.sessionId}] New message from:`, message.key.remoteJid);
+                    
+                    // Auto-save media if present
+                    await this._autoSaveMedia(message);
+                    
+                    // Emit message to WebSocket
+                    const formattedMessage = MessageFormatter.formatMessage(message);
+                    wsManager.emitMessage(this.sessionId, formattedMessage);
+                    
+                    // Send webhook
+                    this._sendWebhook('message', formattedMessage);
+                } else if (message.key.fromMe && m.type === 'notify') {
+                    // Message sent confirmation
+                    const formattedMessage = MessageFormatter.formatMessage(message);
+                    wsManager.emitMessageSent(this.sessionId, formattedMessage);
+                    
+                    // Send webhook
+                    this._sendWebhook('message.sent', formattedMessage);
+                }
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing message upsert:`, error.message);
             }
         });
 
         // Messages update (status: read, delivered, etc)
         this.socket.ev.on('messages.update', (updates) => {
-            wsManager.emitMessageStatus(this.sessionId, updates);
+            try {
+                if (!updates || !Array.isArray(updates)) return;
+                wsManager.emitMessageStatus(this.sessionId, updates);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing messages.update:`, error.message);
+            }
         });
 
         // Message reaction
         this.socket.ev.on('messages.reaction', (reactions) => {
-            wsManager.emitToSession(this.sessionId, 'message.reaction', { reactions });
+            try {
+                if (!reactions) return;
+                wsManager.emitToSession(this.sessionId, 'message.reaction', { reactions });
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing messages.reaction:`, error.message);
+            }
         });
 
         // Chats upsert
         this.socket.ev.on('chats.upsert', (chats) => {
-            console.log(`💬 [${this.sessionId}] Chats updated: ${chats.length} chats`);
-            wsManager.emitChatsUpsert(this.sessionId, chats);
+            try {
+                if (!chats || !Array.isArray(chats)) return;
+                console.log(`💬 [${this.sessionId}] Chats updated: ${chats.length} chats`);
+                wsManager.emitChatsUpsert(this.sessionId, chats);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing chats.upsert:`, error.message);
+            }
         });
 
         // Chats update
         this.socket.ev.on('chats.update', (chats) => {
-            wsManager.emitChatUpdate(this.sessionId, chats);
+            try {
+                if (!chats || !Array.isArray(chats)) return;
+                wsManager.emitChatUpdate(this.sessionId, chats);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing chats.update:`, error.message);
+            }
         });
 
         // Chats delete
         this.socket.ev.on('chats.delete', (chatIds) => {
-            wsManager.emitChatDelete(this.sessionId, chatIds);
+            try {
+                if (!chatIds) return;
+                wsManager.emitChatDelete(this.sessionId, chatIds);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing chats.delete:`, error.message);
+            }
         });
 
         // Contacts upsert
         this.socket.ev.on('contacts.upsert', (contacts) => {
-            console.log(`👥 [${this.sessionId}] Contacts updated: ${contacts.length} contacts`);
-            wsManager.emitContactUpdate(this.sessionId, contacts);
+            try {
+                if (!contacts || !Array.isArray(contacts)) return;
+                console.log(`👥 [${this.sessionId}] Contacts updated: ${contacts.length} contacts`);
+                wsManager.emitContactUpdate(this.sessionId, contacts);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing contacts.upsert:`, error.message);
+            }
         });
 
         // Contacts update
         this.socket.ev.on('contacts.update', (contacts) => {
-            wsManager.emitContactUpdate(this.sessionId, contacts);
+            try {
+                if (!contacts || !Array.isArray(contacts)) return;
+                wsManager.emitContactUpdate(this.sessionId, contacts);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing contacts.update:`, error.message);
+            }
         });
 
         // Presence update (typing, online, etc)
         this.socket.ev.on('presence.update', (presence) => {
-            wsManager.emitPresence(this.sessionId, presence);
+            try {
+                if (!presence) return;
+                wsManager.emitPresence(this.sessionId, presence);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing presence.update:`, error.message);
+            }
         });
 
         // Group participants update
         this.socket.ev.on('group-participants.update', (update) => {
-            wsManager.emitGroupParticipants(this.sessionId, update);
+            try {
+                if (!update) return;
+                wsManager.emitGroupParticipants(this.sessionId, update);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing group-participants.update:`, error.message);
+            }
         });
 
         // Groups update
         this.socket.ev.on('groups.update', (updates) => {
-            wsManager.emitGroupUpdate(this.sessionId, updates);
+            try {
+                if (!updates) return;
+                wsManager.emitGroupUpdate(this.sessionId, updates);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing groups.update:`, error.message);
+            }
         });
 
         // Call events
         this.socket.ev.on('call', (calls) => {
-            wsManager.emitCall(this.sessionId, calls);
+            try {
+                if (!calls) return;
+                wsManager.emitCall(this.sessionId, calls);
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing call:`, error.message);
+            }
         });
 
         // Labels (for business accounts)
         this.socket.ev.on('labels.edit', (label) => {
-            wsManager.emitLabels(this.sessionId, { type: 'edit', label });
+            try {
+                if (!label) return;
+                wsManager.emitLabels(this.sessionId, { type: 'edit', label });
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing labels.edit:`, error.message);
+            }
         });
 
         this.socket.ev.on('labels.association', (association) => {
-            wsManager.emitLabels(this.sessionId, { type: 'association', association });
+            try {
+                if (!association) return;
+                wsManager.emitLabels(this.sessionId, { type: 'association', association });
+            } catch (error) {
+                console.error(`❌ [${this.sessionId}] Error processing labels.association:`, error.message);
+            }
         });
     }
 
@@ -619,7 +700,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', typingTime = 0, replyTo = null) {
+    async sendDocument(chatId, documentUrl, filename, mimetype = 'application/pdf', caption = '', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -633,7 +714,8 @@ class WhatsAppSession {
             const messageContent = {
                 document: { url: documentUrl },
                 fileName: filename,
-                mimetype: mimetype
+                mimetype: mimetype,
+                caption: caption || undefined
             };
             const messageOptions = {};
             
@@ -659,6 +741,78 @@ class WhatsAppSession {
             return {
                 success: true,
                 message: 'Document sent successfully',
+                data: {
+                    messageId: result.key.id,
+                    chatId: jid,
+                    timestamp: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Send Audio Message
+     * @param {string} chatId - Chat ID or phone number
+     * @param {string} audioUrl - URL to audio file (must be OGG format)
+     * @param {boolean} ptt - Push to talk (voice note) mode
+     * @param {number} typingTime - Typing simulation time in ms
+     * @param {string} replyTo - Message ID to reply to
+     */
+    async sendAudio(chatId, audioUrl, ptt = false, typingTime = 0, replyTo = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            // Validate OGG format
+            const urlLower = audioUrl.toLowerCase();
+            if (!urlLower.endsWith('.ogg') && !urlLower.includes('.ogg?')) {
+                return { 
+                    success: false, 
+                    message: 'Audio must be in OGG format (.ogg). WhatsApp only supports OGG audio files.' 
+                };
+            }
+
+            const jid = this.formatChatId(chatId);
+            
+            // Simulate recording if typingTime > 0
+            if (typingTime > 0) {
+                await this.socket.sendPresenceUpdate('recording', jid);
+                await new Promise(resolve => setTimeout(resolve, typingTime));
+                await this.socket.sendPresenceUpdate('paused', jid);
+            }
+            
+            const messageContent = {
+                audio: { url: audioUrl },
+                ptt: ptt, // true = voice note, false = audio file
+                mimetype: 'audio/ogg; codecs=opus'
+            };
+            const messageOptions = {};
+            
+            // Add quoted message for reply
+            if (replyTo) {
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: {
+                            remoteJid: jid,
+                            id: replyTo,
+                            fromMe: false
+                        },
+                        message: { conversation: '' }
+                    };
+                }
+            }
+            
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
+
+            return {
+                success: true,
+                message: ptt ? 'Voice note sent successfully' : 'Audio sent successfully',
                 data: {
                     messageId: result.key.id,
                     chatId: jid,
@@ -1338,35 +1492,51 @@ class WhatsAppSession {
             }
 
             const jid = this.formatChatId(chatId);
+            const isGroup = this.isGroupId(jid);
 
-            // If specific message ID provided, use it
-            if (messageId) {
-                await this.socket.readMessages([{
-                    remoteJid: jid,
-                    id: messageId,
-                    participant: this.isGroupId(jid) ? undefined : undefined
-                }]);
-            } else {
-                // Mark all messages in chat as read using chatModify
-                await this.socket.chatModify(
-                    { markRead: true, lastMessages: [] },
-                    jid
-                );
+            console.log(`[${this.sessionId}] markChatRead: jid=${jid}, isGroup=${isGroup}`);
+
+            // Get messages from store
+            const storeMessages = this.store?.getMessages(jid, { limit: 50 }) || [];
+            console.log(`[${this.sessionId}] Found ${storeMessages.length} messages in store for ${jid}`);
+            
+            // Collect message keys to mark as read
+            const keysToRead = [];
+            for (const msg of storeMessages) {
+                // Only mark incoming messages (not from me)
+                if (msg?.key && !msg.key.fromMe && msg.key.id) {
+                    const readKey = {
+                        remoteJid: jid,
+                        id: msg.key.id
+                    };
+                    // Add participant for group messages
+                    if (isGroup && msg.key.participant) {
+                        readKey.participant = msg.key.participant;
+                    }
+                    keysToRead.push(readKey);
+                }
             }
-
-            console.log(`✅ [${this.sessionId}] Chat marked as read: ${jid}`);
+            
+            if (keysToRead.length > 0) {
+                console.log(`[${this.sessionId}] Marking ${keysToRead.length} messages as read`);
+                await this.socket.readMessages(keysToRead);
+                console.log(`✅ [${this.sessionId}] Messages marked as read: ${jid}`);
+            } else {
+                console.log(`[${this.sessionId}] No unread messages found in store for ${jid}`);
+            }
 
             return {
                 success: true,
                 message: 'Chat marked as read',
                 data: {
                     chatId: jid,
-                    messageId: messageId || null
+                    isGroup: isGroup,
+                    markedCount: keysToRead.length
                 }
             };
         } catch (error) {
-            console.error(`[${this.sessionId}] Mark read error:`, error.message);
-            return { success: false, message: error.message };
+            console.error(`[${this.sessionId}] Mark read error:`, error);
+            return { success: false, message: error.message || 'Failed to mark as read' };
         }
     }
 

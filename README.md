@@ -260,11 +260,31 @@ GET /sessions
       "status": "connected",
       "isConnected": true,
       "phoneNumber": "628123456789",
-      "name": "John Doe"
+      "name": "John Doe",
+      "webhooks": [
+        {
+          "url": "https://your-server.com/webhook",
+          "events": ["message", "message_ack"]
+        }
+      ],
+      "metadata": {
+        "userId": "user123",
+        "plan": "premium"
+      }
     }
   ]
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `sessionId` | string | Unique session identifier |
+| `status` | string | Current status: `disconnected`, `connecting`, `qr_ready`, `connected` |
+| `isConnected` | boolean | Whether session is currently connected |
+| `phoneNumber` | string | Connected WhatsApp phone number |
+| `name` | string | WhatsApp profile name |
+| `webhooks` | array | Configured webhooks for this session |
+| `metadata` | object | Custom metadata associated with this session |
 
 #### Create/Connect Session
 ```http
@@ -455,6 +475,7 @@ POST /chats/send-document
   "documentUrl": "https://example.com/document.pdf",
   "filename": "document.pdf",
   "mimetype": "application/pdf",
+  "caption": "Here is the document you requested",
   "typingTime": 1000,
   "replyTo": null
 }
@@ -467,7 +488,38 @@ POST /chats/send-document
 | `documentUrl` | string | Required. Direct URL to document |
 | `filename` | string | Required. Filename to display |
 | `mimetype` | string | Optional. MIME type (default: application/pdf) |
+| `caption` | string | Optional. Caption text for the document |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
+
+#### Send Audio
+```http
+POST /chats/send-audio
+```
+
+> ⚠️ **Important:** Audio must be in **OGG format** (.ogg). WhatsApp only supports OGG audio files with Opus codec.
+> 
+> Convert audio using FFmpeg: `ffmpeg -i input.mp3 -c:a libopus output.ogg`
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "audioUrl": "https://example.com/audio.ogg",
+  "ptt": true,
+  "typingTime": 1000,
+  "replyTo": null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `audioUrl` | string | Required. Direct URL to OGG audio file (.ogg format only) |
+| `ptt` | boolean | Optional. Push to talk mode - true = voice note, false = audio file (default: false) |
+| `typingTime` | number | Optional. Recording simulation in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Location
@@ -878,20 +930,41 @@ POST /chats/info
 POST /chats/mark-read
 ```
 
+Mark all unread messages in a chat as read. Works for both personal and group chats.
+
 **Body:**
 ```json
 {
   "sessionId": "mysession",
-  "chatId": "628123456789",
-  "messageId": null
+  "chatId": "628123456789"
 }
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID |
-| `messageId` | string | Optional. Specific message ID to mark as read |
+| `chatId` | string | Required. Phone number or group ID (`@s.whatsapp.net` or `@g.us`) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Chat marked as read",
+  "data": {
+    "chatId": "628123456789@s.whatsapp.net",
+    "isGroup": false,
+    "markedCount": 5
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `chatId` | string | Chat ID that was marked as read |
+| `isGroup` | boolean | Whether the chat is a group |
+| `markedCount` | number | Number of messages marked as read |
+
+> **Note:** Messages must be received after the server starts to be in the store. If `markedCount` is 0, there were no unread messages in the store.
 
 ---
 

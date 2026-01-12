@@ -91,6 +91,9 @@ class BaileysStore {
     // Handle message updates - OPTIMIZED
     ev.on('messages.set', ({ messages, isLatest }) => {
       for (const msg of messages) {
+        // Skip null/invalid messages
+        if (!msg || !msg.key || !msg.key.remoteJid || !msg.key.id) continue;
+        
         const chatId = msg.key.remoteJid;
         if (!this.messages.has(chatId)) {
           this.messages.set(chatId, new Map());
@@ -102,6 +105,9 @@ class BaileysStore {
 
     ev.on('messages.upsert', ({ messages, type }) => {
       for (const msg of messages) {
+        // Skip null/invalid messages
+        if (!msg || !msg.key || !msg.key.remoteJid || !msg.key.id) continue;
+        
         const chatId = msg.key.remoteJid;
         if (!this.messages.has(chatId)) {
           this.messages.set(chatId, new Map());
@@ -113,6 +119,9 @@ class BaileysStore {
 
     ev.on('messages.update', (updates) => {
       for (const { key, update } of updates) {
+        // Skip invalid updates
+        if (!key || !key.remoteJid || !key.id) continue;
+        
         const chatMessages = this.messages.get(key.remoteJid);
         if (chatMessages) {
           const existing = chatMessages.get(key.id);
@@ -126,6 +135,9 @@ class BaileysStore {
     ev.on('messages.delete', (item) => {
       if ('keys' in item) {
         for (const key of item.keys) {
+          // Skip invalid keys
+          if (!key || !key.remoteJid) continue;
+          
           const chatMessages = this.messages.get(key.remoteJid);
           if (chatMessages) {
             chatMessages.delete(key.id);
@@ -168,9 +180,18 @@ class BaileysStore {
     // Find latest message
     let latestMessage = newMessage;
     if (!latestMessage) {
-      const messagesArray = Array.from(chatMessages.values());
-      messagesArray.sort((a, b) => (b.messageTimestamp || 0) - (a.messageTimestamp || 0));
+      const messagesArray = Array.from(chatMessages.values()).filter(m => m != null);
+      if (messagesArray.length === 0) {
+        this.chatsOverview.delete(chatId);
+        return;
+      }
+      messagesArray.sort((a, b) => (b?.messageTimestamp || 0) - (a?.messageTimestamp || 0));
       latestMessage = messagesArray[0];
+    }
+
+    // Skip if no valid message found
+    if (!latestMessage) {
+      return;
     }
 
     const contact = this.contacts.get(chatId);
