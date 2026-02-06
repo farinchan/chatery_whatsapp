@@ -45,6 +45,7 @@ class WhatsAppManager {
      * @param {Object} options - Session options
      * @param {Object} options.metadata - Custom metadata to store with session
      * @param {Array} options.webhooks - Array of webhook configs [{ url, events }]
+     * @param {string} options.owner - user name of user
      * @returns {Object}
      */
     async createSession(sessionId, options = {}) {
@@ -61,7 +62,7 @@ class WhatsAppManager {
             const existingSession = this.sessions.get(sessionId);
             
             // Update config if provided
-            if (options.metadata || options.webhooks) {
+            if (options.metadata || options.webhooks || options.owner) {
                 existingSession.updateConfig(options);
             }
             

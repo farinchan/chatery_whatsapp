@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const whatsappManager = require('../services/whatsapp');
+const userAuth = require('../middleware/UserAuth');
 
 // Get all sessions
 router.get('/sessions', (req, res) => {
@@ -16,7 +17,8 @@ router.get('/sessions', (req, res) => {
                 phoneNumber: s.phoneNumber,
                 name: s.name,
                 webhooks: s.webhooks || [],
-                metadata: s.metadata || {}
+                metadata: s.metadata || {},
+                owner: s.owner || ''
             }))
         });
     } catch (error) {
@@ -36,7 +38,9 @@ router.post('/sessions/:sessionId/connect', async (req, res) => {
         const options = {};
         if (metadata) options.metadata = metadata;
         if (webhooks) options.webhooks = webhooks;
-        
+
+        const providedKey = req.headers['x-api-key'];
+        options.owner = await userAuth.getUsername(providedKey);
         const result = await whatsappManager.createSession(sessionId, options);
         
         res.json({

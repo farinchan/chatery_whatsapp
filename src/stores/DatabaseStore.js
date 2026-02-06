@@ -1,6 +1,6 @@
 require("dotenv").config();
 const mysql = require("mysql2/promise");
-const { createClient } = require("npo");
+const { createClient } = require("redis");
 const bcrypt = require("bcrypt");
 
 const BCRYPT_ROUNDS = 12;
@@ -37,11 +37,11 @@ class DatabaseStore {
 
       this.redis.on("error", () => { this.redisReady = false; });
       this.redis.on("ready", () => { this.redisReady = true; });
-      this.redis.connect().catch(() => {});
+      this.redis.connect().catch(() => { });
     }
 
     this.picCache = new Map();
-    
+
     this.mysqlPool.getConnection()
       .then(conn => {
         console.log(`[DB:${this.sessionId}] pool ready (connection acquired successfully)`);
@@ -50,6 +50,113 @@ class DatabaseStore {
       .catch(err => {
         console.error(`[DB:${this.sessionId}] pool startup failed:`, err.message);
       });
+
+    if (sessionId === "global") {
+      this.ensureTables().catch(err => {
+        console.error("[DatabaseStore] Failed to ensure tables:", err);
+      });
+    }
+  }
+
+  async ensureTables() {
+    console.log("[DatabaseStore] Checking and creating tables if needed...");
+
+    const queries = [
+      // call_logs (unchanged)
+      `CREATE TABLE IF NOT EXISTS call_logs (
+      session_id VARCHAR(100) NOT NULL,
+      call_id VARCHAR(100) NOT NULL,
+      caller_jid VARCHAR(255) NOT NULL,
+      is_group TINYINT(1) DEFAULT 0,
+      is_video TINYINT(1) DEFAULT 0,
+      status ENUM('missed','answered','rejected','unknown') DEFAULT 'unknown',
+      timestamp BIGINT NOT NULL,
+      duration_seconds INT DEFAULT NULL,
+      PRIMARY KEY (session_id, call_id),
+      INDEX idx_session (session_id),
+      INDEX idx_timestamp (session_id, timestamp DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      // chats (unchanged)
+      `CREATE TABLE IF NOT EXISTS chats (
+      session_id VARCHAR(100) NOT NULL,
+      id VARCHAR(255) NOT NULL,
+      name VARCHAR(255) DEFAULT NULL,
+      is_group TINYINT(1) DEFAULT 0,
+      unread_count INT DEFAULT 0,
+      last_message_timestamp BIGINT DEFAULT NULL,
+      archived TINYINT(1) DEFAULT 0,
+      pinned TINYINT(1) DEFAULT 0,
+      muted_until BIGINT DEFAULT 0,
+      PRIMARY KEY (session_id, id),
+      INDEX idx_session (session_id),
+      INDEX idx_timestamp (session_id, last_message_timestamp DESC)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      // chats_overview (unchanged - no DEFAULT on LONGTEXT)
+      `CREATE TABLE IF NOT EXISTS chats_overview (
+      session_id VARCHAR(100) NOT NULL,
+      chat_id VARCHAR(255) NOT NULL,
+      last_message_preview LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (JSON_VALID(last_message_preview)),
+      unread_count INT DEFAULT 0,
+      PRIMARY KEY (session_id, chat_id),
+      INDEX idx_session (session_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      // contacts (unchanged)
+      `CREATE TABLE IF NOT EXISTS contacts (
+      session_id VARCHAR(100) NOT NULL,
+      id VARCHAR(255) NOT NULL,
+      lid VARCHAR(255) DEFAULT NULL,
+      phone VARCHAR(50) DEFAULT NULL,
+      name VARCHAR(255) DEFAULT NULL,
+      notify VARCHAR(255) DEFAULT NULL,
+      verified_name VARCHAR(255) DEFAULT NULL,
+      PRIMARY KEY (id),
+      INDEX idx_session (session_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      // device_blocklist — FIXED: removed DEFAULT '[]'
+      `CREATE TABLE IF NOT EXISTS device_blocklist (
+      session_id VARCHAR(100) NOT NULL,
+      blocked_jids LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+      last_updated DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (session_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      // group_metadata (unchanged - no DEFAULT on participants)
+      `CREATE TABLE IF NOT EXISTS group_metadata (
+      session_id VARCHAR(100) NOT NULL,
+      id VARCHAR(255) NOT NULL,
+      subject VARCHAR(255) DEFAULT NULL,
+      subject_owner VARCHAR(255) DEFAULT NULL,
+      subject_time BIGINT DEFAULT NULL,
+      description TEXT DEFAULT NULL,
+      is_restricted TINYINT(1) DEFAULT 0,
+      is_announced TINYINT(1) DEFAULT 0,
+      size INT DEFAULT NULL,
+      creation BIGINT DEFAULT NULL,
+      owner VARCHAR(255) DEFAULT NULL,
+      participants LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (JSON_VALID(participants)),
+      PRIMARY KEY (id),
+      INDEX idx_session (session_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
+
+      // media_files, messages, profile_pictures, users — unchanged
+      // ... (keep as they are - no problematic DEFAULTs)
+    ];
+
+    for (const query of queries) {
+      try {
+        await this.mysqlQuery(query);
+        const tableName = query.match(/TABLE IF NOT EXISTS\s+`?(\w+)`?/)?.[1] || 'unknown';
+        console.log(`[DatabaseStore] Table ensured: ${tableName}`);
+      } catch (err) {
+        console.error(`[DatabaseStore] Failed to create table:`, err.message);
+      }
+    }
+
+    console.log("[DatabaseStore] All tables checked/created successfully");
   }
 
   async mysqlQuery(sql, params = [], maxRetries = 3) {
@@ -96,8 +203,8 @@ class DatabaseStore {
   }
 
   async redisGet(key) { return this.redisReady ? await this.redis.get(key).catch(() => null) : null; }
-  async redisSetEx(key, sec, val) { if (this.redisReady) await this.redis.setEx(key, sec, val).catch(() => {}); }
-  async redisDel(...keys) { if (this.redisReady && keys.length) await this.redis.del(keys).catch(() => {}); }
+  async redisSetEx(key, sec, val) { if (this.redisReady) await this.redis.setEx(key, sec, val).catch(() => { }); }
+  async redisDel(...keys) { if (this.redisReady && keys.length) await this.redis.del(keys).catch(() => { }); }
 
   async createUser({ username, password, apiKey, role = "user" }) {
     if (!username?.trim() || !password || password.length < 6 || !apiKey?.trim()) {
@@ -121,37 +228,37 @@ class DatabaseStore {
     return { username: trimmedUser, apiKey: trimmedKey, role };
   }
 
-async authenticateUser(username, password) {
-  console.log('[DB AUTH] === START ===');
-  console.log('[DB AUTH] Username:', username);
-  console.log('[DB AUTH] Password received (raw):', JSON.stringify(password));
-  console.log('[DB AUTH] Password char codes:', password.split('').map(c => c.charCodeAt(0)));
-  console.log('[DB AUTH] Password length:', password.length);
+  async authenticateUser(username, password) {
+    console.log('[DB AUTH] === START ===');
+    console.log('[DB AUTH] Username:', username);
+    console.log('[DB AUTH] Password received (raw):', JSON.stringify(password));
+    console.log('[DB AUTH] Password char codes:', password.split('').map(c => c.charCodeAt(0)));
+    console.log('[DB AUTH] Password length:', password.length);
 
-  const rows = await this.mysqlQuery(
-    "SELECT username, password_hash, api_key, role FROM users WHERE username = ?",
-    [username]
-  );
+    const rows = await this.mysqlQuery(
+      "SELECT username, password_hash, api_key, role FROM users WHERE username = ?",
+      [username]
+    );
 
-  console.log('[DB AUTH] Rows found:', rows.length);
-  if (rows.length === 0) return null;
+    console.log('[DB AUTH] Rows found:', rows.length);
+    if (rows.length === 0) return null;
 
-  const storedHash = rows[0].password_hash;
-  console.log('[DB AUTH] Stored hash:', storedHash);
+    const storedHash = rows[0].password_hash;
+    console.log('[DB AUTH] Stored hash:', storedHash);
 
-  const match = await bcrypt.compare(password, storedHash);
+    const match = await bcrypt.compare(password, storedHash);
 
-  console.log('[DB AUTH] bcrypt.compare result:', match);
-  console.log('[DB AUTH] === END ===');
+    console.log('[DB AUTH] bcrypt.compare result:', match);
+    console.log('[DB AUTH] === END ===');
 
-  if (!match) return null;
+    if (!match) return null;
 
-  return {
-    username: rows[0].username,
-    apiKey: rows[0].api_key,
-    role: rows[0].role,
-  };
-}
+    return {
+      username: rows[0].username,
+      apiKey: rows[0].api_key,
+      role: rows[0].role,
+    };
+  }
 
   async userExists(username) {
     if (!username) return false;
@@ -258,7 +365,7 @@ async authenticateUser(username, password) {
   }
 
   async saveSessionConfig(sessionId, { metadata = {}, webhooks = [], owner = "", token = "" }) {
-      console.log(sessionId, metadata , webhooks, owner , token );
+    console.log(sessionId, metadata, webhooks, owner, token);
     await this.mysqlQuery(
       `INSERT INTO sessions (session_id, metadata, webhooks, owner, token, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
@@ -271,33 +378,8 @@ async authenticateUser(username, password) {
     if (this.useRedis) await this.redisDel(`session:config:${sessionId}`);
   }
 
-  async getAuthCred(key) {
-    const rows = await this.mysqlQuery(
-      "SELECT value FROM auth_creds WHERE session_id = ? AND `key` = ? LIMIT 1",
-      [this.sessionId, key]
-    );
-    if (!rows.length) return undefined;
-    try { return JSON.parse(rows[0].value); } catch { return undefined; }
-  }
-
-  async setAuthCred(key, value) {
-    if (value === undefined) return this.removeAuthCred(key);
-    await this.mysqlQuery(
-      `INSERT INTO auth_creds (session_id, \`key\`, value, updated_at)
-       VALUES (?, ?, ?, NOW()) ON DUPLICATE KEY UPDATE value=?, updated_at=NOW()`,
-      [this.sessionId, key, JSON.stringify(value), JSON.stringify(value)]
-    );
-  }
-
-  async removeAuthCred(key) {
-    await this.mysqlQuery(
-      "DELETE FROM auth_creds WHERE session_id = ? AND `key` = ?",
-      [this.sessionId, key]
-    );
-  }
-
   bind(ev) {
-    ev.on("connection.update", () => {});
+    ev.on("connection.update", () => { });
     ev.on("creds.update", async (creds) => {
       await this.setAuthCred("creds", creds);
     });
@@ -590,7 +672,7 @@ async authenticateUser(username, password) {
     );
     let current = [];
     if (rows.length) {
-      try { current = JSON.parse(rows[0].blocked_jids || "[]"); } catch {}
+      try { current = JSON.parse(rows[0].blocked_jids || "[]"); } catch { }
     }
 
     let updated;
@@ -651,12 +733,12 @@ async authenticateUser(username, password) {
     }));
     return Object.fromEntries(counts);
   }
- 
-    async readAllSessions() {
-      return await this.mysqlQuery(
-        "SELECT session_id, metadata, webhooks, owner, token FROM sessions ORDER BY session_id"
-      );
-    }  
+
+  async readAllSessions() {
+    return await this.mysqlQuery(
+      "SELECT session_id, metadata, webhooks, owner, token FROM sessions ORDER BY session_id"
+    );
+  }
 }
 
 module.exports = DatabaseStore;

@@ -1,7 +1,6 @@
 // src/middleware/userAuth.js
-const DatabaseStore = require('../storage/DatabaseStore');
+const DatabaseStore = require('../stores/DatabaseStore');
 
-// Global instance for user/auth operations
 const db = new DatabaseStore(); // "global"
 
 const userAuth = {

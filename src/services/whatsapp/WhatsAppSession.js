@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const qrcode = require('qrcode');
 
-const BaileysStore = require('../..stores/BaileysStore');
+const BaileysStore = require('../../stores/BaileysStore');
 const MessageFormatter = require('./MessageFormatter');
 const wsManager = require('../websocket/WebSocketManager');
 
@@ -30,6 +30,7 @@ class WhatsAppSession {
         // Custom metadata and webhook
         this.metadata = options.metadata || {};
         this.webhooks = options.webhooks || []; // Array of { url, events? }
+        this.owner = options.owner || '';
         
         // Load config if exists
         this._loadConfig();
@@ -44,6 +45,7 @@ class WhatsAppSession {
                 const config = JSON.parse(fs.readFileSync(this.configFile, 'utf8'));
                 this.metadata = config.metadata || this.metadata;
                 this.webhooks = config.webhooks || this.webhooks;
+                this.owner = config.owner || this.owner;
             }
         } catch (e) {
             console.log(`⚠️ [${this.sessionId}] Could not load config:`, e.message);
@@ -60,7 +62,8 @@ class WhatsAppSession {
             }
             fs.writeFileSync(this.configFile, JSON.stringify({
                 metadata: this.metadata,
-                webhooks: this.webhooks
+                webhooks: this.webhooks,
+                owner: this.owner
             }, null, 2));
         } catch (e) {
             console.log(`⚠️ [${this.sessionId}] Could not save config:`, e.message);
@@ -76,6 +79,9 @@ class WhatsAppSession {
         }
         if (options.webhooks !== undefined) {
             this.webhooks = options.webhooks;
+        }
+        if (options.owner !== undefined) {
+            this.owner = options.owner;
         }
         this._saveConfig();
         return this.getInfo();
@@ -469,7 +475,8 @@ class WhatsAppSession {
             qrCode: this.qrCode,
             storeStats: this.store ? this.store.getStats() : null,
             metadata: this.metadata,
-            webhooks: this.webhooks
+            webhooks: this.webhooks,
+            owner: this.owner
         };
     }
 
