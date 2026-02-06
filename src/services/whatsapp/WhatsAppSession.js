@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const qrcode = require('qrcode');
 
-const BaileysStore = require('./BaileysStore');
+const BaileysStore = require('../..stores/BaileysStore');
 const MessageFormatter = require('./MessageFormatter');
 const wsManager = require('../websocket/WebSocketManager');
 
