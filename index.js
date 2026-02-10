@@ -33,6 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from public folder (for media access)
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Serve Dashboard
 app.get('/dashboard', (req, res) => {

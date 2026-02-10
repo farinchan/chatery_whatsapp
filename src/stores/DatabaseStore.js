@@ -1,13 +1,16 @@
 require("dotenv").config();
 const mysql = require("mysql2/promise");
 const { createClient } = require("redis");
-const bcrypt = require("bcrypt");
 
-const BCRYPT_ROUNDS = 12;
+const fs = require("fs");
+const path = require("path");
+const { downloadMediaMessage, getContentType } = require("@whiskeysockets/baileys");
 
 class DatabaseStore {
   constructor(sessionId = "global") {
     this.sessionId = sessionId.replace(/[\/\\:*?"<>|]/g, "_");
+
+    const isDev = process.env.NODE_ENV !== "production";
 
     this.mysqlPool = mysql.createPool({
       host: process.env.MYSQL_HOST || "127.0.0.1",
@@ -15,8 +18,8 @@ class DatabaseStore {
       user: process.env.MYSQL_USER || "root",
       password: process.env.MYSQL_PASSWORD || "",
       database: process.env.MYSQL_DATABASE || "whatsapp",
-      connectionLimit: 20,
-      queueLimit: 200,
+      connectionLimit: 50,
+      queueLimit: 500,
       waitForConnections: true,
       timezone: "+00:00",
       supportBigNumbers: true,
@@ -44,23 +47,21 @@ class DatabaseStore {
 
     this.mysqlPool.getConnection()
       .then(conn => {
-        console.log(`[DB:${this.sessionId}] pool ready (connection acquired successfully)`);
+        console.log("pool ready");
         conn.release();
       })
       .catch(err => {
-        console.error(`[DB:${this.sessionId}] pool startup failed:`, err.message);
+        console.error({ err }, "pool startup failed");
       });
 
     if (sessionId === "global") {
       this.ensureTables().catch(err => {
-        console.error("[DatabaseStore] Failed to ensure tables:", err);
+        console.error({ err }, "Failed to ensure tables");
       });
     }
   }
 
   async ensureTables() {
-    console.log("[DatabaseStore] Checking and creating tables if needed...");
-
     const queries = [
       `CREATE TABLE IF NOT EXISTS call_logs (
         session_id VARCHAR(100) NOT NULL,
@@ -68,7 +69,7 @@ class DatabaseStore {
         caller_jid VARCHAR(255) NOT NULL,
         is_group TINYINT(1) DEFAULT 0,
         is_video TINYINT(1) DEFAULT 0,
-        status ENUM('missed','answered','rejected','unknown') DEFAULT 'unknown',
+        status VARCHAR(50) DEFAULT 'unknown',
         timestamp BIGINT NOT NULL,
         duration_seconds INT DEFAULT NULL,
         PRIMARY KEY (session_id, call_id),
@@ -104,7 +105,7 @@ class DatabaseStore {
         session_id VARCHAR(100) NOT NULL,
         id VARCHAR(255) NOT NULL,
         lid VARCHAR(255) DEFAULT NULL,
-        phone VARCHAR(50) DEFAULT NULL,
+        phone_number VARCHAR(50) DEFAULT NULL,
         name VARCHAR(255) DEFAULT NULL,
         notify VARCHAR(255) DEFAULT NULL,
         verified_name VARCHAR(255) DEFAULT NULL,
@@ -112,7 +113,7 @@ class DatabaseStore {
         about TEXT DEFAULT NULL,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         PRIMARY KEY (session_id, id),
-        INDEX idx_phone (session_id, phone),
+        INDEX idx_phone_number (session_id, phone_number),
         INDEX idx_name (session_id, name)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
 
@@ -167,26 +168,14 @@ class DatabaseStore {
         thumbnail_url TEXT DEFAULT NULL,
         fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (session_id, jid)
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`,
-
-      `CREATE TABLE IF NOT EXISTS users (
-        username VARCHAR(100) NOT NULL,
-        password_hash VARCHAR(255) NOT NULL,
-        role ENUM('admin','moderator','user') DEFAULT 'user',
-        api_key VARCHAR(255) NOT NULL UNIQUE,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        PRIMARY KEY (username),
-        INDEX idx_api_key (api_key)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`
     ];
 
     for (const query of queries) {
       try {
         await this.mysqlQuery(query);
-        const tableName = query.match(/TABLE IF NOT EXISTS\s+`?(\w+)`?/)?.[1] || 'unknown';
       } catch (err) {
-        console.error(`[DatabaseStore] Failed to create table:`, err.message);
+        console.error({ err }, "Failed to create table");
       }
     }
   }
@@ -201,14 +190,16 @@ class DatabaseStore {
         return rows;
       } catch (err) {
         lastError = err;
-        console.warn(`[mysqlQuery] attempt ${attempt}/${maxRetries} failed`, {
-          message: err.message,
-          sql: sql.substring(0, 150)
-        });
+        this.logger.warn({
+          attempt,
+          maxRetries,
+          sql: sql.substring(0, 150) + (sql.length > 150 ? '...' : ''),
+          params,
+          error: err.message
+        }, "mysqlQuery failed");
 
         if (attempt === maxRetries) throw err;
 
-        // Exponential backoff: 200ms → 800ms → 1800ms
         await new Promise(r => setTimeout(r, 200 * attempt * attempt));
       } finally {
         if (conn) conn.release();
@@ -227,7 +218,7 @@ class DatabaseStore {
       return result;
     } catch (err) {
       if (conn) await conn.rollback();
-      console.error("[mysqlTransaction] failed", err.message);
+      console.error({ err }, "mysqlTransaction failed");
       throw err;
     } finally {
       if (conn) conn.release();
@@ -238,183 +229,139 @@ class DatabaseStore {
   async redisSetEx(key, sec, val) { if (this.redisReady) await this.redis.setEx(key, sec, val).catch(() => { }); }
   async redisDel(...keys) { if (this.redisReady && keys.length) await this.redis.del(keys).catch(() => { }); }
 
-  async createUser({ username, password, apiKey, role = "user" }) {
-    if (!username?.trim() || !password || password.length < 6 || !apiKey?.trim()) {
-      throw new Error("username, password (min 6 chars), apiKey required");
-    }
-    const trimmedUser = username.trim();
-    const trimmedKey = apiKey.trim();
+  async downloadAndSaveMedia(msg) {
+    if (!msg?.message || !this.sock) return null;
 
-    const existing = await this.mysqlQuery(
-      "SELECT 1 FROM users WHERE username = ? OR api_key = ? LIMIT 1",
-      [trimmedUser, trimmedKey]
-    );
-    if (existing.length) throw new Error("Username or API key already exists");
+    const contentType = getContentType(msg.message);
+    if (!['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'].includes(contentType)) return null;
 
-    const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-    await this.mysqlQuery(
-      "INSERT INTO users (username, password_hash, api_key, role, created_at) VALUES (?, ?, ?, ?, NOW())",
-      [trimmedUser, hash, trimmedKey, role]
-    );
-
-    return { username: trimmedUser, apiKey: trimmedKey, role };
-  }
-
-  async authenticateUser(username, password) {
-    console.log('[DB AUTH] === START ===');
-    console.log('[DB AUTH] Username:', username);
-    console.log('[DB AUTH] Password received (raw):', JSON.stringify(password));
-    console.log('[DB AUTH] Password char codes:', password.split('').map(c => c.charCodeAt(0)));
-    console.log('[DB AUTH] Password length:', password.length);
-
-    const rows = await this.mysqlQuery(
-      "SELECT username, password_hash, api_key, role FROM users WHERE username = ?",
-      [username]
-    );
-
-    console.log('[DB AUTH] Rows found:', rows.length);
-    if (rows.length === 0) return null;
-
-    const storedHash = rows[0].password_hash;
-    console.log('[DB AUTH] Stored hash:', storedHash);
-
-    const match = await bcrypt.compare(password, storedHash);
-
-    console.log('[DB AUTH] bcrypt.compare result:', match);
-    console.log('[DB AUTH] === END ===');
-
-    if (!match) return null;
-
-    return {
-      username: rows[0].username,
-      apiKey: rows[0].api_key,
-      role: rows[0].role,
-    };
-  }
-
-  async userExists(username) {
-    if (!username) return false;
-    const rows = await this.mysqlQuery("SELECT 1 FROM users WHERE username = ? LIMIT 1", [username]);
-    return rows.length > 0;
-  }
-
-  async getUser(username) {
-    const rows = await this.mysqlQuery(
-      "SELECT username, api_key, role, created_at FROM users WHERE username = ? LIMIT 1",
-      [username]
-    );
-    return rows[0] || null;
-  }
-
-  async getAllUsers() {
-    return this.mysqlQuery("SELECT username, api_key, role, created_at FROM users ORDER BY username ASC");
-  }
-
-  async updateUser(username, updates) {
-    const fields = [];
-    const values = [];
-
-    for (const [k, v] of Object.entries(updates)) {
-      if (v === undefined || v === null) continue;
-      if (k === "password") {
-        if (typeof v !== "string" || v.length < 6) throw new Error("Password too short");
-        fields.push("password_hash = ?");
-        values.push(await bcrypt.hash(v, BCRYPT_ROUNDS));
-      } else if (k === "api_key") {
-        if (typeof v !== "string" || !v.trim()) throw new Error("Invalid api_key");
-        const key = v.trim();
-        const conflict = await this.mysqlQuery(
-          "SELECT 1 FROM users WHERE api_key = ? AND username != ? LIMIT 1",
-          [key, username]
-        );
-        if (conflict.length) throw new Error("API key already in use");
-        fields.push("api_key = ?");
-        values.push(key);
-      } else if (k === "role" && ["admin", "moderator", "user"].includes(v)) {
-        fields.push("role = ?");
-        values.push(v);
-      }
-    }
-
-    if (!fields.length) return false;
-    values.push(username);
-
-    const sql = `UPDATE users SET ${fields.join(", ")}, updated_at = NOW() WHERE username = ?`;
-    const { affectedRows } = await this.mysqlQuery(sql, values);
-    return affectedRows > 0;
-  }
-
-  async deleteUser(username) {
-    if (!username) return false;
-    return this.mysqlTransaction(async (conn) => {
-      await conn.execute(
-        `DELETE s, ac, c, co, m, gm, pp, mf
-         FROM sessions s
-         LEFT JOIN auth_creds ac ON ac.session_id = s.session_id
-         LEFT JOIN chats c ON c.session_id = s.session_id
-         LEFT JOIN chats_overview co ON co.session_id = s.session_id
-         LEFT JOIN messages m ON m.session_id = s.session_id
-         LEFT JOIN group_metadata gm ON gm.session_id = s.session_id
-         LEFT JOIN profile_pictures pp ON pp.session_id = s.session_id
-         LEFT JOIN media_files mf ON mf.session_id = s.session_id
-         WHERE s.owner = ?`,
-        [username]
+    try {
+      const buffer = await downloadMediaMessage(
+        msg,
+        'buffer',
+        {},
+        { logger: this.logger.child({ module: 'downloadMedia' }) }
       );
-      const [{ affectedRows }] = await conn.execute("DELETE FROM users WHERE username = ?", [username]);
-      await this.redisDel(`user:${username}`);
-      return affectedRows > 0;
-    });
+
+      const extMap = {
+        imageMessage: 'jpg',
+        videoMessage: 'mp4',
+        audioMessage: msg.message.audioMessage?.ptt ? 'ogg' : 'mp3',
+        documentMessage: msg.message.documentMessage?.fileName?.split('.').pop() || 'bin',
+        stickerMessage: 'webp'
+      };
+
+      const ext = extMap[contentType] || 'bin';
+      const filename = `${msg.key.id}.${ext}`;
+      const mediaDir = path.join(process.cwd(), 'public', 'media', this.sessionId);
+      const fullPath = path.join(mediaDir, filename);
+      const publicUrl = `/media/${this.sessionId}/${filename}`;
+
+      if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+
+      fs.writeFileSync(fullPath, buffer);
+
+      console.log({ messageId: msg.key.id, type: contentType, url: publicUrl }, "Media saved");
+
+      await this.mysqlQuery(
+        `UPDATE messages 
+         SET media_path = ? 
+         WHERE session_id = ? AND chat_id = ? AND message_id = ?`,
+        [publicUrl, this.sessionId, msg.key.remoteJid, msg.key.id]
+      );
+
+      return publicUrl;
+    } catch (err) {
+      console.error({ messageId: msg.key?.id, err }, "Media download failed");
+      return null;
+    }
   }
 
-  async readSessionConfig(sessionId) {
-    const cacheKey = `session:config:${sessionId}`;
-    if (this.useRedis) {
-      const cached = await this.redisGet(cacheKey);
-      if (cached) return JSON.parse(cached);
+  async _bulkUpsertContacts(contacts) {
+    if (!Array.isArray(contacts) || contacts.length === 0) return;
+
+    const values = [];
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    for (const contact of contacts) {
+      if (!contact?.id) continue;
+
+      const contactId       = contact.id;
+      const contactLid      = contact.lid || null;
+      let contactPhone      = contact.phoneNumber || null;
+      const contactName     = contact.name || contact.pushName || null;
+      const contactNotify   = contact.notify || null;
+      const verifiedName    = contact.verifiedName || contact.verified_name || null;
+      const profilePicUrl   = contact.imgUrl || contact.profilePictureUrl || null;
+      const about           = contact.status || contact.about || null;
+
+      let resolvedPhone = null;
+      if (!contactPhone && contactId?.endsWith('@lid') && this.sock?.signalRepository?.lidMapping) {
+        try {
+          resolvedPhone = await this.sock.signalRepository.lidMapping.getPNForLID(contactId);
+          if (resolvedPhone) {
+            console.log({ contactId, resolvedPhone }, "contact resolve success");
+            contactPhone = resolvedPhone;
+          }
+        } catch (err) {}
+      }
+
+      let derivedPhone = null;
+      if (!contactPhone) {
+        if (contactId?.endsWith('@s.whatsapp.net')) {
+          derivedPhone = contactId.split('@')[0];
+        } else if (contactLid?.endsWith('@s.whatsapp.net')) {
+          derivedPhone = contactLid.split('@')[0];
+        }
+      }
+
+      const finalPhone = contactPhone || derivedPhone || null;
+
+      values.push([
+        this.sessionId,
+        contactId,
+        contactLid,
+        finalPhone,
+        contactName,
+        contactNotify,
+        verifiedName,
+        profilePicUrl,
+        about,
+        now
+      ]);
     }
 
-    const rows = await this.mysqlQuery(
-      "SELECT metadata, webhooks, owner, token FROM sessions WHERE session_id = ? LIMIT 1",
-      [sessionId]
-    );
+    if (values.length === 0) return;
 
-    if (!rows.length) {
-      const data = { metadata: {}, webhooks: [], owner: "", token: "" };
-      if (this.useRedis) await this.redisSetEx(cacheKey, 300, JSON.stringify(data));
-      return data;
+    const placeholders = values.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").join(",");
+    const sql = `
+      INSERT INTO contacts (
+        session_id, id, lid, phone_number, name, notify, verified_name,
+        profile_picture_url, about, updated_at
+      ) VALUES ${placeholders}
+      ON DUPLICATE KEY UPDATE
+        lid = VALUES(lid),
+        phone_number = VALUES(phone_number),
+        name = VALUES(name),
+        notify = VALUES(notify),
+        verified_name = VALUES(verified_name),
+        profile_picture_url = VALUES(profile_picture_url),
+        about = VALUES(about),
+        updated_at = NOW()
+    `;
+
+    try {
+      await this.mysqlQuery(sql, values.flat());
+      console.log({ count: values.length }, "Bulk upserted contacts");
+    } catch (err) {
+      console.error({ err, count: values.length }, "Bulk contacts upsert failed");
+      throw err;
     }
-
-    const r = rows[0];
-    const data = {
-      metadata: r.metadata ? JSON.parse(r.metadata) : {},
-      webhooks: r.webhooks ? JSON.parse(r.webhooks) : [],
-      owner: r.owner || "",
-      token: r.token || "",
-    };
-
-    if (this.useRedis) await this.redisSetEx(cacheKey, 300, JSON.stringify(data));
-    return data;
   }
 
-  async saveSessionConfig(sessionId, { metadata = {}, webhooks = [], owner = "", token = "" }) {
-    console.log(sessionId, metadata, webhooks, owner, token);
-    await this.mysqlQuery(
-      `INSERT INTO sessions (session_id, metadata, webhooks, owner, token, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-       ON DUPLICATE KEY UPDATE metadata=VALUES(metadata), webhooks=VALUES(webhooks),
-         owner=VALUES(owner), token=VALUES(token), updated_at=NOW()`,
-      [sessionId, JSON.stringify(metadata), JSON.stringify(webhooks), owner, token]
-    );
-
-    // Invalidate cache
-    if (this.useRedis) await this.redisDel(`session:config:${sessionId}`);
-  }
-
-  bind(ev) {
+  bind(ev, sock) {
+    this.sock = sock;
     ev.on("connection.update", () => { });
-    ev.on("creds.update", async (creds) => {
-      await this.setAuthCred("creds", creds);
-    });
     ev.on("chats.set", async ({ chats }) => {
       if (!Array.isArray(chats)) return;
       await this.mysqlTransaction(async (conn) => {
@@ -448,18 +395,24 @@ class DatabaseStore {
       }
     });
     ev.on("contacts.set", async ({ contacts }) => {
-      if (!Array.isArray(contacts)) return;
-      await this.mysqlTransaction(async (conn) => {
-        for (const c of contacts) await this._upsertContact(c, conn);
-      });
+      await this._bulkUpsertContacts(contacts);
     });
     ev.on("contacts.upsert", async (contacts) => {
-      if (!Array.isArray(contacts)) return;
-      for (const c of contacts) await this._upsertContact(c);
+      await this._bulkUpsertContacts(contacts);
     });
     ev.on("contacts.update", async (updates) => {
-      if (!Array.isArray(updates)) return;
-      for (const u of updates) await this._upsertContact(u);
+      await this._bulkUpsertContacts(updates);
+    });
+    ev.on('lid-mapping.update', (update) => {
+      for (const mapping of update.mapping || []) {
+        const lid = mapping.lid;
+        const pn = mapping.pn;
+        console.log({ lid, pn }, "LID mapping update");
+        this.mysqlQuery(
+          `UPDATE contacts SET phone_number = ? WHERE session_id = ? AND id = ?`,
+          [pn, this.sessionId, lid]
+        ).catch(err => console.warn({ err }, "lid-mapping.update DB update failed"));
+      }
     });
     ev.on("messages.set", async ({ messages }) => {
       if (!Array.isArray(messages)) return;
@@ -475,8 +428,8 @@ class DatabaseStore {
         if (!msg?.key?.id || !msg?.key?.remoteJid) continue;
 
         const jsonStr = JSON.stringify(msg);
-        if (jsonStr.length > 2_000_000) {
-          console.warn(`[${this.sessionId}] Skipping huge message ${msg.key.id}`);
+        if (jsonStr.length > 2000000) {
+          console.warn({ msgId: msg.key.id }, "Skipping huge message");
           continue;
         }
 
@@ -484,18 +437,25 @@ class DatabaseStore {
           this.sessionId,
           msg.key.remoteJid,
           msg.key.id,
+          msg.key.fromMe ? 1 : 0,
+          msg.key.participant || msg.key.remoteJid,
           msg.messageTimestamp || Math.floor(Date.now() / 1000),
           jsonStr
         ]);
+
+        const ct = getContentType(msg.message);
+        if (ct && ['imageMessage','videoMessage','audioMessage','documentMessage','stickerMessage'].includes(ct)) {
+          this.downloadAndSaveMedia(msg).catch(err => console.warn({ err }, "Auto media download failed"));
+        }
       }
 
       if (values.length === 0) return;
 
-      const placeholders = values.map(() => "(?, ?, ?, ?, ?)").join(",");
+      const placeholders = values.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(",");
       await this.mysqlQuery(
-        `INSERT INTO messages (session_id, chat_id, msg_id, timestamp, full_message)
+        `INSERT INTO messages (session_id, chat_id, message_id, from_me, sender_jid, timestamp, raw_json)
          VALUES ${placeholders}
-         ON DUPLICATE KEY UPDATE timestamp=VALUES(timestamp), full_message=VALUES(full_message)`,
+         ON DUPLICATE KEY UPDATE timestamp=VALUES(timestamp), raw_json=VALUES(raw_json)`,
         values.flat()
       );
     });
@@ -510,6 +470,24 @@ class DatabaseStore {
     ev.on("group-participants.update", async (update) => {
       await this._updateGroupParticipants(update);
     });
+    ev.on("groups.set", async ({ groups }) => {
+      if (!Array.isArray(groups)) return;
+      await this.mysqlTransaction(async (conn) => {
+        for (const group of groups) await this._upsertGroupMetadata(group, conn);
+      });
+    });
+
+    ev.on("groups.upsert", async (groups) => {
+      if (!Array.isArray(groups)) return;
+      await this.mysqlTransaction(async (conn) => {
+        for (const group of groups) await this._upsertGroupMetadata(group, conn);
+      });
+    });
+
+    ev.on("groups.update", async (updates) => {
+      if (!Array.isArray(updates)) return;
+      for (const update of updates) await this._upsertGroupMetadata(update);
+    }); 
     ev.on("groups.update", async (updates) => {
       if (!Array.isArray(updates)) return;
       for (const g of updates) await this._upsertGroupMetadata(g);
@@ -548,15 +526,73 @@ class DatabaseStore {
   }
 
   async _upsertContact(contact, conn = null) {
+    if (!contact?.id) return;
+
     const q = conn ? conn.execute.bind(conn) : this.mysqlQuery.bind(this);
+
+    const contactId       = contact.id;
+    const contactLid      = contact.lid || null;
+    let contactPhone      = contact.phoneNumber || null;
+    const contactName     = contact.name || contact.pushName || null;
+    const contactNotify   = contact.notify || null;
+    const verifiedName    = contact.verifiedName || contact.verified_name || null;
+    const profilePicUrl   = contact.imgUrl || contact.profilePictureUrl || null;
+    const about           = contact.status || contact.about || null;
+
+    let resolvedPhone = null;
+
+    if (!contactPhone && contactId?.endsWith('@lid') && this.sock?.signalRepository?.lidMapping) {
+      try {
+        resolvedPhone = await this.sock.signalRepository.lidMapping.getPNForLID(contactId);
+        if (resolvedPhone) {
+          console.log({ contactId, resolvedPhone }, "contact resolve success");
+          contactPhone = resolvedPhone;
+        }
+      } catch (err) {}
+    }
+
+    let derivedPhone = null;
+    if (!contactPhone) {
+      if (contactId?.endsWith('@s.whatsapp.net')) {
+        derivedPhone = contactId.split('@')[0];
+      } else if (contactLid?.endsWith('@s.whatsapp.net')) {
+        derivedPhone = contactLid.split('@')[0];
+      }
+    }
+
+    const finalPhone = contactPhone || derivedPhone || null;
+
+    console.log({
+      id: contactId,
+      lid: contactLid || '-',
+      phone: finalPhone || 'missing',
+      source: contactPhone ? 'server' : derivedPhone ? 'derived' : 'none'
+    }, "contact upsert");
+
     await q(
-      `INSERT INTO contacts (session_id, id, lid, phone, name, notify, verified_name)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE lid=VALUES(lid), phone=VALUES(phone), name=VALUES(name),
-         notify=VALUES(notify), verified_name=VALUES(verified_name)`,
+      `INSERT INTO contacts (
+          session_id, id, lid, phone_number, name, notify, verified_name,
+          profile_picture_url, about, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+      ON DUPLICATE KEY UPDATE
+          lid                  = VALUES(lid),
+          phone_number         = VALUES(phone_number),
+          name                 = VALUES(name),
+          notify               = VALUES(notify),
+          verified_name        = VALUES(verified_name),
+          profile_picture_url  = VALUES(profile_picture_url),
+          about                = VALUES(about),
+          updated_at           = NOW()`,
       [
-        this.sessionId, contact.id, contact.lid || null, contact.phone || null,
-        contact.name || null, contact.notify || null, contact.verifiedName || null
+        this.sessionId,
+        contactId,
+        contactLid,
+        finalPhone,
+        contactName,
+        contactNotify,
+        verifiedName,
+        profilePicUrl,
+        about
       ]
     );
   }
@@ -565,32 +601,25 @@ class DatabaseStore {
     if (!msg?.key?.id || !msg?.key?.remoteJid) return;
 
     const jsonStr = JSON.stringify(msg);
-    if (jsonStr.length > 2_000_000) {
-      console.warn(`[${this.sessionId}] Skipping huge message ${msg.key.id}`);
+    if (jsonStr.length > 2000000) {
+      console.warn({ msgId: msg.key.id }, "Skipping huge message");
       return;
     }
 
     const q = conn ? conn.execute.bind(conn) : this.mysqlQuery.bind(this);
     await q(
-      `INSERT INTO messages (session_id, chat_id, msg_id, timestamp, full_message)
-       VALUES (?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE timestamp=VALUES(timestamp), full_message=VALUES(full_message)`,
+      `INSERT INTO messages (session_id, chat_id, message_id, from_me, sender_jid, timestamp, raw_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE timestamp=VALUES(timestamp), raw_json=VALUES(raw_json)`,
       [
         this.sessionId,
         msg.key.remoteJid,
         msg.key.id,
+        msg.key.fromMe ? 1 : 0,
+        msg.key.participant || msg.key.remoteJid,
         msg.messageTimestamp || Math.floor(Date.now() / 1000),
         jsonStr
       ]
-    );
-  }
-
-  async saveMediaPath(sessionId, msgId, filePath) {
-    await this.mysqlQuery(
-      `INSERT INTO media_files (session_id, msg_id, file_path)
-       VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE file_path = VALUES(file_path), updated_at = NOW()`,
-      [sessionId, msgId, filePath]
     );
   }
 
@@ -598,7 +627,7 @@ class DatabaseStore {
     if (!update.key?.id || !update.key?.remoteJid) return;
     if (update.update?.status) {
       await this.mysqlQuery(
-        "UPDATE messages SET full_message = JSON_SET(full_message, '$.status', ?) WHERE session_id = ? AND chat_id = ? AND msg_id = ?",
+        "UPDATE messages SET raw_json = JSON_SET(raw_json, '$.status', ?) WHERE session_id = ? AND chat_id = ? AND message_id = ?",
         [update.update.status, this.sessionId, update.key.remoteJid, update.key.id]
       );
     }
@@ -607,7 +636,7 @@ class DatabaseStore {
   async _updateReceipt({ key, receipt }) {
     if (!key?.id || !key?.remoteJid) return;
     await this.mysqlQuery(
-      "UPDATE messages SET full_message = JSON_SET(full_message, '$.userReceipt', ?) WHERE session_id = ? AND chat_id = ? AND msg_id = ?",
+      "UPDATE messages SET raw_json = JSON_SET(raw_json, '$.userReceipt', ?) WHERE session_id = ? AND chat_id = ? AND message_id = ?",
       [JSON.stringify(receipt), this.sessionId, key.remoteJid, key.id]
     );
   }
@@ -634,27 +663,53 @@ class DatabaseStore {
     );
   }
 
-  async _upsertGroupMetadata(group) {
+  async _upsertGroupMetadata(group, conn = null) {
     if (!group?.id) return;
-    await this.mysqlQuery(
-      `INSERT INTO group_metadata (session_id, id, subject, subject_owner, subject_time, description,
-        is_restricted, is_announced, size, creation, owner, participants)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         subject=VALUES(subject), subject_owner=VALUES(subject_owner), subject_time=VALUES(subject_time),
-         description=VALUES(description), is_restricted=VALUES(is_restricted), is_announced=VALUES(is_announced),
-         size=VALUES(size), creation=VALUES(creation), owner=VALUES(owner), participants=VALUES(participants)`,
+
+    const q = conn ? conn.execute.bind(conn) : this.mysqlQuery.bind(this);
+
+    await q(
+      `INSERT INTO group_metadata (
+        session_id, id, subject, subject_owner, subject_time, description,
+        is_restricted, is_announced, participant_count, creation, owner, participants
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        subject=VALUES(subject),
+        subject_owner=VALUES(subject_owner),
+        subject_time=VALUES(subject_time),
+        description=VALUES(description),
+        is_restricted=VALUES(is_restricted),
+        is_announced=VALUES(is_announced),
+        participant_count=VALUES(participant_count),
+        creation=VALUES(creation),
+        owner=VALUES(owner),
+        participants=VALUES(participants),
+        updated_at=NOW()`,
       [
-        this.sessionId, group.id, group.subject || null, group.subjectOwner || null,
-        group.subjectTime || null, group.desc || null, group.restrict ? 1 : 0, group.announce ? 1 : 0,
-        group.size || null, group.creation || null, group.owner || null,
+        this.sessionId,
+        group.id,
+        group.subject || null,
+        group.subjectOwner || null,
+        group.subjectTime || null,
+        group.desc || group.description || null,
+        group.restrict ? 1 : 0,
+        group.announce ? 1 : 0,
+        group.participants?.length || null,
+        group.creation || null,
+        group.owner || null,
         JSON.stringify(group.participants || [])
       ]
     );
   }
 
   async _upsertCall(call) {
+    console.log(call);
     if (!call?.id || !call?.from) return;
+
+    const status = call.status 
+      ? String(call.status).trim() || 'unknown' 
+      : 'unknown';
+
     await this.mysqlQuery(
       `INSERT INTO call_logs (session_id, call_id, caller_jid, is_group, is_video, status, timestamp, duration_seconds)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -667,7 +722,7 @@ class DatabaseStore {
         call.from,
         call.isGroup ? 1 : 0,
         call.isVideo ? 1 : 0,
-        call.status || "unknown",
+        status,
         call.timestamp || Math.floor(Date.now() / 1000),
         call.duration || null
       ]
@@ -755,11 +810,11 @@ class DatabaseStore {
   }
 
   async getStats(sessionId = this.sessionId) {
-    const tables = ["chats", "chats_overview", "contacts", "messages", "group_metadata", "profile_pictures", "media_files", "sessions", "auth_creds", "users"];
+    const tables = ["chats", "chats_overview", "contacts", "messages", "group_metadata", "profile_pictures", "sessions"];
     const counts = await Promise.all(tables.map(async t => {
       const rows = await this.mysqlQuery(
-        `SELECT COUNT(*) as cnt FROM ${t} ${t !== "users" ? "WHERE session_id = ?" : ""}`,
-        t !== "users" ? [sessionId] : []
+        `SELECT COUNT(*) as cnt FROM ${t} ${t !== "sessions" ? "WHERE session_id = ?" : ""}`,
+        t !== "sessions" ? [sessionId] : []
       );
       return [t, rows[0]?.cnt ?? 0];
     }));
@@ -770,6 +825,49 @@ class DatabaseStore {
     return await this.mysqlQuery(
       "SELECT session_id, metadata, webhooks, owner, token FROM sessions ORDER BY session_id"
     );
+  }
+
+  async deleteSessionData(sessionId) {
+    if (!sessionId?.trim()) {
+      throw new Error("Session ID is required");
+    }
+
+    const targetSessionId = sessionId.trim();
+
+    console.log({ targetSessionId }, "Starting deletion of session data");
+
+    return this.mysqlTransaction(async (conn) => {
+      try {
+        await conn.execute("DELETE FROM call_logs WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM chats_overview WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM chats WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM contacts WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM device_blocklist WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM group_metadata WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM messages WHERE session_id = ?", [targetSessionId]);
+        await conn.execute("DELETE FROM profile_pictures WHERE session_id = ?", [targetSessionId]);
+
+        const [sessionResult] = await conn.execute("DELETE FROM sessions WHERE session_id = ?", [targetSessionId]);
+
+        if (this.useRedis) {
+          await this.redisDel(
+            `blocklist:${targetSessionId}`,
+            `session:config:${targetSessionId}`
+          );
+        }
+
+        console.log({ targetSessionId, affectedSessions: sessionResult.affectedRows }, "Session data deleted successfully");
+
+        return {
+          success: true,
+          deletedSessionId: targetSessionId,
+          message: "Session data and all related records deleted"
+        };
+      } catch (err) {
+        console.error({ targetSessionId, err }, "Failed to delete session data");
+        throw err;
+      }
+    });
   }
 }
 

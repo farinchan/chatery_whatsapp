@@ -64,28 +64,6 @@ class WhatsAppSession {
     }
   }
 
-  async updatePhoneAndName() {
-    if (!this.socket?.user) return;
-
-    const jid = this.socket.user.id;
-    const newPhone = jid.split('@')[0];
-    const newName  = this.socket.user.name || null;
-
-    let changed = false;
-    if (newPhone !== this.phoneNumber) {
-      this.phoneNumber = newPhone;
-      changed = true;
-    }
-    if (newName !== this.name) {
-      this.name = newName;
-      changed = true;
-    }
-
-    if (changed) {
-      await this._saveConfig();
-    }
-  }
-
   updateConfig(options = {}) {
     if (options.metadata !== undefined) {
       this.metadata = { ...this.metadata, ...options.metadata };
@@ -173,7 +151,7 @@ class WhatsAppSession {
         browser: ['Chatery API', 'Chrome', '1.0.0'],
         syncFullHistory: true
       });
-
+      this.db.bind(this.socket.ev);
       this._setupEventListeners(saveCreds);
       return { success: true, message: 'Initializing connection...' };
     } catch (error) {
@@ -184,13 +162,14 @@ class WhatsAppSession {
   }
 
   _setupEventListeners(saveCreds) {
+    
     this.socket.ev.on('connection.update', async (update) => {
       const { connection, lastDisconnect, qr } = update;
 
       if (qr) {
         this.qrCode = await qrcode.toDataURL(qr);
         this.connectionStatus = 'qr_ready';
-        console.log(`📱 [${this.sessionId}] QR Code generated! Scan dengan WhatsApp Anda.`);
+        console.log(`📱 [${this.sessionId}] QR Code generated! Scan and Connect`);
 
         wsManager.emitQRCode(this.sessionId, this.qrCode);
       }
@@ -232,7 +211,6 @@ class WhatsAppSession {
           console.log(`👤 [${this.sessionId}] Connected as: ${this.name} (${this.phoneNumber})`);
         }
         
-        await this.updatePhoneAndName();
         wsManager.emitConnectionStatus(this.sessionId, 'connected', {
           phoneNumber: this.phoneNumber,
           name: this.name
@@ -253,46 +231,20 @@ class WhatsAppSession {
 
     this.socket.ev.on('creds.update', saveCreds);
 
-    this.socket.ev.on('messages.upsert', async ({ messages, type }) => {
-      if (!['notify', 'append'].includes(type)) return;
-      if (!messages?.length) return;
+    this.socket.ev.on('messages.upsert', ({ messages, type }) => {
+      if (type !== 'notify') return; // only user messages
 
-      for (const message of messages) {
-        if (!message?.key?.remoteJid) continue;
+      for (const msg of messages) {
+          if (!msg.message) continue;
 
-        try {
-          const mediaPath = await this._autoSaveMedia(message);
-          if (mediaPath) {
-            message._mediaPath = mediaPath;
+          const formatted = MessageFormatter.formatMessage(msg);
+          if (!formatted) continue;
 
-            await this.db._upsertMediaFile?.({
-              messageId: message.key.id,
-              chatId: message.key.remoteJid,
-              filePath: mediaPath.replace(process.cwd() + '/public', ''),
-              urlPath: mediaPath,
-              mimetype: message.message?.[getContentType(message.message)]?.mimetype,
-              fileLength: message.message?.[getContentType(message.message)]?.fileLength,
-              timestamp: typeof message.messageTimestamp === 'object'
-                ? message.messageTimestamp.low ?? Math.floor(Date.now() / 1000)
-                : message.messageTimestamp ?? Math.floor(Date.now() / 1000)
-            });
-          }
+          // 1. Immediate real-time push
+          wsManager.emitMessage(this.sessionId, formatted);
 
-          await this.db._upsertMessage(message);
-
-          const formattedMessage = MessageFormatter.formatMessage(message);
-          if (formattedMessage) {
-            if (!message.key.fromMe && type === 'notify') {
-              wsManager.emitMessage(this.sessionId, formattedMessage);
-              this._sendWebhook('message', formattedMessage);
-            } else if (message.key.fromMe && type === 'notify') {
-              wsManager.emitMessageSent(this.sessionId, formattedMessage);
-              this._sendWebhook('message.sent', formattedMessage);
-            }
-          }
-        } catch (error) {
-          console.error(`[${this.sessionId}] messages.upsert processing error:`, error.message);
-        }
+          // 2. Webhook (if configured for message events)
+          this._sendWebhook('message', formatted);
       }
     });
 
@@ -697,6 +649,51 @@ class WhatsAppSession {
       };
     }
   }
+
+async getChatsOverview(limit = 50, offset = 0, type = 'all') {
+  try {
+    if (!this.db) return { success: false, message: 'Database not initialized' };
+
+    let query = `SELECT co.chat_id, c.name, c.is_group, co.last_message_preview, co.unread_count, c.last_message_timestamp, c.archived, c.pinned, c.muted_until FROM chats_overview co LEFT JOIN chats c ON c.session_id = co.session_id AND c.id = co.chat_id WHERE co.session_id = ?`;
+
+    const params = [this.sessionId];
+
+    if (type === 'unread') query += ` AND co.unread_count > 0`;
+    else if (type === 'archived') query += ` AND c.archived = 1`;
+    else if (type === 'pinned') query += ` AND c.pinned = 1`;
+
+    query += ` ORDER BY c.pinned DESC, c.last_message_timestamp DESC LIMIT ? OFFSET ?`;
+    params.push(Number(limit), Number(offset));
+
+    
+
+    const rows = await this.db.mysqlQuery(query, params);
+    console.log(query, params,rows);
+    return {
+      success: true,
+      message: 'Chats overview retrieved',
+      data: {
+        total: rows.length,
+        limit,
+        offset,
+        chats: rows.map(row => ({
+          chatId: row.chat_id,
+          name: row.name || null,
+          isGroup: !!row.is_group,
+          lastMessagePreview: row.last_message_preview ? JSON.parse(row.last_message_preview) : null,
+          unreadCount: row.unread_count || 0,
+          lastMessageTimestamp: row.last_message_timestamp,
+          archived: !!row.archived,
+          pinned: !!row.pinned,
+          mutedUntil: row.muted_until || 0
+        }))
+      }
+    };
+  } catch (error) {
+    this.logger.error({ error: error.message }, 'Failed to get chats overview');
+    return { success: false, message: error.message };
+  }
+}
 
   async getContact(identifier) {
     if (!this.socket || this.connectionStatus !== 'connected') {
