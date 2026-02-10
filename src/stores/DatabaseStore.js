@@ -6,6 +6,7 @@ const fs = require("fs");
 const path = require("path");
 const { downloadMediaMessage, getContentType } = require("@whiskeysockets/baileys");
 
+
 class DatabaseStore {
   constructor(sessionId = "global") {
     this.sessionId = sessionId.replace(/[\/\\:*?"<>|]/g, "_");
@@ -470,7 +471,7 @@ ev.on("chats.update", async (updates) => {
       if (messages.length > 0) {
         const latest = messages[messages.length - 1];
         if (latest?.key?.remoteJid) {
-          const preview = require('./MessageFormatter').formatLastMessagePreview(latest);
+          const preview = require('../services/whatsapp/MessageFormatter').formatLastMessagePreview(latest);
           if (preview) {
             await this._upsertChatOverview(latest.key.remoteJid, {
               last_message_preview: preview
