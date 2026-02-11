@@ -29,11 +29,12 @@ class WhatsAppSession {
 
     this.metadata = options.metadata || {};
     this.webhooks = options.webhooks || [];
-    this.owner = options.owner || '';
+    this.username = options.username || null;
 
-    this.db = new DatabaseStore(this.sessionId);
+    console.log("WhatsAppSession", this.username);
 
     this._loadConfig();
+    this.db = new DatabaseStore(this.sessionId, this.username);
   }
 
   _loadConfig() {
@@ -42,7 +43,7 @@ class WhatsAppSession {
         const config = JSON.parse(fs.readFileSync(this.configFile, 'utf8'));
         this.metadata = config.metadata || this.metadata;
         this.webhooks = config.webhooks || this.webhooks;
-        this.owner = config.owner || this.owner;
+        this.username = config.username || this.username;
       }
     } catch (e) {
       console.log(`⚠️ [${this.sessionId}] Could not load config:`, e.message);
@@ -57,7 +58,7 @@ class WhatsAppSession {
       fs.writeFileSync(this.configFile, JSON.stringify({
         metadata: this.metadata,
         webhooks: this.webhooks,
-        owner: this.owner
+        username: this.username
       }, null, 2));
     } catch (e) {
       console.log(`⚠️ [${this.sessionId}] Could not save config:`, e.message);
@@ -71,8 +72,8 @@ class WhatsAppSession {
     if (options.webhooks !== undefined) {
       this.webhooks = options.webhooks;
     }
-    if (options.owner !== undefined) {
-      this.owner = options.owner;
+    if (options.username !== undefined) {
+      this.username = options.username;
     }
     this._saveConfig();
     return this.getInfo();
@@ -351,7 +352,7 @@ class WhatsAppSession {
       qrCode: this.qrCode,
       metadata: this.metadata,
       webhooks: this.webhooks,
-      owner: this.owner
+      username: this.username
     };
   }
 
@@ -364,6 +365,13 @@ class WhatsAppSession {
 
       this.deleteMediaFolder();
       this.deleteAuthFolder();
+
+     try {
+        await this.db.delete(this.sessionId);
+        console.log(`[${this.sessionId}] Database data cleaned for user ${this.username || 'global'}`);
+      } catch (err) {
+        console.error(`[${this.sessionId}] Failed to clean DB data:`, err);
+      } 
 
       this.connectionStatus = 'disconnected';
       this.qrCode = null;
@@ -460,7 +468,7 @@ class WhatsAppSession {
     }
   }
 
-  async sendMessage(chatId, text = '', options = {}) {
+  async send(chatId, text = '', options = {}) {
     try {
       if (!this.socket || this.connectionStatus !== 'connected') {
         return { success: false, message: 'Session not connected' };
@@ -469,7 +477,7 @@ class WhatsAppSession {
       const jid = this.formatChatId(chatId);
 
       const {
-        attachment = null,      // can be any file, if vcf set contact, if object and have options and selectable, it is poll, if name, phone, it is vcf
+        attachment = null,
         latitude,
         longitude,
         typingTime = 0,
@@ -577,7 +585,7 @@ class WhatsAppSession {
       }
 
       // Send
-      const result = await this.socket.sendMessage(jid, content, messageOptions);
+      const result = await this.socket.send(jid, content, messageOptions);
 
       const sent = {
         messageId: result.key.id,
@@ -653,19 +661,13 @@ class WhatsAppSession {
 async getChatsOverview(limit = 50, offset = 0, type = 'all') {
   try {
     if (!this.db) return { success: false, message: 'Database not initialized' };
-
     let query = `SELECT co.chat_id, c.name, c.is_group, co.last_message_preview, co.unread_count, c.last_message_timestamp, c.archived, c.pinned, c.muted_until FROM chats_overview co LEFT JOIN chats c ON c.session_id = co.session_id AND c.id = co.chat_id WHERE co.session_id = '${this.sessionId}'`;
-
     const params = [];
-
     if (type === 'unread') query += ` AND co.unread_count > 0`;
     else if (type === 'archived') query += ` AND c.archived = 1`;
     else if (type === 'pinned') query += ` AND c.pinned = 1`;
-
-    query += ` ORDER BY c.pinned DESC, c.last_message_timestamp DESC LIMIT ${limit} OFFSET ${offset}`;  
-
+    query += ` ORDER BY c.pinned DESC, c.last_message_timestamp DESC LIMIT ${limit} OFFSET ${offset}`;
     const rows = await this.db.mysqlQuery(query, params);
-    console.log(query, params,rows);
     return {
       success: true,
       message: 'Chats overview retrieved',
@@ -734,9 +736,6 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
     };
 
     try {
-      // ────────────────────────────────────────────────
-      // A. From store.contacts (primary source)
-      // ────────────────────────────────────────────────
       const storeContact = this.socket.store?.contacts?.[jid];
       if (storeContact) {
         result.foundInStore = true;
@@ -894,7 +893,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
         id: group.id,
         name: group.subject,
         isGroup: true,
-        owner: group.owner,
+        username: group.username,
         creation: group.creation,
         participantsCount: group.participants?.length || 0,
         desc: group.desc || null
@@ -923,7 +922,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
         data: {
           id: metadata.id,
           name: metadata.subject,
-          owner: metadata.owner,
+          username: metadata.username,
           creation: metadata.creation,
           desc: metadata.desc || null,
           descId: metadata.descId || null,
@@ -997,8 +996,8 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
               name: metadata.subject,
               isGroup: true,
               profilePicture: profilePicture,
-              owner: metadata.owner,
-              ownerPhone: metadata.owner?.split('@')[0],
+              username: metadata.username,
+              usernamePhone: metadata.username?.split('@')[0],
               creation: metadata.creation,
               description: metadata.desc || null,
               participants: metadata.participants.map(p => ({
@@ -1453,7 +1452,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
         data: {
           id: metadata.id,
           subject: metadata.subject,
-          subjectOwner: metadata.subjectOwner,
+          subjectusername: metadata.subjectusername,
           subjectTime: metadata.subjectTime,
           description: metadata.desc,
           descriptionId: metadata.descId,
@@ -1466,7 +1465,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
             isSuperAdmin: p.admin === 'superadmin'
           })),
           creation: metadata.creation,
-          owner: metadata.owner
+          username: metadata.username
         }
       };
     } catch (error) {
@@ -1484,7 +1483,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
       const groupList = Object.values(groups).map(g => ({
         id: g.id,
         subject: g.subject,
-        subjectOwner: g.subjectOwner,
+        subjectusername: g.subjectusername,
         subjectTime: g.subjectTime,
         description: g.desc,
         restrict: g.restrict,
@@ -1492,7 +1491,7 @@ async getChatsOverview(limit = 50, offset = 0, type = 'all') {
         size: g.size,
         participantsCount: g.participants?.length || 0,
         creation: g.creation,
-        owner: g.owner
+        username: g.username
       }));
       return {
         success: true,

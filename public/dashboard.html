@@ -56,7 +56,7 @@
                 <div class="card">
                     <div class="card-header">
                         <div class="card-title">📱 Sessions</div>
-                        <button class="btn btn-primary btn-sm" onclick="showCreateSession()">
+                        <button class="btn btn-primary btn-sm" onclick="createSession()">
                             + New Session
                         </button>
                     </div>
@@ -307,42 +307,6 @@
                 Open WhatsApp on your phone → Menu → Linked Devices → Link a Device
             </p>
             <button class="btn btn-outline" onclick="closeQrModal()">Close</button>
-        </div>
-    </div>
-
-    <!-- Create Session Modal -->
-    <div class="modal-overlay" id="createSessionModal">
-        <div class="modal" style="max-width: 500px;">
-            <div class="modal-title">➕ Create New Session</div>
-            <div class="modal-subtitle">Enter session details and optional configuration</div>
-
-            <div class="form-group" style="text-align: left;">
-                <label class="form-label">Session ID *</label>
-                <input type="text" class="form-input" id="newSessionId" placeholder="e.g. my-session-1"
-                    pattern="[a-zA-Z0-9_-]+">
-                <small style="color: var(--text-muted); font-size: 12px;">Only letters, numbers, underscore, and dash
-                    allowed</small>
-            </div>
-
-            <div class="form-group" style="text-align: left;">
-                <label class="form-label">Webhook URL (optional)</label>
-                <input type="url" class="form-input" id="newSessionWebhook"
-                    placeholder="https://your-server.com/webhook">
-                <small style="color: var(--text-muted); font-size: 12px;">URL to receive WhatsApp events</small>
-            </div>
-
-            <div class="form-group" style="text-align: left;">
-                <label class="form-label">Metadata (optional)</label>
-                <textarea class="form-input" id="newSessionMetadata" placeholder='{"appName": "MyApp", "userId": "123"}'
-                    style="min-height: 80px; font-family: monospace; font-size: 12px;"></textarea>
-                <small style="color: var(--text-muted); font-size: 12px;">Custom JSON data to associate with this
-                    session</small>
-            </div>
-
-            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                <button class="btn btn-outline" onclick="closeCreateSessionModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="createSession()">Create & Connect</button>
-            </div>
         </div>
     </div>
 

@@ -16,13 +16,9 @@ const userAuth = {
 
     const user = await db.authenticateUser(trimmedUsername, trimmedPassword);
 
-    console.log('[LOGIN DEBUG] DB result:', user ? user : 'user NOT found');
-
     if (!user) {
       return { success: false, message: 'Invalid credentials' };
     }
-
-    console.log('[LOGIN SUCCESS] Returning valid user');
 
     return {
       success: true,
@@ -34,39 +30,60 @@ const userAuth = {
     const apiKey = req.headers['x-api-key']?.trim();
 
     if (!apiKey) {
-      return res.status(401).json({ success: false, message: 'Missing X-Api-Key header' });
+        return res.status(401).json({
+            success: false,
+            message: 'Missing X-Api-Key header'
+        });
     }
 
     const dashboardApiKey = process.env.API_KEY;
-
-    if (dashboardApiKey === apiKey) {
-      const username = process.env.DASHBOARD_USERNAME;
-      req.user = {
-        username: username,
-        apiKey,
-        role: 'admin'
-      };
+    if (dashboardApiKey && dashboardApiKey === apiKey) {
+        const username = process.env.DASHBOARD_USERNAME || 'dashboard';
+        req.user = {
+            username,
+            apiKey,
+            role: 'admin'
+        };
+        return next();
     }
 
-    const rows = await db.mysqlQuery(
-      "SELECT username, role FROM users WHERE api_key = ? LIMIT 1",
-      [apiKey]
-    );
+    try {
+        const rows = await db.mysqlQuery(
+            "SELECT username, role FROM users WHERE api_key = ? LIMIT 1",
+            [apiKey]
+        );
 
-    if (rows.length === 0) {
-      return res.status(401).json({ success: false, message: 'Invalid or expired API key' });
+        if (rows.length === 0) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid or expired API key'
+            });
+        }
+        
+        req.user = {
+            username: rows[0].username,
+            apiKey,
+            role: rows[0].role
+        };
+
+        next();
+    } catch (err) {
+        console.error('API key validation database error:', err);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error during authentication'
+        });
     }
-
-    req.user = {
-      username: rows[0].username,
-      apiKey,
-      role: rows[0].role
-    };
-
-    next();
   },
 
   async getUsername(apiKey) {
+
+    const dashboardApiKey = process.env.API_KEY;
+
+    if (dashboardApiKey == apiKey) {
+      return process.env.DASHBOARD_USERNAME;
+    }
+
     if (!apiKey?.trim()) return false;
     const rows = await db.mysqlQuery(
       "SELECT username FROM users WHERE api_key = ? LIMIT 1",

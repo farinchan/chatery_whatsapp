@@ -13,9 +13,6 @@ class WhatsAppManager {
         this.initExistingSessions();
     }
 
-    /**
-     * Load existing sessions on startup
-     */
     async initExistingSessions() {
         try {
             if (!fs.existsSync(this.sessionsFolder)) {
@@ -28,10 +25,14 @@ class WhatsAppManager {
                 const sessionPath = path.join(this.sessionsFolder, sessionId);
                 if (fs.statSync(sessionPath).isDirectory()) {
                     console.log(`🔄 Restoring session: ${sessionId}`);
-                    // Session will load its own config from file
                     const session = new WhatsAppSession(sessionId, {});
                     this.sessions.set(sessionId, session);
                     await session.connect();
+                    
+                    // Safeguard: Log if username is missing after load
+                    if (!session.username) {
+                        console.warn(`⚠️ [${sessionId}] Restored session has no username. Consider updating config.`);
+                    }
                 }
             }
         } catch (error) {
@@ -39,32 +40,21 @@ class WhatsAppManager {
         }
     }
 
-    /**
-     * Create a new session or reconnect existing
-     * @param {string} sessionId - Session identifier
-     * @param {Object} options - Session options
-     * @param {Object} options.metadata - Custom metadata to store with session
-     * @param {Array} options.webhooks - Array of webhook configs [{ url, events }]
-     * @param {string} options.owner - user name of user
-     * @returns {Object}
-     */
-    async createSession(sessionId, options = {}) {
-        // Validate session ID
-        if (!sessionId || !/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
-            return { 
-                success: false, 
-                message: 'Invalid session ID. Use only letters, numbers, underscore, and dash.' 
-            };
+    async createSession(username, sessionId = false, options = {}) {
+        if (!username) {
+            throw new Error('Username is required for session creation');
         }
-
-        // Check if session already exists
+        
+        sessionId = sessionId || this.createSessionId(username);
+        
+        // Merge username into options
+        options = { ...options, username };
+        
         if (this.sessions.has(sessionId)) {
             const existingSession = this.sessions.get(sessionId);
             
-            // Update config if provided
-            if (options.metadata || options.webhooks || options.owner) {
-                existingSession.updateConfig(options);
-            }
+            // Update config if provided, including username
+            existingSession.updateConfig(options);
             
             if (existingSession.connectionStatus === 'connected') {
                 return { 
@@ -81,10 +71,9 @@ class WhatsAppManager {
                 data: existingSession.getInfo() 
             };
         }
-
-        // Create new session with options
+        
         const session = new WhatsAppSession(sessionId, options);
-        session._saveConfig(); // Save initial config
+        session._saveConfig();
         this.sessions.set(sessionId, session);
         await session.connect();
 
@@ -93,6 +82,21 @@ class WhatsAppManager {
             message: 'Session created', 
             data: session.getInfo() 
         };
+    }
+
+    createSessionId(username) {
+        const now = new Date();
+
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
+        const timeStr = now.toTimeString().slice(0, 5).replace(':', 'H'); // HHhMM -> HHHMM
+
+        const randomPart = Math.random()
+            .toString(36)
+            .substring(2, 10)
+            .replace(/[^a-z0-9]/gi, '')
+            .toUpperCase();
+
+        return `${username.toUpperCase()}-${dateStr}-${timeStr}-${randomPart}`;
     }
 
     /**

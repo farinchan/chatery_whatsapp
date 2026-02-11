@@ -1,6 +1,4 @@
 
-document.getElementById('footerYear').textContent = new Date().getFullYear();
-
 const API_BASE = '/api/whatsapp';
 let socket = null;
 let sessions = [];
@@ -279,83 +277,44 @@ function updateQuickSendDropdown() {
         connectedSessions.map(s => `<option value="${s.sessionId}">${s.name || s.sessionId}</option>`).join('');
 }
 
-// Create Session
-function showCreateSession() {
-    document.getElementById('createSessionModal').classList.add('active');
-    document.getElementById('newSessionId').focus();
-}
-
-function closeCreateSessionModal() {
-    document.getElementById('createSessionModal').classList.remove('active');
-    document.getElementById('newSessionId').value = '';
-    document.getElementById('newSessionWebhook').value = '';
-    document.getElementById('newSessionMetadata').value = '';
-}
-
 async function createSession() {
-    const sessionId = document.getElementById('newSessionId').value.trim();
-    const webhookUrl = document.getElementById('newSessionWebhook').value.trim();
-    const metadataText = document.getElementById('newSessionMetadata').value.trim();
-
-    if (!sessionId) {
-        showToast('error', 'Please enter a session ID');
-        return;
-    }
-
-    if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
-        showToast('error', 'Invalid session ID format');
-        return;
-    }
-
-    // Build request body
-    const body = {};
-
-    // Parse metadata if provided
-    if (metadataText) {
-        try {
-            body.metadata = JSON.parse(metadataText);
-        } catch (e) {
-            showToast('error', 'Invalid JSON in metadata field');
-            return;
-        }
-    }
-
-    // Add webhook if provided
-    if (webhookUrl) {
-        try {
-            new URL(webhookUrl);
-            body.webhooks = [{ url: webhookUrl }];
-        } catch (e) {
-            showToast('error', 'Invalid webhook URL');
-            return;
-        }
-    }
-
     try {
-        const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/connect`, {
+        showToast('info', 'Creating new session...');
+
+        const response = await apiFetch(`${API_BASE}/sessions/connect`, {
             method: 'POST',
-            body: JSON.stringify(body)
+            body: JSON.stringify({})   // ← empty body → backend auto-generates sessionId
         });
+
         const result = await response.json();
 
-        if (result.success) {
-            closeCreateSessionModal();
-            showToast('success', 'Session created! Scan QR code to connect.');
-
-            // Subscribe to this session
-            if (socket && socket.connected) {
-                socket.emit('subscribe', sessionId);
-            }
-
-            loadSessions();
-
-            // Show QR modal after a short delay
-            setTimeout(() => showQrForSession(sessionId), 1000);
-        } else {
-            showToast('error', result.message);
+        if (!result.success) {
+            showToast('error', result.message || 'Failed to create session');
+            return;
         }
-    } catch (error) {
-        showToast('error', 'Failed to create session');
+
+        const newSessionId = result.data?.sessionId;
+
+        showToast('success', `Session created! ID: ${newSessionId}`);
+
+        // Subscribe to WebSocket events for this new session
+        if (socket?.connected) {
+            socket.emit('subscribe', newSessionId);
+        }
+
+        // Refresh session list
+        await loadSessions();
+
+        // Auto-show QR code modal after short delay (most common next step)
+        setTimeout(() => {
+            if (result.data?.status === 'qr_ready' || result.data?.qrCode) {
+                showQrForSession(newSessionId);
+            }
+        }, 800);
+
+    } catch (err) {
+        showToast('error', 'Failed to create session: ' + err.message);
+        console.error('Create session error:', err);
     }
 }
 
@@ -1149,7 +1108,6 @@ async function removeWebhook(url) {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeQrModal();
-        closeCreateSessionModal();
         closeWebhooksModal();
     }
 });
