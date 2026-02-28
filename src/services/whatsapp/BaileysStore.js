@@ -180,12 +180,19 @@ class BaileysStore {
     // Find latest message
     let latestMessage = newMessage;
     if (!latestMessage) {
-      const messagesArray = Array.from(chatMessages.values()).filter(m => m != null);
+      const messagesArray = Array.from(chatMessages.values()).filter(m => m != null && m !== undefined && m.key != null);
       if (messagesArray.length === 0) {
         this.chatsOverview.delete(chatId);
         return;
       }
-      messagesArray.sort((a, b) => (b?.messageTimestamp || 0) - (a?.messageTimestamp || 0));
+      const getTimestamp = (msg) => {
+        if (!msg || msg.messageTimestamp == null) return 0;
+        const ts = msg.messageTimestamp;
+        // Handle Long object (protobuf) from Baileys
+        if (typeof ts === 'object' && ts !== null) return Number(ts) || 0;
+        return Number(ts) || 0;
+      };
+      messagesArray.sort((a, b) => getTimestamp(b) - getTimestamp(a));
       latestMessage = messagesArray[0];
     }
 
