@@ -9,11 +9,38 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
+---
+
+## 🤝 Sponsor
+
+<table>
+  <tr>
+    <td align="center" width="160">
+      <a href="https://sumopod.com" target="_blank">
+        <img src="screenshot/sumopod.png" alt="SumoPod" width="120" /><br/>
+      </a>
+    </td>
+    <td>
+      <strong>SumoPod — Container & Application Management</strong><br/>
+      SumoPod offers seamless container and application purchasing solutions for businesses of all sizes.<br/><br/>
+      <ul>
+        <li><strong>Container Marketplace</strong> — Explore and purchase from an extensive container library, all verified and ready for instant deployment.</li>
+        <li><strong>One-Click Deployment</strong> — Deploy containers to your infrastructure with one click, eliminating complex configuration processes.</li>
+        <li><strong>Automatic Updates</strong> — Keep your containers and applications up to date with automatic version updates and security patches.</li>
+      </ul>
+      <br/>
+      <a href="https://sumopod.com" target="_blank"><strong>✨ Chatery WhatsApp API is available on SumoPod — Deploy with one click, without complex configuration. Includes auto-updates and monitoring. → Get it now</strong></a>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## ✨ Features
 
 - 📱 **Multi-Session Support** - Manage multiple WhatsApp accounts simultaneously
 - 🔌 **Real-time WebSocket** - Get instant notifications for messages, status updates, and more
-- 👥 **Group Management** - Create, manage, and control WhatsApp groups
+- 👥 **Group Management** - Create, manage, and control WhatsApp gada iklan gitu, kayak negiklankan service chatery di sumopodroups
 - 📨 **Send Messages** - Text, images, documents, locations, contacts, and more
 - ↩️ **Reply to Messages** - Reply/quote specific messages with replyTo parameter
 - 📊 **Poll Messages** - Send interactive polls with single or multiple choice
