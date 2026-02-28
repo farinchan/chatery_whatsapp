@@ -241,6 +241,11 @@ class BaileysStore {
     if (msg.buttonsMessage) return msg.buttonsMessage.contentText || 'Buttons';
     if (msg.templateMessage) return 'Template Message';
     if (msg.listMessage) return msg.listMessage.title || 'List';
+    if (msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3) {
+      const pollMsg = msg.pollCreationMessage || msg.pollCreationMessageV2 || msg.pollCreationMessageV3;
+      return `📊 ${pollMsg.name || 'Poll'}`;
+    }
+    if (msg.pollUpdateMessage) return '📊 Poll vote';
     
     return 'Message';
   }

@@ -68,6 +68,25 @@ class MessageFormatter {
                 emoji: messageContent.reactionMessage.text,
                 targetMessageId: messageContent.reactionMessage.key?.id
             };
+        } else if (messageContent?.pollCreationMessage || messageContent?.pollCreationMessageV2 || messageContent?.pollCreationMessageV3) {
+            type = 'poll';
+            const pollMsg = messageContent.pollCreationMessage || messageContent.pollCreationMessageV2 || messageContent.pollCreationMessageV3;
+            content = {
+                question: pollMsg.name,
+                options: pollMsg.options?.map(o => o.optionName) || [],
+                selectableCount: pollMsg.selectableOptionsCount || 1
+            };
+        } else if (messageContent?.pollUpdateMessage) {
+            type = 'poll_vote';
+            const pollVote = messageContent.pollUpdateMessage;
+            content = {
+                pollCreationMessageKey: pollVote.pollCreationMessageKey ? {
+                    id: pollVote.pollCreationMessageKey.id,
+                    fromMe: pollVote.pollCreationMessageKey.fromMe || false,
+                    remoteJid: pollVote.pollCreationMessageKey.remoteJid
+                } : null,
+                selectedOptions: pollVote.vote?.selectedOptions?.map(opt => opt.toString('hex')) || []
+            };
         } else if (messageContent?.protocolMessage) {
             type = 'protocol';
             content = messageContent.protocolMessage.type;
@@ -139,6 +158,13 @@ class MessageFormatter {
         } else if (content.reactionMessage) {
             type = 'reaction';
             text = content.reactionMessage.text || '👍';
+        } else if (content.pollCreationMessage || content.pollCreationMessageV2 || content.pollCreationMessageV3) {
+            type = 'poll';
+            const pollMsg = content.pollCreationMessage || content.pollCreationMessageV2 || content.pollCreationMessageV3;
+            text = `📊 ${pollMsg.name || 'Poll'}`;
+        } else if (content.pollUpdateMessage) {
+            type = 'poll_vote';
+            text = '📊 Poll vote';
         }
 
         return {
