@@ -79,7 +79,7 @@ For complete and detailed documentation, please visit:
   - [Bulk Messaging](#bulk-messaging-background-jobs)
   - [Chat History](#chat-history)
   - [Group Management](#group-management)
-  - [Labels](#labels)
+  - [Labels](#labels-whatsapp-business)
 - [WebSocket Events](#-websocket-events)
 - [Examples](#-examples)
 
@@ -160,6 +160,8 @@ DASHBOARD_PASSWORD=securepassword123
 # API Key Authentication (optional - leave empty or 'your_api_key_here' to disable)
 API_KEY=your_secret_api_key_here
 ```
+
+> **Note:** Personal chat IDs use `@c.us` format (e.g., `628123456789@c.us`). Group IDs use `@g.us` format. Phone numbers are automatically normalized (0 → 62).
 
 ## 🔐 API Key Authentication
 
@@ -935,7 +937,7 @@ POST /chats/messages
 ```json
 {
   "sessionId": "mysession",
-  "chatId": "628123456789@s.whatsapp.net",
+  "chatId": "628123456789@c.us",
   "limit": 50,
   "cursor": null
 }
@@ -950,7 +952,7 @@ POST /chats/info
 ```json
 {
   "sessionId": "mysession",
-  "chatId": "628123456789@s.whatsapp.net"
+  "chatId": "628123456789@c.us"
 }
 ```
 
@@ -972,7 +974,7 @@ Mark all unread messages in a chat as read. Works for both personal and group ch
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID (`@s.whatsapp.net` or `@g.us`) |
+| `chatId` | string | Required. Phone number or group ID (`@c.us` or `@g.us`) |
 
 **Response:**
 ```json
@@ -980,7 +982,7 @@ Mark all unread messages in a chat as read. Works for both personal and group ch
   "success": true,
   "message": "Chat marked as read",
   "data": {
-    "chatId": "628123456789@s.whatsapp.net",
+    "chatId": "628123456789@c.us",
     "isGroup": false,
     "markedCount": 5
   }
@@ -1065,8 +1067,8 @@ POST /groups/metadata
     "subject": "My Group",
     "description": "Group description",
     "participants": [
-      { "id": "628123456789@s.whatsapp.net", "admin": "superadmin" },
-      { "id": "628987654321@s.whatsapp.net", "admin": null }
+      { "id": "628123456789@c.us", "admin": "superadmin" },
+      { "id": "628987654321@c.us", "admin": null }
     ],
     "size": 25
   }
@@ -1258,11 +1260,11 @@ POST /groups/revoke-invite
 
 ---
 
-### Labels
+## 🏷️ Labels (WhatsApp Business)
 
-> 🏷️ **WhatsApp Business Feature**: Labels are available for WhatsApp Business accounts. Labels are created in the WhatsApp Business app, and you can manage label associations (assign/remove labels to chats and messages) via the API.
+WhatsApp Business labels help you organize and categorize chats. Available only for WhatsApp Business accounts.
 
-#### Get All Labels
+### Get All Labels
 ```http
 POST /labels
 ```
@@ -1280,43 +1282,63 @@ POST /labels
   "success": true,
   "data": {
     "labels": [
-      {
-        "id": "1",
-        "name": "New Customer",
-        "color": 0,
-        "predefinedId": null
-      },
-      {
-        "id": "2",
-        "name": "Pending Payment",
-        "color": 1,
-        "predefinedId": null
-      }
+      { "id": "1", "name": "New Customer", "color": 0 },
+      { "id": "2", "name": "VIP", "color": 5 }
     ],
-    "total": 2
+    "count": 2
   }
 }
 ```
 
-#### Get Label Info
+### Create/Update Label
 ```http
-POST /labels/info
+POST /labels/create
 ```
 
 **Body:**
 ```json
 {
   "sessionId": "mysession",
-  "labelId": "1"
+  "name": "My Label",
+  "colorId": 3,
+  "labelId": null
 }
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `sessionId` | string | Required. Session ID |
-| `labelId` | string | Required. Label ID |
+| `name` | string | Required. Label name |
+| `colorId` | number | Optional. Color ID (0-19), default: 0 |
+| `labelId` | string | Optional. Existing label ID to update |
 
-#### Add Label to Chat
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Label created successfully",
+  "data": {
+    "labelId": "3",
+    "name": "My Label",
+    "color": 3
+  }
+}
+```
+
+### Delete Label
+```http
+POST /labels/delete
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "labelId": "3"
+}
+```
+
+### Add Label to Chat
 ```http
 POST /labels/chat/add
 ```
@@ -1326,29 +1348,11 @@ POST /labels/chat/add
 {
   "sessionId": "mysession",
   "chatId": "628123456789",
-  "labelId": "1"
+  "labelId": "3"
 }
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID |
-| `labelId` | string | Required. Label ID to assign |
-
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Label added to chat",
-  "data": {
-    "chatId": "628123456789@s.whatsapp.net",
-    "labelId": "1"
-  }
-}
-```
-
-#### Remove Label from Chat
+### Remove Label from Chat
 ```http
 POST /labels/chat/remove
 ```
@@ -1358,110 +1362,14 @@ POST /labels/chat/remove
 {
   "sessionId": "mysession",
   "chatId": "628123456789",
-  "labelId": "1"
+  "labelId": "3"
 }
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID |
-| `labelId` | string | Required. Label ID to remove |
-
-#### Add Label to Message
+### Get Labels for Chat
 ```http
-POST /labels/message/add
+POST /labels/chat
 ```
-
-**Body:**
-```json
-{
-  "sessionId": "mysession",
-  "chatId": "628123456789",
-  "messageId": "3EB0B430A2B52B67D0",
-  "labelId": "2"
-}
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID |
-| `messageId` | string | Required. Message ID to label |
-| `labelId` | string | Required. Label ID to assign |
-
-#### Remove Label from Message
-```http
-POST /labels/message/remove
-```
-
-**Body:**
-```json
-{
-  "sessionId": "mysession",
-  "chatId": "628123456789",
-  "messageId": "3EB0B430A2B52B67D0",
-  "labelId": "2"
-}
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID |
-| `messageId` | string | Required. Message ID |
-| `labelId` | string | Required. Label ID to remove |
-
-#### Get Chats by Label
-```http
-POST /labels/chats
-```
-
-Get all chats that have been assigned a specific label.
-
-**Body:**
-```json
-{
-  "sessionId": "mysession",
-  "labelId": "1"
-}
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sessionId` | string | Required. Session ID |
-| `labelId` | string | Required. Label ID to filter by |
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "label": {
-      "id": "1",
-      "name": "New Customer",
-      "color": 0,
-      "predefinedId": null
-    },
-    "chats": [
-      {
-        "chatId": "628123456789@s.whatsapp.net",
-        "name": "John Doe",
-        "isGroup": false,
-        "profilePicture": null
-      }
-    ],
-    "total": 1
-  }
-}
-```
-
-#### Get Labels by Chat
-```http
-POST /labels/by-chat
-```
-
-Get all labels assigned to a specific chat.
 
 **Body:**
 ```json
@@ -1471,29 +1379,20 @@ Get all labels assigned to a specific chat.
 }
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `sessionId` | string | Required. Session ID |
-| `chatId` | string | Required. Phone number or group ID |
-
 **Response:**
 ```json
 {
   "success": true,
   "data": {
-    "chatId": "628123456789@s.whatsapp.net",
+    "chatId": "628123456789@c.us",
     "labels": [
-      {
-        "id": "1",
-        "name": "New Customer",
-        "color": 0,
-        "predefinedId": null
-      }
-    ],
-    "total": 1
+      { "id": "3", "name": "My Label", "color": 3 }
+    ]
   }
 }
 ```
+
+> **Note:** Labels are only available for WhatsApp Business accounts. Personal accounts cannot use labels.
 
 ---
 
@@ -1553,7 +1452,7 @@ socket.on('message', (data) => {
   //   sessionId: 'mysession',
   //   message: {
   //     id: 'ABC123',
-  //     from: '628123456789@s.whatsapp.net',
+  //     from: '628123456789@c.us',
   //     text: 'Hello!',
   //     timestamp: 1234567890,
   //     ...
@@ -1640,7 +1539,7 @@ All configured webhook endpoints will receive POST requests with this format:
   },
   "data": {
     "id": "ABC123",
-    "from": "628123456789@s.whatsapp.net",
+    "from": "628123456789@c.us",
     "text": "Hello!",
     "timestamp": 1234567890
   },

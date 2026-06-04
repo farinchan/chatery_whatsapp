@@ -539,15 +539,27 @@ class WhatsAppSession {
 
     // ==================== HELPERS ====================
 
-    formatPhoneNumber(phone) {
+    formatPhoneNumber(phone, isGroup = null) {
+        if (!phone || phone.trim() === '') {
+            throw new Error('Phone number cannot be empty');
+        }
+        if (phone.includes('@')) {
+            if (phone.includes('@g.us')) {
+                return phone.replace('@c.us', '@g.us');
+            }
+            return phone;
+        }
         let formatted = phone.replace(/\D/g, '');
         if (formatted.startsWith('0')) {
             formatted = '62' + formatted.slice(1);
         }
-        if (!formatted.includes('@')) {
-            formatted = formatted + '@s.whatsapp.net';
+        if (!formatted) {
+            throw new Error('Invalid phone number: no digits found');
         }
-        return formatted;
+        if (isGroup === null) {
+            isGroup = this.isGroupId(phone);
+        }
+        return isGroup ? `${formatted}@g.us` : `${formatted}@c.us`;
     }
 
     formatJid(id, isGroup = false) {
@@ -558,17 +570,52 @@ class WhatsAppSession {
             formatted = '62' + formatted.slice(1);
         }
         
-        return isGroup ? `${formatted}@g.us` : `${formatted}@s.whatsapp.net`;
+        return isGroup ? `${formatted}@g.us` : `${formatted}@c.us`;
     }
 
-    formatChatId(chatId) {
-        if (chatId.includes('@')) return chatId;
-        
+    formatChatId(chatId, isGroup = null) {
+        if (!chatId || chatId.trim() === '') {
+            throw new Error('Chat ID cannot be empty');
+        }
+        if (chatId.includes('@')) {
+            if (chatId.includes('@g.us')) {
+                return chatId.replace('@c.us', '@g.us');
+            }
+            return chatId;
+        }
+
         let formatted = chatId.replace(/\D/g, '');
         if (formatted.startsWith('0')) {
             formatted = '62' + formatted.slice(1);
         }
-        return `${formatted}@s.whatsapp.net`;
+        if (!formatted) {
+            throw new Error('Invalid Chat ID: no digits found');
+        }
+        if (isGroup === null) {
+            isGroup = this.isGroupId(chatId);
+        }
+        return isGroup ? `${formatted}@g.us` : `${formatted}@c.us`;
+    }
+
+    normalizeChatId(chatId) {
+        if (!chatId || chatId.trim() === '') {
+            return null;
+        }
+        if (chatId.includes('@g.us')) {
+            return this.formatChatId(chatId, true);
+        }
+        if (chatId.includes('@c.us')) {
+            return this.formatChatId(chatId, false);
+        }
+        const jid = this.formatJid(chatId, false);
+        if (this.isGroupJid(jid)) {
+            return this.formatChatId(chatId, true);
+        }
+        return jid;
+    }
+
+    isGroupJid(jid) {
+        return jid?.endsWith('@g.us');
     }
 
     isGroupId(chatId) {
@@ -1107,7 +1154,7 @@ class WhatsAppSession {
             }
 
             const jid = this.formatPhoneNumber(phone);
-            const [result] = await this.socket.onWhatsApp(jid.replace('@s.whatsapp.net', ''));
+            const [result] = await this.socket.onWhatsApp(jid.replace('@c.us', ''));
             
             return {
                 success: true,
@@ -1170,7 +1217,7 @@ class WhatsAppSession {
 
             let isRegistered = false;
             try {
-                const [result] = await this.socket.onWhatsApp(jid.replace('@s.whatsapp.net', ''));
+                const [result] = await this.socket.onWhatsApp(jid.replace('@c.us', ''));
                 isRegistered = !!result?.exists;
             } catch (e) {}
 
@@ -1836,7 +1883,7 @@ class WhatsAppSession {
             );
 
             // Create media folder structure: public/media/{sessionId}/{chatId}/
-            const chatId = message.key.remoteJid.replace('@s.whatsapp.net', '').replace('@g.us', '');
+            const chatId = message.key.remoteJid.replace('@c.us', '').replace('@g.us', '');
             const mediaDir = path.join(this.mediaFolder, chatId);
             
             if (!fs.existsSync(mediaDir)) {
@@ -2426,6 +2473,225 @@ class WhatsAppSession {
                 message: 'Group profile picture updated successfully',
                 data: {
                     groupId: gid
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    // ==================== LABELS ====================
+
+    /**
+     * Get all labels
+     * @returns {Object}
+     */
+    async getLabels() {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const labels = this.socket.store?.labels;
+            if (!labels) {
+                return { success: false, message: 'Label store not available' };
+            }
+
+            const allLabels = labels.get()?.map?.(label => ({
+                id: label.id,
+                name: label.name,
+                color: label.color,
+                predefinedId: label.predefinedId || null
+            })) || [];
+
+            return {
+                success: true,
+                data: {
+                    labels: allLabels,
+                    count: allLabels.length
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Create or update a label
+     * @param {string} name - Label name
+     * @param {number} colorId - Color ID (0-19)
+     * @param {string|null} labelId - Existing label ID to update (optional)
+     * @returns {Object}
+     */
+    async createLabel(name, colorId = 0, labelId = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!name) {
+                return { success: false, message: 'Label name is required' };
+            }
+
+            if (colorId < 0 || colorId > 19) {
+                return { success: false, message: 'Color ID must be between 0 and 19' };
+            }
+
+            const result = await this.socket.addLabel({
+                name,
+                color: colorId,
+                id: labelId || undefined
+            });
+
+            return {
+                success: true,
+                message: labelId ? 'Label updated successfully' : 'Label created successfully',
+                data: {
+                    labelId: result.id || labelId,
+                    name: name,
+                    color: colorId
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Delete a label
+     * @param {string} labelId - Label ID to delete
+     * @returns {Object}
+     */
+    async deleteLabel(labelId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!labelId) {
+                return { success: false, message: 'Label ID is required' };
+            }
+
+            const result = await this.socket.addLabel({
+                name: '',
+                color: 0,
+                id: labelId,
+                deleted: true
+            });
+
+            return {
+                success: true,
+                message: 'Label deleted successfully',
+                data: {
+                    labelId: labelId
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Add label to a chat
+     * @param {string} chatId - Chat JID
+     * @param {string} labelId - Label ID
+     * @returns {Object}
+     */
+    async addChatLabel(chatId, labelId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!chatId || !labelId) {
+                return { success: false, message: 'Chat ID and label ID are required' };
+            }
+
+            const isGroup = this.isGroupId(chatId);
+            const jid = this.formatChatId(chatId, isGroup);
+            await this.socket.chatModify({ addChatLabel: { type: 'label_jid', chatId: jid, labelId } }, jid);
+
+            return {
+                success: true,
+                message: 'Label added to chat',
+                data: {
+                    chatId: jid,
+                    labelId: labelId
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Remove label from a chat
+     * @param {string} chatId - Chat JID
+     * @param {string} labelId - Label ID
+     * @returns {Object}
+     */
+    async removeChatLabel(chatId, labelId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!chatId || !labelId) {
+                return { success: false, message: 'Chat ID and label ID are required' };
+            }
+
+            const isGroup = this.isGroupId(chatId);
+            const jid = this.formatChatId(chatId, isGroup);
+            await this.socket.chatModify({ removeChatLabel: { type: 'label_jid', chatId: jid, labelId } }, jid);
+
+            return {
+                success: true,
+                message: 'Label removed from chat',
+                data: {
+                    chatId: jid,
+                    labelId: labelId
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Get labels for a specific chat
+     * @param {string} chatId - Chat JID
+     * @returns {Object}
+     */
+    async getChatLabels(chatId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!chatId) {
+                return { success: false, message: 'Chat ID is required' };
+            }
+
+            const isGroup = this.isGroupId(chatId);
+            const jid = this.formatChatId(chatId, isGroup);
+            const chatLabelsRaw = this.socket.store?.getChatLabels?.(jid);
+            const chatLabels = Array.isArray(chatLabelsRaw) ? chatLabelsRaw : [];
+
+            const labels = this.socket.store?.labels;
+            const allLabels = Array.isArray(labels?.get?.()) ? labels.get() : [];
+
+            const chatLabelIds = chatLabels.map(cl => cl.labelId);
+            const detailedLabels = allLabels.filter(l => chatLabelIds.includes(l.id)).map(l => ({
+                id: l.id,
+                name: l.name,
+                color: l.color
+            }));
+
+            return {
+                success: true,
+                data: {
+                    chatId: jid,
+                    labels: detailedLabels
                 }
             };
         } catch (error) {

@@ -1143,7 +1143,7 @@
  *                   properties:
  *                     chatId:
  *                       type: string
- *                       example: "628123456789@s.whatsapp.net"
+ *                       example: "628123456789@c.us"
  *                     isGroup:
  *                       type: boolean
  *                       example: false
@@ -1887,7 +1887,7 @@
  *           type: array
  *           items:
  *             type: string
- *           example: ["628123456789@s.whatsapp.net"]
+ *           example: ["628123456789@c.us"]
  *         actor:
  *           type: string
  *           description: Who performed the action

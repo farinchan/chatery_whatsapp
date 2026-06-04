@@ -1942,15 +1942,15 @@
             } else if (path.includes('/chats/messages')) {
                 body = {
                     sessionId: '',
-                    chatId: '628123456789@s.whatsapp.net',
+                    chatId: '628123456789@c.us',
                     limit: 50,
                     cursor: null
                 };
-                helpText = '📜 <code>chatId</code>: Use @s.whatsapp.net for personal chats, @g.us for groups. <code>cursor</code>: Message ID for pagination.';
+                helpText = '📜 <code>chatId</code>: Use @c.us for personal chats, @g.us for groups. <code>cursor</code>: Message ID for pagination.';
             } else if (path.includes('/chats/info')) {
                 body = {
                     sessionId: '',
-                    chatId: '628123456789@s.whatsapp.net'
+                    chatId: '628123456789@c.us'
                 };
                 helpText = 'ℹ️ Get detailed information about a chat or group.';
             } else if (path.includes('/chats/mark-read')) {

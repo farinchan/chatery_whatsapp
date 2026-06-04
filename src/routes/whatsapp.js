@@ -1489,135 +1489,144 @@ router.post('/groups/revoke-invite', checkSession, async (req, res) => {
 
 // ==================== LABELS ====================
 
-/**
- * Get all labels
- * Body: { sessionId }
- */
+// Get all labels
 router.post('/labels', checkSession, async (req, res) => {
     try {
         const result = await req.session.getLabels();
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 
-/**
- * Get label by ID
- * Body: { sessionId, labelId }
- */
-router.post('/labels/info', checkSession, async (req, res) => {
+// Create a label
+router.post('/labels/create', checkSession, async (req, res) => {
     try {
-        const { labelId } = req.body;
-        if (!labelId) {
-            return res.status(400).json({ success: false, message: 'Missing required field: labelId' });
+        const { name, colorId = 0, labelId = null } = req.body;
+        
+        if (!name && !labelId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Label name is required for new label'
+            });
         }
-        const result = await req.session.getLabelById(labelId);
+
+        const result = await req.session.createLabel(name, colorId, labelId);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 
-/**
- * Add label to chat
- * Body: { sessionId, chatId, labelId }
- */
+// Delete a label
+router.post('/labels/delete', checkSession, async (req, res) => {
+    try {
+        const { labelId } = req.body;
+        
+        if (!labelId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Label ID is required'
+            });
+        }
+
+        const result = await req.session.deleteLabel(labelId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Add label to chat
 router.post('/labels/chat/add', checkSession, async (req, res) => {
     try {
         const { chatId, labelId } = req.body;
+
         if (!chatId || !labelId) {
-            return res.status(400).json({ success: false, message: 'Missing required fields: chatId, labelId' });
+            return res.status(400).json({
+                success: false,
+                message: 'Chat ID and label ID are required'
+            });
         }
+
+        if (chatId.includes('@g.us') || chatId.match(/^\d+-\d+@g\.us$/)) {
+            chatId = chatId.replace('@g.us', '') + '@g.us';
+        } else if (chatId.includes('@c.us')) {
+            chatId = chatId.replace('@c.us', '') + '@c.us';
+        }
+
         const result = await req.session.addChatLabel(chatId, labelId);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 
-/**
- * Remove label from chat
- * Body: { sessionId, chatId, labelId }
- */
+// Remove label from chat
 router.post('/labels/chat/remove', checkSession, async (req, res) => {
     try {
         const { chatId, labelId } = req.body;
+
         if (!chatId || !labelId) {
-            return res.status(400).json({ success: false, message: 'Missing required fields: chatId, labelId' });
+            return res.status(400).json({
+                success: false,
+                message: 'Chat ID and label ID are required'
+            });
         }
+
+        if (chatId.includes('@g.us') || chatId.match(/^\d+-\d+@g\.us$/)) {
+            chatId = chatId.replace('@g.us', '') + '@g.us';
+        } else if (chatId.includes('@c.us')) {
+            chatId = chatId.replace('@c.us', '') + '@c.us';
+        }
+
         const result = await req.session.removeChatLabel(chatId, labelId);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 
-/**
- * Add label to message
- * Body: { sessionId, chatId, messageId, labelId }
- */
-router.post('/labels/message/add', checkSession, async (req, res) => {
-    try {
-        const { chatId, messageId, labelId } = req.body;
-        if (!chatId || !messageId || !labelId) {
-            return res.status(400).json({ success: false, message: 'Missing required fields: chatId, messageId, labelId' });
-        }
-        const result = await req.session.addMessageLabel(chatId, messageId, labelId);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-/**
- * Remove label from message
- * Body: { sessionId, chatId, messageId, labelId }
- */
-router.post('/labels/message/remove', checkSession, async (req, res) => {
-    try {
-        const { chatId, messageId, labelId } = req.body;
-        if (!chatId || !messageId || !labelId) {
-            return res.status(400).json({ success: false, message: 'Missing required fields: chatId, messageId, labelId' });
-        }
-        const result = await req.session.removeMessageLabel(chatId, messageId, labelId);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-/**
- * Get all chats with a specific label
- * Body: { sessionId, labelId }
- */
-router.post('/labels/chats', checkSession, async (req, res) => {
-    try {
-        const { labelId } = req.body;
-        if (!labelId) {
-            return res.status(400).json({ success: false, message: 'Missing required field: labelId' });
-        }
-        const result = await req.session.getChatsByLabel(labelId);
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-/**
- * Get all labels for a specific chat
- * Body: { sessionId, chatId }
- */
-router.post('/labels/by-chat', checkSession, async (req, res) => {
+// Get labels for a chat
+router.post('/labels/chat', checkSession, async (req, res) => {
     try {
         const { chatId } = req.body;
+
         if (!chatId) {
-            return res.status(400).json({ success: false, message: 'Missing required field: chatId' });
+            return res.status(400).json({
+                success: false,
+                message: 'Chat ID is required'
+            });
         }
-        const result = await req.session.getLabelsByChat(chatId);
+
+        if (chatId.includes('@g.us') || chatId.match(/^\d+-\d+@g\.us$/)) {
+            chatId = chatId.replace('@g.us', '') + '@g.us';
+        } else if (chatId.includes('@c.us')) {
+            chatId = chatId.replace('@c.us', '') + '@c.us';
+        }
+
+        const result = await req.session.getChatLabels(chatId);
         res.json(result);
     } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
     }
 });
 

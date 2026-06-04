@@ -437,7 +437,7 @@ class BaileysStore {
 
     this.chatsOverview.set(chatId, {
       id: chatId,
-      name: chatName,
+      name: groupMeta?.subject || contact?.name || contact?.notify || chat?.name || chatId.replace('@c.us', '').replace('@g.us', ''),
       isGroup,
       unreadCount: chat?.unreadCount || 0,
       lastMessage: {
@@ -569,23 +569,14 @@ class BaileysStore {
     const { limit = 100, offset = 0, search = '' } = options;
     
     let contacts = Array.from(this.contacts.values())
-      .map(c => {
-        let resolvedId = c.id;
-        if (c.id && c.id.endsWith('@lid')) {
-          const resolved = this.resolveIdentity(c.id);
-          if (resolved && resolved.jid) {
-            resolvedId = resolved.jid;
-          }
-        }
-        return {
-          id: resolvedId,
-          name: c.name || c.notify || (resolvedId ? resolvedId.replace('@s.whatsapp.net', '') : ''),
-          notify: c.notify,
-          verifiedName: c.verifiedName,
-          profilePicture: this.profilePictures.get(c.id) || null
-        };
-      })
-      .filter(c => c.id && c.id.endsWith('@s.whatsapp.net'));
+      .filter(c => c.id.endsWith('@c.us'))
+      .map(c => ({
+        id: c.id,
+        name: c.name || c.notify || c.id.replace('@c.us', ''),
+        notify: c.notify,
+        verifiedName: c.verifiedName,
+        profilePicture: this.profilePictures.get(c.id) || null
+      }));
     
     // Apply search filter
     if (search) {
