@@ -63,7 +63,8 @@ All API endpoints require \`X-Api-Key\` header (if API_KEY is configured in .env
             { name: 'Bulk Messaging', description: 'Send bulk messages to multiple recipients (max 100 per request)' },
             { name: 'Chat History', description: 'Get chats, messages, contacts' },
             { name: 'Groups', description: 'Group management operations' },
-            { name: 'WebSocket', description: 'WebSocket connection info' }
+            { name: 'WebSocket', description: 'WebSocket connection info' },
+            { name: 'Labels', description: 'Label management for WhatsApp Business accounts' }
         ],
         components: {
             securitySchemes: {

@@ -973,6 +973,24 @@
                                     <option value="POST|/api/whatsapp/groups/revoke-invite">POST /groups/revoke-invite -
                                         Revoke invite link</option>
                                 </optgroup>
+                                <optgroup label="Labels">
+                                    <option value="POST|/api/whatsapp/labels">POST /labels - Get all labels
+                                    </option>
+                                    <option value="POST|/api/whatsapp/labels/info">POST /labels/info - Get label by ID
+                                    </option>
+                                    <option value="POST|/api/whatsapp/labels/chat/add">POST /labels/chat/add - Add label
+                                        to chat</option>
+                                    <option value="POST|/api/whatsapp/labels/chat/remove">POST /labels/chat/remove -
+                                        Remove label from chat</option>
+                                    <option value="POST|/api/whatsapp/labels/message/add">POST /labels/message/add - Add
+                                        label to message</option>
+                                    <option value="POST|/api/whatsapp/labels/message/remove">POST
+                                        /labels/message/remove - Remove label from message</option>
+                                    <option value="POST|/api/whatsapp/labels/chats">POST /labels/chats - Get chats by
+                                        label</option>
+                                    <option value="POST|/api/whatsapp/labels/by-chat">POST /labels/by-chat - Get labels
+                                        for chat</option>
+                                </optgroup>
                                 <optgroup label="WebSocket">
                                     <option value="GET|/api/websocket/stats">GET /websocket/stats - WebSocket stats
                                     </option>
@@ -1075,7 +1093,7 @@
                 <strong>Chatery API</strong> - WhatsApp Multi-Session Gateway
             </div>
             <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                📊 <strong>Fitur:</strong> Text, Image, Document, Audio, Location, Contact, Poll, Bulk Messaging, Reply Messages
+                📊 <strong>Fitur:</strong> Text, Image, Document, Audio, Location, Contact, Poll, Bulk Messaging, Reply Messages, Labels
             </div>
             <div style="font-size: 12px; color: var(--text-muted);">
                 © <span id="footerYear"></span> Chatery. Open Source under MIT License.
@@ -2049,6 +2067,61 @@
                     groupId: '123456789@g.us'
                 };
                 helpText = '🔄 Revoke current invite link and generate a new one.';
+            }
+            // Labels
+            else if (path === 'POST|/api/whatsapp/labels' || (path.endsWith('/labels') && !path.includes('/info') && !path.includes('/chat') && !path.includes('/message') && !path.includes('/chats') && !path.includes('/by-chat'))) {
+                body = {
+                    sessionId: ''
+                };
+                helpText = '🏷️ Get all labels for the WhatsApp Business account. Labels are only available for WhatsApp Business accounts.';
+            } else if (path.includes('/labels/info')) {
+                body = {
+                    sessionId: '',
+                    labelId: '1'
+                };
+                helpText = '🏷️ Get label details by ID.<br><code>labelId</code>: The label ID (e.g., "1", "2", etc.).';
+            } else if (path.includes('/labels/chat/add')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    labelId: '1'
+                };
+                helpText = '➕ Add a label to a chat.<br><code>chatId</code>: Phone number or group ID.<br><code>labelId</code>: The label ID to assign.';
+            } else if (path.includes('/labels/chat/remove')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    labelId: '1'
+                };
+                helpText = '➖ Remove a label from a chat.<br><code>chatId</code>: Phone number or group ID.<br><code>labelId</code>: The label ID to remove.';
+            } else if (path.includes('/labels/message/add')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    messageId: 'ABCDEF123456',
+                    labelId: '1'
+                };
+                helpText = '➕ Add a label to a specific message.<br><code>chatId</code>: Chat where the message is.<br><code>messageId</code>: The message ID.<br><code>labelId</code>: The label ID to assign.<br>⚠️ May not be supported in all Baileys versions.';
+            } else if (path.includes('/labels/message/remove')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    messageId: 'ABCDEF123456',
+                    labelId: '1'
+                };
+                helpText = '➖ Remove a label from a specific message.<br><code>chatId</code>: Chat where the message is.<br><code>messageId</code>: The message ID.<br><code>labelId</code>: The label ID to remove.<br>⚠️ May not be supported in all Baileys versions.';
+            } else if (path.includes('/labels/chats')) {
+                body = {
+                    sessionId: '',
+                    labelId: '1'
+                };
+                helpText = '📋 Get all chats that have a specific label assigned.<br><code>labelId</code>: The label ID to filter by.';
+            } else if (path.includes('/labels/by-chat')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789@s.whatsapp.net'
+                };
+                helpText = '🏷️ Get all labels assigned to a specific chat.<br><code>chatId</code>: Use @s.whatsapp.net for personal chats, @g.us for groups.';
             }
             // System
             else if (path.includes('/health') || path.includes('/websocket/stats')) {
