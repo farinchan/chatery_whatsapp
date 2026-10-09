@@ -611,7 +611,14 @@ class BaileysStore {
    */
   getMessages(chatId, options = {}) {
     const { limit = 50, before = null } = options;
-    const chatMessages = this.messages.get(chatId);
+    let chatMessages = this.messages.get(chatId);
+    if (!chatMessages && chatId) {
+      if (chatId.endsWith('@c.us')) {
+        chatMessages = this.messages.get(chatId.replace('@c.us', '@s.whatsapp.net'));
+      } else if (chatId.endsWith('@s.whatsapp.net')) {
+        chatMessages = this.messages.get(chatId.replace('@s.whatsapp.net', '@c.us'));
+      }
+    }
     
     if (!chatMessages) return [];
     
@@ -638,7 +645,14 @@ class BaileysStore {
    * Get a specific message by ID from a chat
    */
   getMessage(chatId, messageId) {
-    const chatMessages = this.messages.get(chatId);
+    let chatMessages = this.messages.get(chatId);
+    if (!chatMessages && chatId) {
+      if (chatId.endsWith('@c.us')) {
+        chatMessages = this.messages.get(chatId.replace('@c.us', '@s.whatsapp.net'));
+      } else if (chatId.endsWith('@s.whatsapp.net')) {
+        chatMessages = this.messages.get(chatId.replace('@s.whatsapp.net', '@c.us'));
+      }
+    }
     if (!chatMessages) return null;
     return chatMessages.get(messageId) || null;
   }

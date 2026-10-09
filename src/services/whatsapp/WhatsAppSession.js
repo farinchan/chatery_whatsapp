@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, getContentType, jidNormalizedUser } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion, downloadMediaMessage, getContentType, jidNormalizedUser, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const path = require('path');
 const fs = require('fs');
@@ -191,7 +191,7 @@ class WhatsAppSession {
                 version,
                 auth: state,
                 logger: pino({ level: 'silent' }),
-                browser: ['Chatery API', 'Chrome', '1.0.0'],
+                browser: Browsers.ubuntu('Chrome'),
                 syncFullHistory: true,
                 connectTimeoutMs: 60_000,
                 defaultQueryTimeoutMs: 60_000,
@@ -561,6 +561,9 @@ class WhatsAppSession {
             if (phone.includes('@g.us')) {
                 return phone.replace('@c.us', '@g.us');
             }
+            if (phone.includes('@c.us')) {
+                return phone.replace('@c.us', '@s.whatsapp.net');
+            }
             return phone;
         }
         let formatted = phone.replace(/\D/g, '');
@@ -573,18 +576,23 @@ class WhatsAppSession {
         if (isGroup === null) {
             isGroup = this.isGroupId(phone);
         }
-        return isGroup ? `${formatted}@g.us` : `${formatted}@c.us`;
+        return isGroup ? `${formatted}@g.us` : `${formatted}@s.whatsapp.net`;
     }
 
     formatJid(id, isGroup = false) {
-        if (id.includes('@')) return id;
+        if (id.includes('@')) {
+            if (id.includes('@c.us')) {
+                return id.replace('@c.us', '@s.whatsapp.net');
+            }
+            return id;
+        }
         
         let formatted = id.replace(/\D/g, '');
         if (formatted.startsWith('0')) {
             formatted = '62' + formatted.slice(1);
         }
         
-        return isGroup ? `${formatted}@g.us` : `${formatted}@c.us`;
+        return isGroup ? `${formatted}@g.us` : `${formatted}@s.whatsapp.net`;
     }
 
     formatChatId(chatId, isGroup = null) {
@@ -594,6 +602,9 @@ class WhatsAppSession {
         if (chatId.includes('@')) {
             if (chatId.includes('@g.us')) {
                 return chatId.replace('@c.us', '@g.us');
+            }
+            if (chatId.includes('@c.us')) {
+                return chatId.replace('@c.us', '@s.whatsapp.net');
             }
             return chatId;
         }
@@ -608,7 +619,7 @@ class WhatsAppSession {
         if (isGroup === null) {
             isGroup = this.isGroupId(chatId);
         }
-        return isGroup ? `${formatted}@g.us` : `${formatted}@c.us`;
+        return isGroup ? `${formatted}@g.us` : `${formatted}@s.whatsapp.net`;
     }
 
     normalizeChatId(chatId) {
@@ -1256,7 +1267,7 @@ class WhatsAppSession {
             }
 
             const jid = this.formatPhoneNumber(phone);
-            const [result] = await this.socket.onWhatsApp(jid.replace('@c.us', ''));
+            const [result] = await this.socket.onWhatsApp(jid.replace('@s.whatsapp.net', '').replace('@c.us', ''));
             
             return {
                 success: true,
@@ -1319,7 +1330,7 @@ class WhatsAppSession {
 
             let isRegistered = false;
             try {
-                const [result] = await this.socket.onWhatsApp(jid.replace('@c.us', ''));
+                const [result] = await this.socket.onWhatsApp(jid.replace('@s.whatsapp.net', '').replace('@c.us', ''));
                 isRegistered = !!result?.exists;
             } catch (e) {}
 
