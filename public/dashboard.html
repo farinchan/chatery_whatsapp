@@ -912,6 +912,18 @@
                                         emoji reaction</option>
                                     <option value="POST|/api/whatsapp/chats/delete-message">POST /chats/delete-message -
                                         Delete / revoke message</option>
+                                    <option value="POST|/api/whatsapp/chats/send-video">POST /chats/send-video - Send
+                                        video</option>
+                                    <option value="POST|/api/whatsapp/chats/send-sticker">POST /chats/send-sticker - Send
+                                        sticker</option>
+                                    <option value="POST|/api/whatsapp/chats/pin-message">POST /chats/pin-message - Pin
+                                        message</option>
+                                    <option value="POST|/api/whatsapp/chats/star-message">POST /chats/star-message -
+                                        Star message</option>
+                                    <option value="POST|/api/whatsapp/chats/pin">POST /chats/pin - Pin chat</option>
+                                    <option value="POST|/api/whatsapp/chats/archive">POST /chats/archive - Archive
+                                        chat</option>
+                                    <option value="POST|/api/whatsapp/chats/mute">POST /chats/mute - Mute chat</option>
                                     <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing
                                         indicator</option>
                                     <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number -
@@ -935,6 +947,18 @@
                                     <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Get chats
                                         overview</option>
                                     <option value="POST|/api/whatsapp/contacts">POST /contacts - Get contacts</option>
+                                    <option value="POST|/api/whatsapp/contacts/status">POST /contacts/status - Get
+                                        contact bio</option>
+                                    <option value="POST|/api/whatsapp/contacts/business-profile">POST
+                                        /contacts/business-profile - Business profile</option>
+                                    <option value="POST|/api/whatsapp/contacts/block">POST /contacts/block -
+                                        Block/unblock contact</option>
+                                    <option value="POST|/api/whatsapp/contacts/blocklist">POST /contacts/blocklist -
+                                        Get blocklist</option>
+                                    <option value="POST|/api/whatsapp/profile/status">POST /profile/status - Update
+                                        profile status</option>
+                                    <option value="POST|/api/whatsapp/profile/name">POST /profile/name - Update profile
+                                        name</option>
                                     <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Get chat
                                         messages</option>
                                     <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Get chat info
@@ -948,6 +972,8 @@
                                         group</option>
                                     <option value="POST|/api/whatsapp/groups/metadata">POST /groups/metadata - Get group
                                         metadata</option>
+                                    <option value="POST|/api/whatsapp/groups/invite-info">POST /groups/invite-info - Get
+                                        invite info</option>
                                     <option value="POST|/api/whatsapp/groups/leave">POST /groups/leave - Leave group
                                     </option>
                                     <option value="POST|/api/whatsapp/groups/join">POST /groups/join - Join via invite
@@ -1867,6 +1893,64 @@
                     messageId: 'ABCDEF123456'
                 };
                 helpText = '🗑️ <code>messageId</code>: ID of the message to delete / revoke (delete for everyone).';
+            } else if (path.includes('/chats/send-video')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    videoUrl: 'https://example.com/video.mp4',
+                    caption: 'Check this video!',
+                    gifPlayback: false,
+                    typingTime: 0,
+                    replyTo: null
+                };
+                helpText = '🎥 <code>videoUrl</code>: Direct URL to video. <code>gifPlayback</code>: Set true to play like a GIF.';
+            } else if (path.includes('/chats/send-sticker')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    stickerUrl: 'https://example.com/sticker.webp',
+                    replyTo: null
+                };
+                helpText = '✨ <code>stickerUrl</code>: Direct URL to webp/image sticker.';
+            } else if (path.includes('/chats/pin-message')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    messageId: 'ABCDEF123456',
+                    time: 604800,
+                    fromMe: false
+                };
+                helpText = '📌 <code>time</code>: Duration in seconds (86400 = 24h, 604800 = 7d, 2592000 = 30d, 0 = unpin).';
+            } else if (path.includes('/chats/star-message')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    messageId: 'ABCDEF123456',
+                    star: true,
+                    fromMe: false
+                };
+                helpText = '⭐ <code>star</code>: true to star, false to unstar message.';
+            } else if (path.endsWith('/chats/pin')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    pin: true
+                };
+                helpText = '📌 <code>pin</code>: true to pin chat to top of chat list, false to unpin.';
+            } else if (path.includes('/chats/archive')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    archive: true
+                };
+                helpText = '📦 <code>archive</code>: true to archive chat, false to unarchive.';
+            } else if (path.includes('/chats/mute')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    duration: 28800
+                };
+                helpText = '🔕 <code>duration</code>: Mute duration in seconds (28800 = 8h, 604800 = 1 week, -1 = forever, null/0 = unmute).';
             } else if (path.includes('/chats/presence')) {
                 body = {
                     sessionId: '',
@@ -1886,6 +1970,48 @@
                     phone: '628123456789'
                 };
                 helpText = '🖼️ Get the profile picture URL of a WhatsApp user.';
+            } else if (path.includes('/contacts/status')) {
+                body = {
+                    sessionId: '',
+                    phone: '628123456789'
+                };
+                helpText = '💬 Get the status / bio / About text of a contact.';
+            } else if (path.includes('/contacts/business-profile')) {
+                body = {
+                    sessionId: '',
+                    phone: '628123456789'
+                };
+                helpText = '🏢 Get WhatsApp Business profile (description, address, email, websites).';
+            } else if (path.includes('/contacts/blocklist')) {
+                body = {
+                    sessionId: ''
+                };
+                helpText = '🚫 Get list of blocked WhatsApp contacts.';
+            } else if (path.includes('/contacts/block')) {
+                body = {
+                    sessionId: '',
+                    phone: '628123456789',
+                    action: 'block'
+                };
+                helpText = '⛔ <code>action</code>: <code>block</code> or <code>unblock</code>.';
+            } else if (path.includes('/profile/status')) {
+                body = {
+                    sessionId: '',
+                    status: 'Hey there! I am using WhatsApp.'
+                };
+                helpText = '✍️ Update own account status / bio (About text).';
+            } else if (path.includes('/profile/name')) {
+                body = {
+                    sessionId: '',
+                    name: 'My Business'
+                };
+                helpText = '🏷️ Update own account display name.';
+            } else if (path.includes('/groups/invite-info')) {
+                body = {
+                    sessionId: '',
+                    inviteCode: 'https://chat.whatsapp.com/ABC123xyz'
+                };
+                helpText = 'ℹ️ Get group info and metadata from an invite link without joining.';
             }
             // Bulk Messaging
             else if (path.includes('/chats/send-bulk') && !path.includes('image') && !path.includes('document')) {

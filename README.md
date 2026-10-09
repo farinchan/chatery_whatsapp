@@ -11,46 +11,25 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 
 ---
 
-## 🤝 Sponsor
-
-<table>
-  <tr>
-    <td align="center" width="160">
-      <a href="https://sumopod.com" target="_blank">
-        <img src="screenshot/sumopod.png" alt="SumoPod" width="120" /><br/>
-      </a>
-    </td>
-    <td>
-      <strong>SumoPod — Container & Application Management</strong><br/>
-      SumoPod offers seamless container and application purchasing solutions for businesses of all sizes.<br/><br/>
-      <ul>
-        <li><strong>Container Marketplace</strong> — Explore and purchase from an extensive container library, all verified and ready for instant deployment.</li>
-        <li><strong>One-Click Deployment</strong> — Deploy containers to your infrastructure with one click, eliminating complex configuration processes.</li>
-        <li><strong>Automatic Updates</strong> — Keep your containers and applications up to date with automatic version updates and security patches.</li>
-      </ul>
-      <br/>
-      <a href="https://sumopod.com" target="_blank"><strong>✨ Chatery WhatsApp API is available on SumoPod — Deploy with one click, without complex configuration. Includes auto-updates and monitoring. → Get it now</strong></a>
-    </td>
-  </tr>
-</table>
-
----
-
 ## ✨ Features
 
 - 📱 **Multi-Session Support** - Manage multiple WhatsApp accounts simultaneously
 - 🔌 **Real-time WebSocket** - Get instant notifications for messages, status updates, and more
-- 👥 **Group Management** - Create, manage, and control WhatsApp groups
+- 👥 **Group Management** - Create, manage, and control WhatsApp groups, including invite link preview
 - 🏷️ **Chat Labels** - Label chats and messages for organization (WhatsApp Business)
-- 📨 **Send Messages** - Text, images, documents, locations, contacts, and more
-- ↩️ **Reply to Messages** - Reply/quote specific messages with replyTo parameter
+- 📨 **Rich Messaging** - Send text, images, videos (with GIF playback), documents, audio/voice notes, stickers, locations, and contacts
+- ↩️ **Reply & Mentions** - Quote specific messages with `replyTo` parameter and mention participants
 - 📊 **Poll Messages** - Send interactive polls with single or multiple choice
-- 📤 **Bulk Messaging** - Send messages to multiple recipients with background processing
+- 📌 **Pin & Star Messages** - Pin messages to chat top with custom duration and star important messages
+- 🗃️ **Chat Organization** - Pin, archive, and mute individual chats
+- 👤 **Contact & Profile Privacy** - Check bio status, business profile info, block/unblock, view blocklist, and update profile bio/display name
+- 📤 **Bulk Messaging** - Send messages, images, and documents to multiple recipients with background processing
 - 📥 **Auto-Save Media** - Automatically save incoming media to server
-- 💾 **Persistent Store** - Message history with optimized caching
+- 💾 **Persistent Store** - Message history with optimized LID mapping and in-memory caching
 - 🔐 **Session Persistence** - Sessions survive server restarts
-- 🎛️ **Admin Dashboard** - Web-based dashboard with real-time monitoring and API tester
-- 📄 **Swagger UI** - Interactive API documentation at root URL
+- 🎛️ **Admin Dashboard** - Web-based dashboard with real-time monitoring and interactive API tester
+- 📄 **Swagger UI** - Interactive OpenAPI documentation at root URL
+- 🧪 **Automated Testing** - Complete native test suite with 160+ unit, WebSocket, and integration tests
 
 ## 📖 Full Documentation
 
@@ -78,9 +57,13 @@ For complete and detailed documentation, please visit:
   - [Messaging](#messaging)
   - [Bulk Messaging](#bulk-messaging-background-jobs)
   - [Chat History](#chat-history)
+  - [Contacts & Profile](#contacts--profile)
   - [Group Management](#group-management)
   - [Labels](#labels-whatsapp-business)
 - [WebSocket Events](#-websocket-events)
+- [Webhooks](#-webhooks)
+- [Testing](#-testing)
+- [Project Structure](#-project-structure)
 - [Examples](#-examples)
 
 ## 🛠 Installation
@@ -493,6 +476,34 @@ POST /chats/send-image
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
 
+#### Send Video
+```http
+POST /chats/send-video
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "videoUrl": "https://example.com/video.mp4",
+  "caption": "Check out this video!",
+  "gifPlayback": false,
+  "typingTime": 2000,
+  "replyTo": null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `videoUrl` | string | Required. Direct URL to video file (MP4) |
+| `caption` | string | Optional. Video caption |
+| `gifPlayback` | boolean | Optional. Play video as looping animated GIF without audio (default: false) |
+| `typingTime` | number | Optional. Upload/recording simulation in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
+
 #### Send Document
 ```http
 POST /chats/send-document
@@ -551,6 +562,30 @@ POST /chats/send-audio
 | `audioUrl` | string | Required. Direct URL to OGG audio file (.ogg format only) |
 | `ptt` | boolean | Optional. Push to talk mode - true = voice note, false = audio file (default: false) |
 | `typingTime` | number | Optional. Recording simulation in ms (default: 0) |
+| `replyTo` | string | Optional. Message ID to reply to |
+
+#### Send Sticker
+```http
+POST /chats/send-sticker
+```
+
+> 💡 **Tip:** WhatsApp stickers must be in WebP format (.webp). Supports both static and animated stickers.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "stickerUrl": "https://example.com/sticker.webp",
+  "replyTo": null
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `stickerUrl` | string | Required. Direct URL to WebP sticker file |
 | `replyTo` | string | Optional. Message ID to reply to |
 
 #### Send Location
@@ -664,6 +699,170 @@ POST /chats/send-button
 | `buttons` | array | Required. Array of options (poll choices) |
 | `typingTime` | number | Optional. Typing duration in ms (default: 0) |
 | `replyTo` | string | Optional. Message ID to reply to |
+
+#### Send Reaction
+```http
+POST /chats/send-reaction
+```
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "messageId": "3EB0B430A2B52B67D0",
+  "emoji": "👍",
+  "fromMe": false
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `messageId` | string | Required. Target message ID to react to |
+| `emoji` | string | Optional. Emoji reaction (empty string `""` to remove reaction) |
+| `fromMe` | boolean | Optional. Whether the target message was sent by yourself (default: false) |
+
+#### Delete (Revoke) Message
+```http
+POST /chats/delete-message
+```
+
+Deletes/revokes a message for everyone in personal or group chat.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "messageId": "3EB0B430A2B52B67D0"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `messageId` | string | Required. ID of the message to revoke/delete |
+
+#### Pin / Unpin Message
+```http
+POST /chats/pin-message
+```
+
+Pin a message to the top of a conversation. Supports 24 hours, 7 days, 30 days, or unpinning.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "messageId": "3EB0B430A2B52B67D0",
+  "time": 604800,
+  "fromMe": false
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `messageId` | string | Required. Target message ID to pin/unpin |
+| `time` | number | Optional. Pin duration in seconds (`86400` = 24h, `604800` = 7d, `2592000` = 30d, `0` = unpin, default: `604800`) |
+| `fromMe` | boolean | Optional. Whether the message was sent by yourself (default: false) |
+
+#### Star / Unstar Message
+```http
+POST /chats/star-message
+```
+
+Star or unstar a message for easy reference and bookmarking.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "messageId": "3EB0B430A2B52B67D0",
+  "star": true,
+  "fromMe": false
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `messageId` | string | Required. Target message ID |
+| `star` | boolean | Optional. `true` to star message, `false` to unstar (default: `true`) |
+| `fromMe` | boolean | Optional. Whether the message was sent by yourself (default: false) |
+
+#### Pin / Unpin Chat
+```http
+POST /chats/pin
+```
+
+Pin or unpin an entire chat to the top of your chat list.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "pin": true
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `pin` | boolean | Optional. `true` to pin chat, `false` to unpin (default: `true`) |
+
+#### Archive / Unarchive Chat
+```http
+POST /chats/archive
+```
+
+Archive or unarchive a chat thread.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "archive": true
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `archive` | boolean | Optional. `true` to archive chat, `false` to unarchive (default: `true`) |
+
+#### Mute / Unmute Chat
+```http
+POST /chats/mute
+```
+
+Mute or unmute notifications for a specific chat.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "chatId": "628123456789",
+  "duration": 28800000
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `chatId` | string | Required. Phone number or group ID |
+| `duration` | number \| null | Optional. Mute duration in ms (`28800000` = 8h, `604800000` = 1 week, `-1` = indefinitely, `null` = unmute) |
 
 #### Send Presence Update
 ```http
@@ -999,6 +1198,199 @@ Mark all unread messages in a chat as read. Works for both personal and group ch
 
 ---
 
+### Contacts & Profile
+
+#### Get Contacts
+```http
+POST /contacts
+```
+
+Get all contacts stored in the session store with optional pagination and search filter.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "limit": 100,
+  "offset": 0,
+  "search": "john"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `limit` | number | Optional. Max results (default: 100) |
+| `offset` | number | Optional. Pagination offset (default: 0) |
+| `search` | string | Optional. Search query for contact name, phone number, or ID |
+
+#### Get Contact Status / Bio
+```http
+POST /contacts/status
+```
+
+Fetch the WhatsApp "About" (bio / status) text of a given phone number.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "phone": "628123456789"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `phone` | string | Required. Phone number (e.g. 628123456789) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "Hey there! I am using WhatsApp.",
+    "setAt": "2026-01-01T12:00:00.000Z"
+  }
+}
+```
+
+#### Get WhatsApp Business Profile
+```http
+POST /contacts/business-profile
+```
+
+Fetch business profile details for a WhatsApp Business account (description, address, email, websites, category).
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "phone": "628123456789"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `phone` | string | Required. Phone number |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "wid": "628123456789@s.whatsapp.net",
+    "description": "Official Support for MyApp",
+    "address": "Jakarta, Indonesia",
+    "email": "support@example.com",
+    "websites": ["https://example.com"],
+    "category": "Customer Support"
+  }
+}
+```
+
+#### Block or Unblock Contact
+```http
+POST /contacts/block
+```
+
+Block or unblock a contact from sending messages and calling.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "phone": "628123456789",
+  "action": "block"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `phone` | string | Required. Phone number to block or unblock |
+| `action` | string | Optional. Action: `block` or `unblock` (default: `block`) |
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Contact blocked successfully",
+  "data": {
+    "phone": "628123456789",
+    "action": "block"
+  }
+}
+```
+
+#### Get Blocklist
+```http
+POST /contacts/blocklist
+```
+
+Get the list of all blocked contacts for the current session.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    "628123456789@s.whatsapp.net",
+    "628987654321@s.whatsapp.net"
+  ]
+}
+```
+
+#### Update Profile Status (Bio)
+```http
+POST /profile/status
+```
+
+Update your WhatsApp account's "About" bio status text.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "status": "Available on WhatsApp"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `status` | string | Required. New bio/status text |
+
+#### Update Profile Display Name
+```http
+POST /profile/name
+```
+
+Update your WhatsApp account's public display name.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "name": "My Support Bot"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `name` | string | Required. New display name |
+
+---
+
 ### Group Management
 
 #### Get All Groups
@@ -1255,6 +1647,41 @@ POST /groups/revoke-invite
 {
   "sessionId": "mysession",
   "groupId": "123456789@g.us"
+}
+```
+
+#### Get Group Invite Info (Preview Group)
+```http
+POST /groups/invite-info
+```
+
+Inspect and preview group information (subject, description, creator, participant count) from an invite link or code without joining.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "inviteCode": "https://chat.whatsapp.com/AbCdEfGhIjKlMn"
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `inviteCode` | string | Required. Group invite code or full WhatsApp invite link |
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "123456789@g.us",
+    "subject": "Community Discussion",
+    "owner": "628123456789@s.whatsapp.net",
+    "creation": 1704326400,
+    "size": 42,
+    "desc": "Official community discussion group"
+  }
 }
 ```
 
@@ -1588,36 +2015,73 @@ GET /api/websocket/stats
 
 ---
 
+## 🧪 Testing
+
+Chatery WhatsApp comes equipped with a comprehensive automated test suite powered by the Node.js native test runner (`node:test` and `node:assert`). No heavy test runners or external mocking dependencies are needed.
+
+### Running Tests
+
+```bash
+# Run all tests (Unit, WebSocket, Integration) - 160+ passing tests
+npm test
+
+# Run only unit tests (Store, Formatter, Auth Middleware)
+npm run test:unit
+
+# Run only WebSocket tests (Rooms, Event Emitters, Broadcasts)
+npm run test:websocket
+
+# Run only REST API integration tests (All endpoints & validation)
+npm run test:integration
+```
+
+---
+
 ## 📁 Project Structure
 
 ```
-chatery_backend/
-├── index.js                 # Application entry point
-├── package.json
-├── .env                     # Environment variables
-├── README.md                # Documentation
+chatery_whatsapp/
+├── index.js                     # Application entry point
+├── package.json                 # Dependencies and test scripts
+├── .env                         # Environment variables
+├── README.md                    # Documentation
 ├── public/
-│   ├── dashboard.html       # Admin dashboard
-│   ├── websocket-test.html  # WebSocket test page
-│   └── media/               # Auto-saved media files
+│   ├── dashboard.html           # Admin dashboard & interactive API tester
+│   ├── websocket-test.html      # WebSocket live test page
+│   └── media/                   # Auto-saved media files
 │       └── {sessionId}/
 │           └── {chatId}/
-├── sessions/                # Session authentication data
+├── sessions/                    # WhatsApp multi-device authentication & stores
 │   └── {sessionId}/
 │       ├── creds.json
 │       └── store.json
-└── src/
-    ├── routes/
-    │   └── whatsapp.js      # API routes
-    └── services/
-        ├── websocket/
-        │   └── WebSocketManager.js
-        └── whatsapp/
-            ├── index.js
-            ├── WhatsAppManager.js
-            ├── WhatsAppSession.js
-            ├── BaileysStore.js
-            └── MessageFormatter.js
+├── src/
+│   ├── config/
+│   │   └── swagger-paths.js     # OpenAPI / Swagger specification
+│   ├── routes/
+│   │   └── whatsapp.js          # REST API route handlers
+│   └── services/
+│       ├── websocket/
+│       │   └── WebSocketManager.js # Socket.IO room manager & event broadcaster
+│       └── whatsapp/
+│           ├── index.js
+│           ├── WhatsAppManager.js  # Multi-session orchestrator
+│           ├── WhatsAppSession.js  # Baileys client wrapper & business logic
+│           ├── BaileysStore.js     # In-memory store with LID identity mapping
+│           └── MessageFormatter.js # Universal Baileys message parser
+└── tests/
+    ├── unit/
+    │   ├── api-key-auth.test.js      # Middleware authentication tests
+    │   ├── baileys-store.test.js     # Store caching & LID resolution tests
+    │   └── message-formatter.test.js # Multi-format message parser tests
+    ├── websocket/
+    │   └── websocket-manager.test.js # Socket.IO connection & event tests
+    └── integration/
+        ├── test-helper.js            # Mock session & lightweight test server
+        ├── server-endpoints.test.js  # Health, OpenAPI, login & WS stats tests
+        ├── sessions-api.test.js      # Session lifecycle & webhook tests
+        ├── messaging-bulk-api.test.js# Send messages, reactions, pins & bulk jobs
+        └── groups-labels-api.test.js # Group admin actions & labels tests
 ```
 
 ---

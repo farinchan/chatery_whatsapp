@@ -719,6 +719,412 @@
 
 /**
  * @swagger
+ * /api/whatsapp/chats/send-video:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Send video message
+ *     description: Send video with optional caption and gifPlayback
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *               - videoUrl
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               videoUrl:
+ *                 type: string
+ *               caption:
+ *                 type: string
+ *               gifPlayback:
+ *                 type: boolean
+ *               typingTime:
+ *                 type: integer
+ *               replyTo:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Video sent successfully
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/send-sticker:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Send sticker message
+ *     description: Send WebP sticker to chat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *               - stickerUrl
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               stickerUrl:
+ *                 type: string
+ *               replyTo:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Sticker sent successfully
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/pin-message:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Pin or unpin a message
+ *     description: Pin a specific message in a chat (or unpin with time 0)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *               - messageId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               messageId:
+ *                 type: string
+ *               time:
+ *                 type: integer
+ *                 example: 604800
+ *               fromMe:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Message pinned or unpinned successfully
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/star-message:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Star or unstar a message
+ *     description: Star or unstar a message for this user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *               - messageId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               messageId:
+ *                 type: string
+ *               star:
+ *                 type: boolean
+ *                 default: true
+ *               fromMe:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Message star status updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/pin:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Pin or unpin chat
+ *     description: Pin or unpin a conversation in the chat list
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               pin:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       200:
+ *         description: Chat pin status updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/archive:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Archive or unarchive chat
+ *     description: Archive or unarchive a conversation
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               archive:
+ *                 type: boolean
+ *                 default: true
+ *     responses:
+ *       200:
+ *         description: Chat archive status updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/mute:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Mute or unmute chat
+ *     description: Mute chat for duration in seconds or unmute
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               chatId:
+ *                 type: string
+ *               duration:
+ *                 type: integer
+ *                 example: 28800
+ *     responses:
+ *       200:
+ *         description: Chat mute status updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/contacts/status:
+ *   post:
+ *     tags: [Contacts]
+ *     summary: Get contact status
+ *     description: Get status / About text of a contact
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - phone
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Contact status retrieved
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/contacts/business-profile:
+ *   post:
+ *     tags: [Contacts]
+ *     summary: Get WhatsApp Business profile
+ *     description: Get business profile details
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - phone
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Business profile retrieved
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/contacts/block:
+ *   post:
+ *     tags: [Contacts]
+ *     summary: Block or unblock contact
+ *     description: Update block status for a contact
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - phone
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               action:
+ *                 type: string
+ *                 enum: [block, unblock]
+ *                 default: block
+ *     responses:
+ *       200:
+ *         description: Contact block status updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/contacts/blocklist:
+ *   post:
+ *     tags: [Contacts]
+ *     summary: Get blocklist
+ *     description: Retrieve list of blocked contacts
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Blocklist retrieved
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/profile/status:
+ *   post:
+ *     tags: [Account]
+ *     summary: Update own profile status
+ *     description: Update About text for current WhatsApp account
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - status
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile status updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/profile/name:
+ *   post:
+ *     tags: [Account]
+ *     summary: Update profile name
+ *     description: Update display name for current WhatsApp account
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - name
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile name updated
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/groups/invite-info:
+ *   post:
+ *     tags: [Groups]
+ *     summary: Get group invite info
+ *     description: Retrieve metadata and details of a group from invite code
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - inviteCode
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *               inviteCode:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Group invite info retrieved
+ */
+
+/**
+ * @swagger
  * /api/whatsapp/chats/bulk-status/{jobId}:
  *   get:
  *     tags: [Bulk Messaging]

@@ -251,6 +251,111 @@ describe('Messaging & Bulk API Integration Tests', () => {
             assert.strictEqual(res2.data.success, true);
         });
 
+        it('POST /chats/send-video: should validate chatId and videoUrl', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/send-video', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us' }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/send-video', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', videoUrl: 'https://example.com/v.mp4', caption: 'Vid' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/send-sticker: should validate chatId and stickerUrl', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/send-sticker', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us' }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/send-sticker', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', stickerUrl: 'https://example.com/s.webp' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/pin-message: should validate chatId and messageId', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/pin-message', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us' }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/pin-message', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', messageId: 'm_pin_1', time: 86400 }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/star-message: should validate chatId and messageId', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/star-message', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us' }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/star-message', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', messageId: 'm_star_1', star: true }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/pin: should validate chatId and pin boolean', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/pin', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/pin', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', pin: true }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/archive: should validate chatId', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/archive', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/archive', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', archive: true }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/mute: should validate chatId', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/mute', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/mute', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', duration: 28800 }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
         it('POST /chats/presence: should validate chatId and valid presence options', async () => {
             // Missing chatId
             const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/presence', {
@@ -301,6 +406,90 @@ describe('Messaging & Bulk API Integration Tests', () => {
             const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/profile-picture', {
                 method: 'POST',
                 body: { sessionId: SESSION_ID, phone: '628123456789' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /contacts/status: should validate phone number', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/contacts/status', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/contacts/status', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /contacts/business-profile: should validate phone number', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/contacts/business-profile', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/contacts/business-profile', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /contacts/block: should validate phone number', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/contacts/block', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/contacts/block', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789', action: 'block' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /contacts/blocklist: should return blocklist', async () => {
+            const res = await apiRequest(baseUrl, '/api/whatsapp/contacts/blocklist', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res.status, 200);
+            assert.strictEqual(res.data.success, true);
+        });
+
+        it('POST /profile/status: should validate status text', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/profile/status', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/profile/status', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, status: 'Hello WhatsApp!' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /profile/name: should validate name', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/profile/name', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/profile/name', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, name: 'My Business Name' }
             });
             assert.strictEqual(res2.status, 200);
             assert.strictEqual(res2.data.success, true);

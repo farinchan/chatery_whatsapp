@@ -97,6 +97,45 @@ function createMockSession(sessionId, overrides = {}) {
         async deleteMessage(chatId, messageId) {
             return { success: true, message: 'Message deleted', data: { chatId, messageId } };
         },
+        async sendVideo(chatId, videoUrl, caption = '', gifPlayback = false, typingTime = 0, replyTo = null) {
+            return { success: true, message: 'Video sent', data: { messageId: 'msg_test_vid_1' } };
+        },
+        async sendSticker(chatId, stickerUrl, replyTo = null) {
+            return { success: true, message: 'Sticker sent', data: { messageId: 'msg_test_stk_1' } };
+        },
+        async pinMessage(chatId, messageId, time = 604800, fromMe = false) {
+            return { success: true, message: 'Message pinned', data: { messageId: 'pin_msg_1', pinnedMessageId: messageId } };
+        },
+        async starMessage(chatId, messageId, star = true, fromMe = false) {
+            return { success: true, message: 'Message starred', data: { chatId, messageId, starred: Boolean(star) } };
+        },
+        async pinChat(chatId, pin = true) {
+            return { success: true, message: pin ? 'Chat pinned' : 'Chat unpinned', data: { chatId, pinned: Boolean(pin) } };
+        },
+        async archiveChat(chatId, archive = true) {
+            return { success: true, message: archive ? 'Chat archived' : 'Chat unarchived', data: { chatId, archived: Boolean(archive) } };
+        },
+        async muteChat(chatId, duration = null) {
+            return { success: true, message: duration !== null ? 'Chat muted' : 'Chat unmuted', data: { chatId, duration } };
+        },
+        async blockContact(phone, action = 'block') {
+            return { success: true, message: `Contact ${action}ed`, data: { phone, action } };
+        },
+        async getBlocklist() {
+            return { success: true, data: { blocklist: ['628999@s.whatsapp.net'], total: 1 } };
+        },
+        async getContactStatus(phone) {
+            return { success: true, data: { phone, status: 'Available' } };
+        },
+        async getBusinessProfile(phone) {
+            return { success: true, data: { phone, businessProfile: { description: 'Test biz' } } };
+        },
+        async updateProfileStatus(status) {
+            return { success: true, message: 'Profile status updated', data: { status } };
+        },
+        async updateProfileName(name) {
+            return { success: true, message: 'Profile name updated', data: { name } };
+        },
         async sendPresenceUpdate(chatId, presence = 'composing') {
             return { success: true, message: `Presence '${presence}' sent` };
         },
@@ -167,6 +206,9 @@ function createMockSession(sessionId, overrides = {}) {
         },
         async groupRevokeInvite(groupId) {
             return { success: true, data: { inviteCode: 'newcode123' } };
+        },
+        async groupGetInviteInfo(inviteCode) {
+            return { success: true, data: { id: 'group_test_1@g.us', subject: 'Test Group' } };
         },
         
         // Labels

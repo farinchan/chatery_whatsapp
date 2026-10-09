@@ -289,6 +289,21 @@ describe('Groups & Labels API Integration Tests', () => {
             assert.strictEqual(res2.data.success, true);
             assert.ok(res2.data.data.inviteCode);
         });
+
+        it('POST /groups/invite-info: should validate inviteCode', async () => {
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/groups/invite-info', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/groups/invite-info', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, inviteCode: 'https://chat.whatsapp.com/ABC123xyz' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
     });
 
     describe('Labels Endpoints', () => {

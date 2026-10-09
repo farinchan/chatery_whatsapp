@@ -947,6 +947,90 @@ class WhatsAppSession {
         }
     }
 
+    async sendVideo(chatId, videoUrl, caption = '', gifPlayback = false, typingTime = 0, replyTo = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            await this._simulateTyping(jid, typingTime);
+
+            const messageContent = {
+                video: { url: videoUrl },
+                caption: caption,
+                gifPlayback: Boolean(gifPlayback)
+            };
+            const messageOptions = {};
+
+            if (replyTo) {
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: { remoteJid: jid, id: replyTo, fromMe: false },
+                        message: { conversation: '' }
+                    };
+                }
+            }
+
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
+
+            return {
+                success: true,
+                message: 'Video sent successfully',
+                data: {
+                    messageId: result.key.id,
+                    chatId: jid,
+                    timestamp: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async sendSticker(chatId, stickerUrl, replyTo = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            const messageContent = {
+                sticker: { url: stickerUrl }
+            };
+            const messageOptions = {};
+
+            if (replyTo) {
+                const quotedMsg = this.store?.getMessage(jid, replyTo);
+                if (quotedMsg) {
+                    messageOptions.quoted = quotedMsg;
+                } else {
+                    messageOptions.quoted = {
+                        key: { remoteJid: jid, id: replyTo, fromMe: false },
+                        message: { conversation: '' }
+                    };
+                }
+            }
+
+            const result = await this.socket.sendMessage(jid, messageContent, messageOptions);
+
+            return {
+                success: true,
+                message: 'Sticker sent successfully',
+                data: {
+                    messageId: result.key.id,
+                    chatId: jid,
+                    timestamp: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
     async sendLocation(chatId, latitude, longitude, name = '', typingTime = 0, replyTo = null) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
@@ -1258,6 +1342,129 @@ class WhatsAppSession {
         }
     }
 
+    async pinMessage(chatId, messageId, time = 604800, fromMe = false) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            const pinDuration = Number(time);
+            const isUnpin = pinDuration === 0;
+
+            const result = await this.socket.sendMessage(jid, {
+                pin: {
+                    remoteJid: jid,
+                    id: messageId,
+                    fromMe: Boolean(fromMe)
+                },
+                type: isUnpin ? 2 : 1, // 1 = PIN, 2 = UNPIN
+                time: isUnpin ? 0 : (pinDuration || 604800)
+            });
+
+            return {
+                success: true,
+                message: isUnpin ? 'Message unpinned successfully' : 'Message pinned successfully',
+                data: {
+                    messageId: result.key.id,
+                    pinnedMessageId: messageId,
+                    chatId: jid,
+                    duration: pinDuration
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async starMessage(chatId, messageId, star = true, fromMe = false) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            await this.socket.chatModify({
+                star: {
+                    messages: [{ id: messageId, fromMe: Boolean(fromMe) }],
+                    star: Boolean(star)
+                }
+            }, jid);
+
+            return {
+                success: true,
+                message: star ? 'Message starred' : 'Message unstarred',
+                data: { chatId: jid, messageId, starred: Boolean(star) }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async pinChat(chatId, pin = true) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            await this.socket.chatModify({ pin: Boolean(pin) }, jid);
+
+            return {
+                success: true,
+                message: pin ? 'Chat pinned' : 'Chat unpinned',
+                data: { chatId: jid, pinned: Boolean(pin) }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async archiveChat(chatId, archive = true) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            await this.socket.chatModify({ archive: Boolean(archive) }, jid);
+
+            return {
+                success: true,
+                message: archive ? 'Chat archived' : 'Chat unarchived',
+                data: { chatId: jid, archived: Boolean(archive) }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async muteChat(chatId, duration = null) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            let muteValue = null;
+            if (duration && Number(duration) > 0) {
+                muteValue = Date.now() + (Number(duration) * 1000);
+            } else if (duration === -1 || duration === 'forever') {
+                muteValue = -1;
+            }
+
+            await this.socket.chatModify({ mute: muteValue }, jid);
+
+            return {
+                success: true,
+                message: muteValue !== null ? 'Chat muted' : 'Chat unmuted',
+                data: { chatId: jid, muted: muteValue !== null, duration }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
     // ==================== CONTACT & PROFILE ====================
 
     async isRegistered(phone) {
@@ -1343,6 +1550,136 @@ class WhatsAppSession {
                     profilePicture: profilePicture,
                     status: status
                 }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async blockContact(phone, action = 'block') {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatPhoneNumber(phone);
+            const act = action === 'unblock' ? 'unblock' : 'block';
+            await this.socket.updateBlockStatus(jid, act);
+
+            return {
+                success: true,
+                message: `Contact ${act}ed successfully`,
+                data: { phone, jid, action: act }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async getBlocklist() {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const blocklist = await this.socket.fetchBlocklist();
+
+            return {
+                success: true,
+                data: {
+                    blocklist: blocklist || [],
+                    total: (blocklist || []).length
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async getContactStatus(phone) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatPhoneNumber(phone);
+            const statusResult = await this.socket.fetchStatus(jid);
+
+            return {
+                success: true,
+                data: {
+                    phone,
+                    jid,
+                    status: statusResult?.status || null,
+                    setAt: statusResult?.setAt ? new Date(statusResult.setAt * 1000).toISOString() : null
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async getBusinessProfile(phone) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            const jid = this.formatPhoneNumber(phone);
+            const profile = await this.socket.getBusinessProfile(jid);
+
+            return {
+                success: true,
+                data: {
+                    phone,
+                    jid,
+                    businessProfile: profile || null
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async updateProfileStatus(status) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (typeof status !== 'string') {
+                return { success: false, message: 'Status text is required' };
+            }
+
+            await this.socket.updateProfileStatus(status);
+
+            return {
+                success: true,
+                message: 'Profile status updated successfully',
+                data: { status }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    async updateProfileName(name) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!name || typeof name !== 'string') {
+                return { success: false, message: 'Name is required' };
+            }
+
+            await this.socket.updateProfileName(name);
+            this.name = name;
+
+            return {
+                success: true,
+                message: 'Profile name updated successfully',
+                data: { name }
             };
         } catch (error) {
             return { success: false, message: error.message };
@@ -2445,6 +2782,33 @@ class WhatsAppSession {
                     newInviteCode: newCode,
                     newInviteLink: `https://chat.whatsapp.com/${newCode}`
                 }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Get group info from invite code
+     * @param {string} inviteCode - Group invite code or link
+     * @returns {Object}
+     */
+    async groupGetInviteInfo(inviteCode) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!inviteCode || typeof inviteCode !== 'string') {
+                return { success: false, message: 'Invite code is required' };
+            }
+
+            const code = inviteCode.replace('https://chat.whatsapp.com/', '').trim();
+            const info = await this.socket.groupGetInviteInfo(code);
+
+            return {
+                success: true,
+                data: info
             };
         } catch (error) {
             return { success: false, message: error.message };

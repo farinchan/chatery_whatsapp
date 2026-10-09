@@ -570,6 +570,160 @@ router.post('/chats/delete-message', checkSession, async (req, res) => {
     }
 });
 
+// Send video message
+router.post('/chats/send-video', checkSession, async (req, res) => {
+    try {
+        const { chatId, videoUrl, caption = '', gifPlayback = false, typingTime = 0, replyTo = null } = req.body;
+        
+        if (!chatId || !videoUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, videoUrl'
+            });
+        }
+
+        const result = await req.session.sendVideo(chatId, videoUrl, caption, gifPlayback, typingTime, replyTo);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Send sticker message
+router.post('/chats/send-sticker', checkSession, async (req, res) => {
+    try {
+        const { chatId, stickerUrl, replyTo = null } = req.body;
+        
+        if (!chatId || !stickerUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, stickerUrl'
+            });
+        }
+
+        const result = await req.session.sendSticker(chatId, stickerUrl, replyTo);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Pin or unpin a message
+router.post('/chats/pin-message', checkSession, async (req, res) => {
+    try {
+        const { chatId, messageId, time = 604800, fromMe = false } = req.body;
+        
+        if (!chatId || !messageId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, messageId'
+            });
+        }
+
+        const result = await req.session.pinMessage(chatId, messageId, time, fromMe);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Star or unstar a message
+router.post('/chats/star-message', checkSession, async (req, res) => {
+    try {
+        const { chatId, messageId, star = true, fromMe = false } = req.body;
+        
+        if (!chatId || !messageId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, messageId'
+            });
+        }
+
+        const result = await req.session.starMessage(chatId, messageId, star, fromMe);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Pin or unpin a chat in chat list
+router.post('/chats/pin', checkSession, async (req, res) => {
+    try {
+        const { chatId, pin = true } = req.body;
+        
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chatId'
+            });
+        }
+
+        const result = await req.session.pinChat(chatId, pin);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Archive or unarchive a chat
+router.post('/chats/archive', checkSession, async (req, res) => {
+    try {
+        const { chatId, archive = true } = req.body;
+        
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chatId'
+            });
+        }
+
+        const result = await req.session.archiveChat(chatId, archive);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Mute or unmute a chat
+router.post('/chats/mute', checkSession, async (req, res) => {
+    try {
+        const { chatId, duration = null } = req.body;
+        
+        if (!chatId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: chatId'
+            });
+        }
+
+        const result = await req.session.muteChat(chatId, duration);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // ==================== BULK MESSAGING (Background Jobs) ====================
 
 // Store for bulk message jobs
@@ -1038,6 +1192,129 @@ router.post('/chats/profile-picture', checkSession, async (req, res) => {
         }
         
         const result = await req.session.getProfilePicture(phone);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Get contact status / bio (About)
+router.post('/contacts/status', checkSession, async (req, res) => {
+    try {
+        const { phone } = req.body;
+        
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: phone'
+            });
+        }
+
+        const result = await req.session.getContactStatus(phone);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Get WhatsApp Business profile
+router.post('/contacts/business-profile', checkSession, async (req, res) => {
+    try {
+        const { phone } = req.body;
+        
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: phone'
+            });
+        }
+
+        const result = await req.session.getBusinessProfile(phone);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Block or unblock contact
+router.post('/contacts/block', checkSession, async (req, res) => {
+    try {
+        const { phone, action = 'block' } = req.body;
+        
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: phone'
+            });
+        }
+
+        const result = await req.session.blockContact(phone, action);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Get blocklist
+router.post('/contacts/blocklist', checkSession, async (req, res) => {
+    try {
+        const result = await req.session.getBlocklist();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Update own profile status / bio
+router.post('/profile/status', checkSession, async (req, res) => {
+    try {
+        const { status } = req.body;
+        
+        if (typeof status !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: status (string)'
+            });
+        }
+
+        const result = await req.session.updateProfileStatus(status);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Update own profile name
+router.post('/profile/name', checkSession, async (req, res) => {
+    try {
+        const { name } = req.body;
+        
+        if (!name || typeof name !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: name (string)'
+            });
+        }
+
+        const result = await req.session.updateProfileName(name);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -1522,6 +1799,28 @@ router.post('/groups/revoke-invite', checkSession, async (req, res) => {
         }
         
         const result = await req.session.groupRevokeInvite(groupId);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Get group info from invite code
+router.post('/groups/invite-info', checkSession, async (req, res) => {
+    try {
+        const { inviteCode } = req.body;
+        
+        if (!inviteCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: inviteCode'
+            });
+        }
+
+        const result = await req.session.groupGetInviteInfo(inviteCode);
         res.json(result);
     } catch (error) {
         res.status(500).json({
