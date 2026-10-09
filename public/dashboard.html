@@ -1,2294 +1,1272 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chatery Dashboard - WhatsApp API</title>
+    <title>Chatery - WhatsApp Gateway Dashboard</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1E9DFF',
+                            50: '#F0F8FF',
+                            100: '#E0F1FF',
+                            200: '#BAE1FF',
+                            300: '#85CAFF',
+                            400: '#4AB0FF',
+                            500: '#1E9DFF',
+                            600: '#0083E6',
+                            700: '#0065B3',
+                            800: '#004A85',
+                            900: '#002F57',
+                        },
+                        wa: {
+                            bg: '#0B0F19',
+                            sidebar: '#101726',
+                            sidebarHeader: '#121A2B',
+                            chatBg: '#090D16',
+                            chatHeader: '#121A2B',
+                            bubbleOut: '#0B3F6E',
+                            bubbleIn: '#16233B',
+                            border: '#1B273D',
+                            input: '#0D1424',
+                            muted: '#94A3B8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons (CDN) - Crisp Universal SVG Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Socket.IO Client (CDN) -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- QRCode Generator (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
+    <!-- Highlight.js (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+
+    <!-- SweetAlert2 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --primary: #25D366;
-            --primary-dark: #128C7E;
-            --secondary: #075E54;
-            --bg-dark: #0a0a0a;
-            --bg-card: #141414;
-            --bg-card-hover: #1a1a1a;
-            --border: #2a2a2a;
-            --text: #ffffff;
-            --text-muted: #888888;
-            --danger: #ff4757;
-            --warning: #ffa502;
-            --info: #3498db;
-            --success: #2ed573;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
-            min-height: 100vh;
-        }
-
-        /* Header */
-        .header {
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .logo-text {
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .logo-text span {
-            color: var(--primary);
-        }
-
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: var(--bg-dark);
-            border-radius: 20px;
-            font-size: 13px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--danger);
-        }
-
-        .status-dot.connected {
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-        }
-
-        /* Main Container */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 24px;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card:hover {
-            background: var(--bg-card-hover);
-            border-color: var(--primary);
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-        }
-
-        .stat-value.success {
-            color: var(--success);
-        }
-
-        .stat-value.warning {
-            color: var(--warning);
-        }
-
-        .stat-value.info {
-            color: var(--info);
-        }
-
-        .stat-value.danger {
-            color: var(--danger);
-        }
-
-        /* Main Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Card */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-
-        .card-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .card-title {
-            font-size: 16px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .card-body {
-            padding: 20px;
-        }
-
-        /* Sessions */
-        .session-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .session-item {
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            transition: all 0.3s ease;
-        }
-
-        .session-item:hover {
-            border-color: var(--primary);
-        }
-
-        .session-avatar {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .session-info {
-            flex: 1;
-        }
-
-        .session-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .session-phone {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .session-status {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background: rgba(255, 71, 87, 0.1);
-            color: var(--danger);
-        }
-
-        .session-status.connected {
-            background: rgba(46, 213, 115, 0.1);
-            color: var(--success);
-        }
-
-        .session-status.connecting {
-            background: rgba(255, 165, 2, 0.1);
-            color: var(--warning);
-        }
-
-        .session-status.qr_ready {
-            background: rgba(52, 152, 219, 0.1);
-            color: var(--info);
-        }
-
-        .session-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--primary);
-            color: #000;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            color: #fff;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-        }
-
-        .btn-outline:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .btn-danger {
-            background: rgba(255, 71, 87, 0.1);
-            color: var(--danger);
-        }
-
-        .btn-danger:hover {
-            background: var(--danger);
-            color: #fff;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        .btn-icon {
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 8px;
-        }
-
-        /* Form */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        /* QR Code Modal */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 32px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            transform: scale(0.9);
-            transition: all 0.3s ease;
-        }
-
-        .modal-overlay.active .modal {
-            transform: scale(1);
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .modal-subtitle {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-        }
-
-        .qr-container {
-            background: #fff;
-            padding: 16px;
-            border-radius: 12px;
-            display: inline-block;
-            margin-bottom: 24px;
-        }
-
-        .qr-container img {
-            width: 256px;
-            height: 256px;
-        }
-
-        .qr-loading {
-            width: 256px;
-            height: 256px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg-dark);
-            border-radius: 12px;
-            color: var(--text-muted);
-        }
-
-        /* Events Log */
-        .events-log {
-            height: 400px;
-            overflow-y: auto;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
-        }
-
-        .event-item {
-            padding: 10px 12px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 12px;
-        }
-
-        .event-time {
-            color: var(--text-muted);
-            flex-shrink: 0;
-        }
-
-        .event-type {
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
-            flex-shrink: 0;
-        }
-
-        .event-type.message {
-            background: rgba(46, 213, 115, 0.1);
-            color: var(--success);
-        }
-
-        .event-type.connection {
-            background: rgba(52, 152, 219, 0.1);
-            color: var(--info);
-        }
-
-        .event-type.qr {
-            background: rgba(255, 165, 2, 0.1);
-            color: var(--warning);
-        }
-
-        .event-type.error {
-            background: rgba(255, 71, 87, 0.1);
-            color: var(--danger);
-        }
-
-        .event-content {
-            color: var(--text-muted);
-            word-break: break-all;
-        }
-
-        /* Send Message Panel */
-        .send-panel {
-            margin-top: 24px;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .tab {
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-muted);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .tab.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #000;
-        }
-
-        .tab:hover:not(.active) {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        /* Toast */
-        .toast-container {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .toast {
-            padding: 16px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: slideIn 0.3s ease;
-            min-width: 300px;
-        }
-
-        .toast.success {
-            border-color: var(--success);
-        }
-
-        .toast.error {
-            border-color: var(--danger);
-        }
-
-        .toast.info {
-            border-color: var(--info);
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 48px 24px;
-            color: var(--text-muted);
-        }
-
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-        }
-
-        /* Scrollbar */
+        /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
+            height: 6px;
         }
-
         ::-webkit-scrollbar-track {
-            background: var(--bg-dark);
+            background: transparent;
         }
-
         ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
+            background: #1B273D;
+            border-radius: 9999px;
         }
-
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
+            background: #2D3E5E;
         }
 
-        /* Spinner */
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        /* SweetAlert2 Dark Theme */
+        .swal2-popup.swal-dark {
+            background: #121A2B !important;
+            border: 1px solid #1B273D !important;
+            color: #F8FAFC !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+            font-family: 'Inter', sans-serif !important;
         }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .swal2-title {
+            color: #F8FAFC !important;
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
         }
-
-        /* API Tester */
-        .api-tester {
-            margin-top: 24px;
+        .swal2-html-container {
+            color: #94A3B8 !important;
+            font-size: 0.9rem !important;
         }
-
-        .endpoint-select {
-            width: 100%;
-            padding: 12px 16px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-size: 14px;
-            cursor: pointer;
+        .swal2-confirm.btn-swal-confirm {
+            background: #1E9DFF !important;
+            color: #ffffff !important;
+            border-radius: 0.5rem !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1.25rem !important;
         }
-
-        .endpoint-select:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .json-editor {
-            width: 100%;
-            min-height: 150px;
-            padding: 12px 16px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 13px;
-            resize: vertical;
-        }
-
-        .response-box {
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 16px;
-            max-height: 300px;
-            overflow-y: auto;
-            font-family: 'Monaco', 'Menlo', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .response-box.success {
-            border-color: var(--success);
-        }
-
-        .response-box.error {
-            border-color: var(--danger);
-        }
-
-        /* Method Badge */
-        .method-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 700;
-            margin-right: 8px;
-        }
-
-        .method-badge.get {
-            background: rgba(46, 213, 115, 0.2);
-            color: var(--success);
-        }
-
-        .method-badge.post {
-            background: rgba(52, 152, 219, 0.2);
-            color: var(--info);
-        }
-
-        .method-badge.delete {
-            background: rgba(255, 71, 87, 0.2);
-            color: var(--danger);
-        }
-
-        .method-badge.put {
-            background: rgba(255, 165, 2, 0.2);
-            color: var(--warning);
-        }
-
-        /* API Help */
-        .api-help {
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 12px;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .api-help code {
-            background: var(--bg-card);
-            padding: 2px 6px;
-            border-radius: 4px;
-            color: var(--primary);
-        }
-
-        /* Footer */
-        .footer {
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
-            padding: 24px;
-            margin-top: 48px;
-            text-align: center;
-        }
-
-        .footer-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .footer-credit {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .footer-credit a {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        .footer-credit a:hover {
-            text-decoration: underline;
-        }
-
-        .footer-buttons {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .btn-donate {
-            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
-            color: #fff;
-            font-weight: 600;
-        }
-
-        .btn-donate:hover {
-            background: linear-gradient(135deg, #FF8E53, #FF6B6B);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .btn-github {
-            background: #333;
-            color: #fff;
-        }
-
-        .btn-github:hover {
-            background: #555;
+        .swal2-cancel.btn-swal-cancel {
+            background: #1B273D !important;
+            color: #94A3B8 !important;
+            border-radius: 0.5rem !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1.25rem !important;
         }
     </style>
 </head>
 
-<body>
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">
-            <div class="logo-text">Chatery<span>API</span></div>
+<body class="bg-wa-bg text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-primary/30 selection:text-white">
+
+    <!-- ==================== TOP NAVIGATION BAR ==================== -->
+    <header class="h-14 bg-wa-sidebarHeader border-b border-wa-border px-4 flex items-center justify-between z-30 select-none shrink-0">
+        
+        <!-- Left: Logo & Nav Links -->
+        <div class="flex items-center gap-3">
+            <a href="/dashboard" class="flex items-center gap-2.5 group">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-blue-700 flex items-center justify-center text-white shadow-md shadow-primary/20">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm tracking-tight text-white group-hover:text-primary transition-colors">Chatery</span>
+                </div>
+            </a>
+
+            <!-- Navigation Bar Tabs -->
+            <nav class="flex items-center gap-1 ml-2 pl-3 border-l border-wa-border">
+                <a href="/dashboard" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/25 transition-colors">
+                    <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                    <span>Dashboard & Sessions</span>
+                </a>
+                <a href="/wa-web" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-wa-muted hover:text-white hover:bg-wa-input transition-colors">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                    <span>WhatsApp Web</span>
+                </a>
+            </nav>
         </div>
-        <div class="header-actions">
-            <div class="status-badge">
-                <div class="status-dot" id="wsStatus"></div>
-                <span id="wsStatusText">WebSocket Disconnected</span>
-            </div>
-            <a href="/ws-test" class="btn btn-outline btn-sm">WebSocket Tester</a>
-            <button onclick="logout()" class="btn btn-danger btn-sm">🚪 Logout</button>
+
+        <!-- Right: Actions & Tools -->
+        <div class="flex items-center gap-2">
+            <!-- Create Session Button -->
+            <button onclick="showCreateSessionModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary hover:bg-primary-600 text-white rounded-lg shadow-sm shadow-primary/20 transition-colors">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Create Session</span>
+            </button>
+
+            <!-- Toggle API Explorer Drawer -->
+            <button onclick="toggleApiDrawer()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-wa-muted hover:text-white bg-wa-input hover:bg-wa-border border border-wa-border rounded-lg transition-colors" title="Interactive REST API Tester">
+                <i data-lucide="terminal" class="w-3.5 h-3.5 text-primary"></i>
+                <span class="hidden sm:inline">API Tester</span>
+            </button>
+
+            <!-- Toggle Live Activity Drawer -->
+            <button onclick="toggleActivityDrawer()" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-wa-muted hover:text-white bg-wa-input hover:bg-wa-border border border-wa-border rounded-lg transition-colors" title="Live WebSocket Events">
+                <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+                <span id="unreadEventsBadge" class="hidden text-[10px] bg-primary text-white font-bold px-1.5 rounded-full">0</span>
+            </button>
+
+            <!-- Swagger Docs Link -->
+            <a href="/" target="_blank" class="p-2 text-wa-muted hover:text-white hover:bg-wa-border/50 rounded-lg transition-colors" title="OpenAPI Documentation (Swagger UI)">
+                <i data-lucide="book-open" class="w-4 h-4"></i>
+            </a>
+
+            <!-- Logout Button -->
+            <button onclick="logout()" class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors" title="Sign Out">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <div class="container">
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-label">Total Sessions</div>
-                <div class="stat-value info" id="statSessions">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Connected</div>
-                <div class="stat-value success" id="statConnected">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Disconnected</div>
-                <div class="stat-value danger" id="statDisconnected">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">WebSocket Clients</div>
-                <div class="stat-value warning" id="statWsClients">0</div>
-            </div>
-        </div>
+    <!-- ==================== MAIN DASHBOARD BODY (Scrollable) ==================== -->
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
 
-        <!-- Main Grid -->
-        <div class="main-grid">
-            <!-- Left Column -->
-            <div>
-                <!-- Sessions Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">📱 Sessions</div>
-                        <button class="btn btn-primary btn-sm" onclick="showCreateSession()">
-                            + New Session
-                        </button>
+        <!-- Welcome & Header Banner -->
+        <div class="bg-gradient-to-r from-wa-sidebarHeader via-wa-sidebar to-wa-sidebarHeader border border-wa-border rounded-2xl p-6 shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Dashboard & Session Manager</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Server Live</span>
                     </div>
-                    <div class="card-body">
-                        <div id="sessionsList" class="session-list">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">📱</div>
-                                <p>No sessions yet</p>
-                                <p style="font-size: 13px; margin-top: 8px;">Create a new session to get started</p>
-                            </div>
-                        </div>
-                    </div>
+                    <p class="text-xs sm:text-sm text-wa-muted max-w-2xl">
+                        Monitor multi-device Baileys WhatsApp Gateway performance, manage active WhatsApp sessions, pair devices via QR Code, and open the authentic WhatsApp Web interface.
+                    </p>
                 </div>
 
-                <!-- API Tester -->
-                <div class="card api-tester">
-                    <div class="card-header">
-                        <div class="card-title">🧪 API Tester</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label class="form-label">Endpoint</label>
-                            <select class="endpoint-select" id="apiEndpoint" onchange="updateRequestBody()">
-                                <optgroup label="Sessions">
-                                    <option value="GET|/api/whatsapp/sessions">GET /sessions - List all sessions
-                                    </option>
-                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET
-                                        /sessions/:sessionId/status - Get session status</option>
-                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET
-                                        /sessions/:sessionId/qr - Get QR code (JSON)</option>
-                                    <option value="GET|/api/whatsapp/sessions/{sessionId}/qr/image">GET
-                                        /sessions/:sessionId/qr/image - Get QR code (PNG Image)</option>
-                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST
-                                        /sessions/:sessionId/connect - Connect session</option>
-                                    <option value="PATCH|/api/whatsapp/sessions/{sessionId}/config">PATCH
-                                        /sessions/:sessionId/config - Update config</option>
-                                    <option value="POST|/api/whatsapp/sessions/{sessionId}/webhooks">POST
-                                        /sessions/:sessionId/webhooks - Add webhook</option>
-                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}/webhooks">DELETE
-                                        /sessions/:sessionId/webhooks - Remove webhook</option>
-                                    <option value="DELETE|/api/whatsapp/sessions/{sessionId}">DELETE
-                                        /sessions/:sessionId - Delete session</option>
-                                </optgroup>
-                                <optgroup label="Messaging">
-                                    <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text
-                                        message</option>
-                                    <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send
-                                        image</option>
-                                    <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document -
-                                        Send document</option>
-                                    <option value="POST|/api/whatsapp/chats/send-audio">POST /chats/send-audio - Send
-                                        audio/voice note</option>
-                                    <option value="POST|/api/whatsapp/chats/send-location">POST /chats/send-location -
-                                        Send location</option>
-                                    <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact -
-                                        Send contact</option>
-                                    <option value="POST|/api/whatsapp/chats/send-poll">POST /chats/send-poll - Send
-                                        poll message</option>
-                                    <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send
-                                        button (⚠️ deprecated, uses Poll)</option>
-                                    <option value="POST|/api/whatsapp/chats/send-reaction">POST /chats/send-reaction - Send
-                                        emoji reaction</option>
-                                    <option value="POST|/api/whatsapp/chats/delete-message">POST /chats/delete-message -
-                                        Delete / revoke message</option>
-                                    <option value="POST|/api/whatsapp/chats/send-video">POST /chats/send-video - Send
-                                        video</option>
-                                    <option value="POST|/api/whatsapp/chats/send-sticker">POST /chats/send-sticker - Send
-                                        sticker</option>
-                                    <option value="POST|/api/whatsapp/chats/pin-message">POST /chats/pin-message - Pin
-                                        message</option>
-                                    <option value="POST|/api/whatsapp/chats/star-message">POST /chats/star-message -
-                                        Star message</option>
-                                    <option value="POST|/api/whatsapp/chats/pin">POST /chats/pin - Pin chat</option>
-                                    <option value="POST|/api/whatsapp/chats/archive">POST /chats/archive - Archive
-                                        chat</option>
-                                    <option value="POST|/api/whatsapp/chats/mute">POST /chats/mute - Mute chat</option>
-                                    <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing
-                                        indicator</option>
-                                    <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number -
-                                        Check number exists</option>
-                                    <option value="POST|/api/whatsapp/chats/profile-picture">POST /chats/profile-picture
-                                        - Get profile picture</option>
-                                </optgroup>
-                                <optgroup label="Bulk Messaging">
-                                    <option value="POST|/api/whatsapp/chats/send-bulk">POST /chats/send-bulk - Send bulk
-                                        text (Background)</option>
-                                    <option value="POST|/api/whatsapp/chats/send-bulk-image">POST /chats/send-bulk-image
-                                        - Send bulk image (Background)</option>
-                                    <option value="POST|/api/whatsapp/chats/send-bulk-document">POST
-                                        /chats/send-bulk-document - Send bulk document (Background)</option>
-                                    <option value="GET|/api/whatsapp/chats/bulk-status/{jobId}">GET
-                                        /chats/bulk-status/:jobId - Get job status</option>
-                                    <option value="POST|/api/whatsapp/chats/bulk-jobs">POST /chats/bulk-jobs - Get all
-                                        bulk jobs</option>
-                                </optgroup>
-                                <optgroup label="Chat History">
-                                    <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Get chats
-                                        overview</option>
-                                    <option value="POST|/api/whatsapp/contacts">POST /contacts - Get contacts</option>
-                                    <option value="POST|/api/whatsapp/contacts/status">POST /contacts/status - Get
-                                        contact bio</option>
-                                    <option value="POST|/api/whatsapp/contacts/business-profile">POST
-                                        /contacts/business-profile - Business profile</option>
-                                    <option value="POST|/api/whatsapp/contacts/block">POST /contacts/block -
-                                        Block/unblock contact</option>
-                                    <option value="POST|/api/whatsapp/contacts/blocklist">POST /contacts/blocklist -
-                                        Get blocklist</option>
-                                    <option value="POST|/api/whatsapp/profile/status">POST /profile/status - Update
-                                        profile status</option>
-                                    <option value="POST|/api/whatsapp/profile/name">POST /profile/name - Update profile
-                                        name</option>
-                                    <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Get chat
-                                        messages</option>
-                                    <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Get chat info
-                                    </option>
-                                    <option value="POST|/api/whatsapp/chats/mark-read">POST /chats/mark-read - Mark chat
-                                        as read</option>
-                                </optgroup>
-                                <optgroup label="Groups - Basic">
-                                    <option value="POST|/api/whatsapp/groups">POST /groups - Get all groups</option>
-                                    <option value="POST|/api/whatsapp/groups/create">POST /groups/create - Create new
-                                        group</option>
-                                    <option value="POST|/api/whatsapp/groups/metadata">POST /groups/metadata - Get group
-                                        metadata</option>
-                                    <option value="POST|/api/whatsapp/groups/invite-info">POST /groups/invite-info - Get
-                                        invite info</option>
-                                    <option value="POST|/api/whatsapp/groups/leave">POST /groups/leave - Leave group
-                                    </option>
-                                    <option value="POST|/api/whatsapp/groups/join">POST /groups/join - Join via invite
-                                        code</option>
-                                </optgroup>
-                                <optgroup label="Groups - Participants">
-                                    <option value="POST|/api/whatsapp/groups/participants/add">POST
-                                        /groups/participants/add - Add participants</option>
-                                    <option value="POST|/api/whatsapp/groups/participants/remove">POST
-                                        /groups/participants/remove - Remove participants</option>
-                                    <option value="POST|/api/whatsapp/groups/participants/promote">POST
-                                        /groups/participants/promote - Promote to admin</option>
-                                    <option value="POST|/api/whatsapp/groups/participants/demote">POST
-                                        /groups/participants/demote - Demote from admin</option>
-                                </optgroup>
-                                <optgroup label="Groups - Settings">
-                                    <option value="POST|/api/whatsapp/groups/subject">POST /groups/subject - Update
-                                        group name</option>
-                                    <option value="POST|/api/whatsapp/groups/description">POST /groups/description -
-                                        Update description</option>
-                                    <option value="POST|/api/whatsapp/groups/settings">POST /groups/settings - Update
-                                        settings</option>
-                                    <option value="POST|/api/whatsapp/groups/picture">POST /groups/picture - Update
-                                        picture</option>
-                                    <option value="POST|/api/whatsapp/groups/invite-code">POST /groups/invite-code - Get
-                                        invite link</option>
-                                    <option value="POST|/api/whatsapp/groups/revoke-invite">POST /groups/revoke-invite -
-                                        Revoke invite link</option>
-                                </optgroup>
-                                <optgroup label="Labels">
-                                    <option value="POST|/api/whatsapp/labels">POST /labels - Get all labels
-                                    </option>
-                                    <option value="POST|/api/whatsapp/labels/info">POST /labels/info - Get label by ID
-                                    </option>
-                                    <option value="POST|/api/whatsapp/labels/chat/add">POST /labels/chat/add - Add label
-                                        to chat</option>
-                                    <option value="POST|/api/whatsapp/labels/chat/remove">POST /labels/chat/remove -
-                                        Remove label from chat</option>
-                                    <option value="POST|/api/whatsapp/labels/message/add">POST /labels/message/add - Add
-                                        label to message</option>
-                                    <option value="POST|/api/whatsapp/labels/message/remove">POST
-                                        /labels/message/remove - Remove label from message</option>
-                                    <option value="POST|/api/whatsapp/labels/chats">POST /labels/chats - Get chats by
-                                        label</option>
-                                    <option value="POST|/api/whatsapp/labels/by-chat">POST /labels/by-chat - Get labels
-                                        for chat</option>
-                                </optgroup>
-                                <optgroup label="WebSocket">
-                                    <option value="GET|/api/websocket/stats">GET /websocket/stats - WebSocket stats
-                                    </option>
-                                </optgroup>
-                                <optgroup label="System">
-                                    <option value="GET|/api/health">GET /health - Health check</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="form-group" id="sessionIdGroup" style="display: none;">
-                            <label class="form-label">Session ID (for URL)</label>
-                            <input type="text" class="form-input" id="apiSessionId" placeholder="Enter session ID">
-                        </div>
-                        <div class="form-group" id="jobIdGroup" style="display: none;">
-                            <label class="form-label">Job ID (for URL)</label>
-                            <input type="text" class="form-input" id="apiJobId"
-                                placeholder="Enter job ID (e.g., bulk_123456789_abc123def)">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Request Body (JSON)</label>
-                            <textarea class="json-editor" id="apiBody" placeholder="{}"></textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="sendApiRequest()" id="btnSendApi">
-                            Send Request
-                        </button>
-                        <div class="api-help" id="apiHelp" style="display: none;"></div>
-                        <div class="form-group" style="margin-top: 16px;">
-                            <label class="form-label">Response</label>
-                            <div class="response-box" id="apiResponse">Response will appear here...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column -->
-            <div>
-                <!-- Events Log -->
-                <div class="card">
-                    <div class="card-header">
-                        <div class="card-title">📡 Live Events</div>
-                        <button class="btn btn-outline btn-sm" onclick="clearEvents()">Clear</button>
-                    </div>
-                    <div class="card-body" style="padding: 0;">
-                        <div class="events-log" id="eventsLog">
-                            <div class="empty-state">
-                                <div class="empty-state-icon">📡</div>
-                                <p>No events yet</p>
-                                <p style="font-size: 13px; margin-top: 8px;">Events will appear here in real-time</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Send -->
-                <div class="card" style="margin-top: 24px;">
-                    <div class="card-header">
-                        <div class="card-title">✉️ Quick Send</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label class="form-label">Session</label>
-                            <select class="form-input" id="quickSession">
-                                <option value="">Select session...</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Phone Number</label>
-                            <input type="text" class="form-input" id="quickPhone" placeholder="628123456789">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Message</label>
-                            <textarea class="form-input" id="quickMessage" rows="3"
-                                placeholder="Type your message..."></textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="quickSend()" style="width: 100%;">
-                            Send Message
-                        </button>
-                    </div>
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <a href="/wa-web" class="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 rounded-xl text-xs font-semibold transition-all">
+                        <i data-lucide="message-square" class="w-4 h-4"></i>
+                        <span>Buka WhatsApp Web</span>
+                    </a>
+                    <button onclick="loadDashboardData()" class="p-2 bg-wa-input hover:bg-wa-border text-wa-muted hover:text-white border border-wa-border rounded-xl transition-colors" title="Refresh Dashboard">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-buttons">
-                <a href="https://saweria.co/fajrichan" target="_blank" class="btn btn-donate">
-                    ☕ Buy Me a Coffee
-                </a>
-                <a href="https://github.com/farinchan/chatery_whatsapp" target="_blank" class="btn btn-github">
-                    ⭐ Star on GitHub
-                </a>
-                <a href="https://www.linkedin.com/in/fajri-chan" target="_blank" class="btn btn-outline">
-                    💼 LinkedIn
-                </a>
-            </div>
-            <div class="footer-credit">
-                Made with ❤️ by <a href="https://github.com/farinchan" target="_blank">Farin Chan</a> |
-                <strong>Chatery API</strong> - WhatsApp Multi-Session Gateway
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                📊 <strong>Fitur:</strong> Text, Image, Document, Audio, Location, Contact, Poll, Bulk Messaging, Reply Messages, Labels
-            </div>
-            <div style="font-size: 12px; color: var(--text-muted);">
-                © <span id="footerYear"></span> Chatery. Open Source under MIT License.
-
-            </div>
-        </div>
-    </footer>
-
-    <!-- QR Modal -->
-    <div class="modal-overlay" id="qrModal">
-        <div class="modal">
-            <div class="modal-title">📱 Scan QR Code</div>
-            <div class="modal-subtitle" id="qrSessionName">Session: -</div>
-            <div class="qr-container" id="qrContainer">
-                <div class="qr-loading">
-                    <div class="spinner"></div>
+        <!-- 4 Stat Metrics Cards Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Card 1: Total Sessions -->
+            <div class="bg-wa-sidebar border border-wa-border rounded-2xl p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-wa-muted">Total Sesi</span>
+                    <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                        <i data-lucide="server" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="statTotalSessions" class="text-2xl font-bold text-white tracking-tight">0</div>
+                    <div class="text-[11px] text-wa-muted mt-0.5">Sesi terdaftar di database</div>
                 </div>
             </div>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-                Open WhatsApp on your phone → Menu → Linked Devices → Link a Device
-            </p>
-            <button class="btn btn-outline" onclick="closeQrModal()">Close</button>
+
+            <!-- Card 2: Connected Sessions -->
+            <div class="bg-wa-sidebar border border-wa-border rounded-2xl p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-wa-muted">Sesi Terhubung</span>
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="statConnectedSessions" class="text-2xl font-bold text-emerald-400 tracking-tight">0</div>
+                    <div class="text-[11px] text-wa-muted mt-0.5">Online & siap kirim pesan</div>
+                </div>
+            </div>
+
+            <!-- Card 3: Total Chats in Active Session -->
+            <div class="bg-wa-sidebar border border-wa-border rounded-2xl p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-wa-muted">Percakapan Aktif</span>
+                    <div class="w-9 h-9 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center">
+                        <i data-lucide="messages-square" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div id="statTotalChats" class="text-2xl font-bold text-cyan-400 tracking-tight">0</div>
+                    <div class="text-[11px] text-wa-muted mt-0.5">Chat tersinkronisasi di store</div>
+                </div>
+            </div>
+
+            <!-- Card 4: Gateway Status -->
+            <div class="bg-wa-sidebar border border-wa-border rounded-2xl p-5 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-wa-muted">Gateway Engine</span>
+                    <div class="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center">
+                        <i data-lucide="radio" class="w-4 h-4"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-lg font-bold text-white tracking-tight">Baileys v7.0</div>
+                    <div class="text-[11px] text-emerald-400 mt-0.5 flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Port 3000 • WebSocket Live</span>
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </div>
+
+        <!-- WhatsApp Sessions Management Section -->
+        <div class="bg-wa-sidebar border border-wa-border rounded-2xl p-6 shadow-sm space-y-5">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-wa-border">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-primary"></i>
+                        <span>Daftar Sesi WhatsApp</span>
+                    </h2>
+                    <p class="text-xs text-wa-muted mt-0.5">Kelola seluruh session instance, scan QR code, dan buka percakapan di web interface.</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <div class="relative">
+                        <input type="text" id="sessionSearchInput" oninput="filterSessionsList(this.value)" placeholder="Cari nama / nomor sesi..." class="bg-wa-input text-xs text-slate-200 border border-wa-border rounded-xl pl-8 pr-3 py-2 w-48 sm:w-64 focus:outline-none focus:border-primary transition-colors">
+                        <div class="absolute left-2.5 top-2.5 text-wa-muted">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                        </div>
+                    </div>
+                    <button onclick="showCreateSessionModal()" class="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-primary hover:bg-primary-600 text-white rounded-xl shadow-sm transition-colors shrink-0">
+                        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        <span>Tambah Sesi</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sessions Cards Grid Container -->
+            <div id="sessionsGridContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="col-span-full py-16 text-center text-wa-muted text-xs">
+                    <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-primary"></i>
+                    <span>Memuat sesi WhatsApp...</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- System Diagnostics & Fast Shortcuts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Diagnostics Card -->
+            <div class="bg-wa-sidebar border border-wa-border rounded-2xl p-5 space-y-4">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="cpu" class="w-4 h-4 text-primary"></i>
+                    <span>Informasi Sistem & Gateway</span>
+                </h3>
+                
+                <div class="space-y-2 text-xs">
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-wa-input border border-wa-border">
+                        <span class="text-wa-muted">Node Environment</span>
+                        <span class="font-semibold text-white">development</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-wa-input border border-wa-border">
+                        <span class="text-wa-muted">Baileys Version</span>
+                        <span class="font-mono text-primary font-medium">^7.0.0-rc14</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-wa-input border border-wa-border">
+                        <span class="text-wa-muted">WebSocket Clients</span>
+                        <span id="statWsClients" class="font-semibold text-emerald-400">0 connected</span>
+                    </div>
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-wa-input border border-wa-border">
+                        <span class="text-wa-muted">Auth Middleware</span>
+                        <span class="font-semibold text-white">X-Api-Key Protection</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- REST API Quick Explorer Card -->
+            <div class="lg:col-span-2 bg-wa-sidebar border border-wa-border rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+                        <span>REST API Endpoints Quick Reference</span>
+                    </h3>
+                    <button onclick="toggleApiDrawer()" class="text-xs text-primary hover:underline font-semibold flex items-center gap-1">
+                        <span>Buka API Tester Drawer</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div class="p-3 bg-wa-input border border-wa-border rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">POST</span>
+                            <span class="font-mono font-semibold text-white">/chats/send-text</span>
+                        </div>
+                        <p class="text-[11px] text-wa-muted">Kirim pesan teks dengan simulasi mengetik & reply.</p>
+                    </div>
+
+                    <div class="p-3 bg-wa-input border border-wa-border rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">POST</span>
+                            <span class="font-mono font-semibold text-white">/chats/send-image</span>
+                        </div>
+                        <p class="text-[11px] text-wa-muted">Kirim gambar dari direct URL publik beserta caption.</p>
+                    </div>
+
+                    <div class="p-3 bg-wa-input border border-wa-border rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">POST</span>
+                            <span class="font-mono font-semibold text-white">/chats/overview</span>
+                        </div>
+                        <p class="text-[11px] text-wa-muted">Ambil ringkasan daftar percakapan aktif yang tersimpan.</p>
+                    </div>
+
+                    <div class="p-3 bg-wa-input border border-wa-border rounded-xl space-y-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">POST</span>
+                            <span class="font-mono font-semibold text-white">/chats/send-bulk</span>
+                        </div>
+                        <p class="text-[11px] text-wa-muted">Diseminasi pesan massal / broadcast dengan job queue tracking.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ==================== MODALS ==================== -->
 
     <!-- Create Session Modal -->
-    <div class="modal-overlay" id="createSessionModal">
-        <div class="modal" style="max-width: 500px;">
-            <div class="modal-title">➕ Create New Session</div>
-            <div class="modal-subtitle">Enter session details and optional configuration</div>
-
-            <div class="form-group" style="text-align: left;">
-                <label class="form-label">Session ID *</label>
-                <input type="text" class="form-input" id="newSessionId" placeholder="e.g. my-session-1"
-                    pattern="[a-zA-Z0-9_-]+">
-                <small style="color: var(--text-muted); font-size: 12px;">Only letters, numbers, underscore, and dash
-                    allowed</small>
-            </div>
-
-            <div class="form-group" style="text-align: left;">
-                <label class="form-label">Webhook URL (optional)</label>
-                <input type="url" class="form-input" id="newSessionWebhook"
-                    placeholder="https://your-server.com/webhook">
-                <small style="color: var(--text-muted); font-size: 12px;">URL to receive WhatsApp events</small>
-            </div>
-
-            <div class="form-group" style="text-align: left;">
-                <label class="form-label">Metadata (optional)</label>
-                <textarea class="form-input" id="newSessionMetadata" placeholder='{"appName": "MyApp", "userId": "123"}'
-                    style="min-height: 80px; font-family: monospace; font-size: 12px;"></textarea>
-                <small style="color: var(--text-muted); font-size: 12px;">Custom JSON data to associate with this
-                    session</small>
-            </div>
-
-            <div style="display: flex; gap: 12px; justify-content: center; margin-top: 20px;">
-                <button class="btn btn-outline" onclick="closeCreateSessionModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="createSession()">Create & Connect</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Webhooks Modal -->
-    <div class="modal-overlay" id="webhooksModal">
-        <div class="modal" style="max-width: 600px;">
-            <div class="modal-title">🔗 Manage Webhooks</div>
-            <div class="modal-subtitle" id="webhooksSessionName">Session: -</div>
-
-            <!-- Add Webhook Form -->
-            <div
-                style="background: var(--card-bg); border-radius: 8px; padding: 16px; margin-bottom: 16px; text-align: left;">
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label class="form-label">Webhook URL</label>
-                    <input type="url" class="form-input" id="newWebhookUrl"
-                        placeholder="https://your-server.com/webhook">
-                </div>
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label class="form-label">Events (optional - leave empty for all events)</label>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="message"> message
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="message_ack"> message_ack
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="message_revoke"> message_revoke
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="presence"> presence
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="qr"> qr
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="ready"> ready
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="disconnected"> disconnected
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="group_update"> group_update
-                        </label>
-                        <label
-                            style="display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--text-muted);">
-                            <input type="checkbox" class="webhook-event" value="group_participants"> group_participants
-                        </label>
+    <div id="createSessionModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-wa-border">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Buat Sesi WhatsApp Baru</h3>
+                        <p class="text-[11px] text-wa-muted">Inisialisasi instance koneksi WhatsApp multi-device</p>
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="addWebhook()" style="width: 100%;">➕ Add Webhook</button>
+                <button onclick="closeCreateSessionModal()" class="text-wa-muted hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
             </div>
 
-            <!-- Existing Webhooks List -->
-            <div style="text-align: left;">
-                <label class="form-label">Active Webhooks</label>
-                <div id="webhooksList" style="max-height: 200px; overflow-y: auto;">
-                    <div style="text-align: center; color: var(--text-muted); padding: 16px;">Loading...</div>
+            <div class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1.5">Session ID *</label>
+                    <input type="text" id="newSessionId" onkeydown="if(event.key==='Enter') submitCreateSession()" placeholder="misal: CS_Support, TokoOnline_1" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-3 focus:outline-none focus:border-primary font-mono">
+                    <span class="text-[10px] text-wa-muted mt-1 block">Gunakan alfanumerik tanpa spasi (misal: session_1). Tekan Enter untuk inisialisasi.</span>
                 </div>
             </div>
 
-            <div style="margin-top: 16px;">
-                <button class="btn btn-outline" onclick="closeWebhooksModal()">Close</button>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button onclick="closeCreateSessionModal()" class="px-4 py-2 text-xs font-semibold text-wa-muted hover:text-white bg-wa-input border border-wa-border rounded-xl transition-colors">
+                    Batal
+                </button>
+                <button onclick="submitCreateSession()" id="btnSubmitCreateSession" class="px-5 py-2 text-xs font-semibold bg-primary hover:bg-primary-600 text-white rounded-xl shadow-md transition-colors flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                    <span>Inisialisasi Sesi</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div class="toast-container" id="toastContainer"></div>
+    <!-- QR Code Scan Modal -->
+    <div id="qrModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-wa-border">
+                <div class="flex items-center gap-2 text-left">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+                        <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-white">Scan WhatsApp QR</h3>
+                        <p id="qrSessionLabel" class="text-[11px] text-wa-muted font-mono">Session: -</p>
+                    </div>
+                </div>
+                <button onclick="closeQrModal()" class="text-wa-muted hover:text-white p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
 
+            <div id="qrCanvasContainer" class="bg-white p-4 rounded-2xl w-64 h-64 mx-auto flex items-center justify-center shadow-inner relative">
+                <canvas id="qrCanvas" class="w-full h-full"></canvas>
+            </div>
+
+            <div class="space-y-1 text-xs text-wa-muted">
+                <p class="font-semibold text-white">Petunjuk Tautkan Perangkat:</p>
+                <p>1. Buka aplikasi WhatsApp di HP Anda</p>
+                <p>2. Tekan menu Titik Tiga / Setelan &gt; Perangkat Tertaut</p>
+                <p>3. Arahkan kamera ke kode QR di atas</p>
+            </div>
+
+            <button onclick="closeQrModal()" class="w-full py-2 bg-wa-input hover:bg-wa-border border border-wa-border text-xs font-semibold text-white rounded-xl transition-colors">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-5">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg shadow-primary/20">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-base text-white">Chatery Dashboard Login</h3>
+                <p class="text-xs text-wa-muted">Enter credentials to unlock web gateway</p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Username</label>
+                    <input type="text" id="loginUsername" value="admin" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-3 focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Password</label>
+                    <input type="password" id="loginPassword" value="admin" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-3 focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">API Key (Optional)</label>
+                    <input type="text" id="loginApiKey" placeholder="Auto-retrieved on success" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-3 focus:outline-none focus:border-primary font-mono text-[11px]">
+                </div>
+                <div id="loginError" class="text-xs text-rose-400 hidden text-center"></div>
+            </div>
+
+            <button onclick="handleLogin()" id="btnLogin" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white font-semibold text-xs rounded-xl shadow-lg shadow-primary/20 transition-all">
+                Sign In
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== DRAWERS ==================== -->
+
+    <!-- API Tester Drawer -->
+    <div id="apiDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[500px] bg-wa-sidebarHeader border-l border-wa-border z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
+        <div class="h-14 px-4 bg-wa-sidebar border-b border-wa-border flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+                <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+                <span class="font-bold text-xs text-white">Interactive REST API Explorer</span>
+            </div>
+            <button onclick="toggleApiDrawer()" class="p-1 text-wa-muted hover:text-white rounded-lg">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Select Endpoint</label>
+                <select id="apiEndpoint" onchange="updateRequestBody()" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                    <optgroup label="Send Messages">
+                        <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text</option>
+                        <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send image</option>
+                        <option value="POST|/api/whatsapp/chats/send-video">POST /chats/send-video - Send video</option>
+                        <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document - Send file</option>
+                        <option value="POST|/api/whatsapp/chats/send-audio">POST /chats/send-audio - Send voice note</option>
+                    </optgroup>
+                    <optgroup label="Chat History & Overview">
+                        <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Overview list</option>
+                        <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Message log</option>
+                        <option value="POST|/api/whatsapp/contacts">POST /contacts - Contact list</option>
+                    </optgroup>
+                    <optgroup label="Sessions & Diagnostics">
+                        <option value="GET|/api/whatsapp/sessions">GET /sessions - List sessions</option>
+                        <option value="GET|/api/websocket/stats">GET /websocket/stats - Stats</option>
+                        <option value="GET|/api/health">GET /health - Healthcheck</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div id="bodyGroup">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-semibold text-wa-muted uppercase tracking-wider">Payload (JSON)</label>
+                    <button onclick="formatRequestBody()" class="text-[11px] text-primary hover:underline">Format JSON</button>
+                </div>
+                <textarea id="apiBody" rows="7" class="w-full bg-wa-input text-xs text-slate-200 border border-wa-border rounded-xl p-2.5 font-mono focus:outline-none focus:border-primary"></textarea>
+            </div>
+
+            <button onclick="sendApiRequest()" id="btnSendApi" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white font-semibold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                <span>Send API Request</span>
+            </button>
+
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-semibold text-wa-muted uppercase tracking-wider">Response Payload</span>
+                    <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md"></span>
+                </div>
+                <pre class="bg-wa-input border border-wa-border rounded-xl p-3 text-[11px] font-mono text-slate-200 overflow-x-auto max-h-64"><code id="apiResponse" class="language-json">// Response will render here</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Stream Drawer -->
+    <div id="activityDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-wa-sidebarHeader border-l border-wa-border z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
+        <div class="h-14 px-4 bg-wa-sidebar border-b border-wa-border flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2">
+                <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
+                <span class="font-bold text-xs text-white">Live WebSocket Event Log</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="clearActivityLog()" class="text-[11px] text-wa-muted hover:text-white">Clear</button>
+                <button onclick="toggleActivityDrawer()" class="p-1 text-wa-muted hover:text-white rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="activityLogContainer" class="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-[11px]">
+            <div class="text-center py-10 text-wa-muted font-sans text-xs">Waiting for events...</div>
+        </div>
+    </div>
+
+    <!-- ==================== CORE JAVASCRIPT ==================== -->
     <script>
-        document.getElementById('footerYear').textContent = new Date().getFullYear();
-
         const API_BASE = '/api/whatsapp';
         let socket = null;
         let sessions = [];
-        let isAuthenticated = false;
-        let apiKey = '';
+        let apiKey = sessionStorage.getItem('api_key') || '';
+        let currentQrSessionId = null;
 
-        // Get API headers with API key
+        // Toast Helper
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: { popup: 'swal-dark', confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' }
+        });
+
+        function notify(type, message) {
+            Toast.fire({ icon: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'), title: message });
+        }
+
         function getApiHeaders(includeContentType = true) {
-            const headers = {};
-            if (includeContentType) {
-                headers['Content-Type'] = 'application/json';
-            }
-            if (apiKey) {
-                headers['X-Api-Key'] = apiKey;
-            }
-            return headers;
+            const h = {};
+            if (includeContentType) h['Content-Type'] = 'application/json';
+            if (apiKey) h['X-Api-Key'] = apiKey;
+            return h;
         }
 
-        // Wrapper for fetch with API key
         async function apiFetch(url, options = {}) {
-            const headers = getApiHeaders(options.method && options.method !== 'GET');
+            if (!apiKey) {
+                await attemptAutoLogin();
+            }
+            let headers = getApiHeaders(options.method && options.method !== 'GET');
             options.headers = { ...headers, ...options.headers };
-            return fetch(url, options);
+            let response = await fetch(url, options);
+            if (response.status === 401) {
+                const refreshed = await attemptAutoLogin();
+                if (refreshed) {
+                    headers = getApiHeaders(options.method && options.method !== 'GET');
+                    options.headers = { ...headers, ...options.headers };
+                    response = await fetch(url, options);
+                }
+            }
+            return response;
         }
 
-        // Check authentication on page load
+        // Authentication Handlers
         function checkAuth() {
-            const authToken = sessionStorage.getItem('dashboard_auth');
-            const storedApiKey = sessionStorage.getItem('api_key');
-            if (authToken === 'authenticated') {
-                isAuthenticated = true;
-                if (storedApiKey) {
-                    apiKey = storedApiKey;
+            return sessionStorage.getItem('dashboard_auth') === 'authenticated';
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginModal').classList.add('flex');
+            document.getElementById('loginUsername').focus();
+            lucide.createIcons();
+        }
+
+        async function attemptAutoLogin() {
+            try {
+                const res = await fetch('/api/dashboard/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    sessionStorage.setItem('dashboard_auth', 'authenticated');
+                    apiKey = data.apiKey || '';
+                    if (apiKey) sessionStorage.setItem('api_key', apiKey);
+                    return true;
                 }
-                return true;
+            } catch (e) {
+                console.warn('Auto-login could not be performed:', e);
             }
             return false;
         }
 
-        // Login with prompt
-        async function promptLogin() {
-            const username = prompt('🔐 Dashboard Login\n\nUsername:');
-            if (username === null) {
-                alert('❌ Login required to access dashboard');
-                window.location.href = '/';
-                return false;
+        async function handleLogin() {
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+            const k = document.getElementById('loginApiKey').value.trim();
+            const err = document.getElementById('loginError');
+            const btn = document.getElementById('btnLogin');
+
+            if (!u || !p) {
+                err.textContent = 'Please enter username and password';
+                err.classList.remove('hidden');
+                return;
             }
 
-            const password = prompt('🔑 Password:');
-            if (password === null) {
-                alert('❌ Login required to access dashboard');
-                window.location.href = '/';
-                return false;
-            }
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
 
             try {
-                const response = await fetch('/api/dashboard/login', {
+                const res = await fetch('/api/dashboard/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username: u, password: p })
                 });
-
-                const data = await response.json();
+                const data = await res.json();
 
                 if (data.success) {
                     sessionStorage.setItem('dashboard_auth', 'authenticated');
-                    isAuthenticated = true;
-
-                    // Ask for API key (optional)
-                    const inputApiKey = prompt('🔑 API Key (optional - leave blank if not configured):');
-                    if (inputApiKey && inputApiKey.trim()) {
-                        apiKey = inputApiKey.trim();
-                        sessionStorage.setItem('api_key', apiKey);
-                    }
-
-                    alert('✅ Login successful! Welcome to Chatery Dashboard.');
-                    return true;
+                    apiKey = k || data.apiKey || '';
+                    if (apiKey) sessionStorage.setItem('api_key', apiKey);
+                    document.getElementById('loginModal').classList.add('hidden');
+                    document.getElementById('loginModal').classList.remove('flex');
+                    notify('success', 'Logged in successfully');
+                    initDashboard();
                 } else {
-                    alert('❌ ' + data.message);
-                    return promptLogin(); // Retry
+                    err.textContent = data.message || 'Invalid credentials';
+                    err.classList.remove('hidden');
                 }
-            } catch (error) {
-                alert('❌ Login failed: ' + error.message);
-                return promptLogin(); // Retry
+            } catch (e) {
+                err.textContent = 'Network failure: ' + e.message;
+                err.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
             }
         }
 
-        // Logout
         function logout() {
-            sessionStorage.removeItem('dashboard_auth');
-            sessionStorage.removeItem('api_key');
-            apiKey = '';
-            isAuthenticated = false;
-            alert('👋 Logged out successfully');
-            window.location.reload();
+            Swal.fire({
+                title: 'Sign Out',
+                text: 'Keluar dari sesi Chatery Dashboard?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Keluar',
+                cancelButtonText: 'Batal',
+                customClass: { popup: 'swal-dark', confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' }
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    sessionStorage.removeItem('dashboard_auth');
+                    sessionStorage.removeItem('api_key');
+                    window.location.reload();
+                }
+            });
         }
 
-        // Initialize
+        // Initialize App on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', async () => {
-            // Check if already authenticated
-            if (!checkAuth()) {
-                const loggedIn = await promptLogin();
-                if (!loggedIn) return;
+            if (checkAuth() && apiKey) {
+                initDashboard();
+            } else {
+                const loggedIn = await attemptAutoLogin();
+                if (loggedIn) {
+                    initDashboard();
+                } else {
+                    showLoginModal();
+                }
             }
-
-            connectWebSocket();
-            loadSessions();
-            loadWsStats();
-            updateRequestBody();
-
-            // Refresh stats every 30 seconds
-            setInterval(() => {
-                loadSessions();
-                loadWsStats();
-            }, 30000);
+            lucide.createIcons();
         });
 
-        // WebSocket Connection
+        function initDashboard() {
+            connectWebSocket();
+            loadDashboardData();
+            updateRequestBody();
+
+            // Refresh periodically
+            setInterval(() => {
+                loadDashboardData(true);
+            }, 30000);
+        }
+
+        // WebSocket Setup
         function connectWebSocket() {
             socket = io(window.location.origin);
 
             socket.on('connect', () => {
-                updateWsStatus(true);
-                addEvent('connection', 'WebSocket connected');
-
-                // Subscribe to all sessions
-                sessions.forEach(s => socket.emit('subscribe', s.sessionId));
+                addEvent('connection', 'Socket connected to server');
             });
 
             socket.on('disconnect', () => {
-                updateWsStatus(false);
-                addEvent('error', 'WebSocket disconnected');
+                addEvent('error', 'Socket disconnected');
             });
 
-            // WhatsApp Events
             socket.on('qr', (data) => {
-                addEvent('qr', `QR Code generated for ${data.sessionId}`);
-                showQrCode(data.sessionId, data.qrCode);
+                addEvent('qr', `QR code received for ${data.sessionId}`);
+                if (currentQrSessionId === data.sessionId) {
+                    renderQrCode(data.qrCode);
+                }
+                loadDashboardData(true);
             });
 
             socket.on('connection.update', (data) => {
                 addEvent('connection', `${data.sessionId}: ${data.status}`);
-                if (data.status === 'connected') {
+                if (currentQrSessionId === data.sessionId && data.status === 'connected') {
                     closeQrModal();
-                    showToast('success', `Session ${data.sessionId} connected!`);
+                    notify('success', `Sesi ${data.sessionId} berhasil terhubung!`);
                 }
-                loadSessions();
+                loadDashboardData(true);
             });
 
             socket.on('message', (data) => {
-                const from = data.message?.from || 'unknown';
-                const text = data.message?.text || data.message?.caption || '[media]';
-                addEvent('message', `From ${from}: ${text.substring(0, 50)}...`);
-            });
-
-            socket.on('message.sent', (data) => {
-                addEvent('message', `Message sent to ${data.message?.to || 'unknown'}`);
+                const msg = data.message;
+                const from = msg?.senderName || msg?.senderPhone || msg?.from || 'Unknown';
+                addEvent('message', `From ${from}`);
             });
 
             socket.on('logged.out', (data) => {
                 addEvent('error', `Session ${data.sessionId} logged out`);
-                loadSessions();
+                loadDashboardData(true);
             });
         }
 
-        function updateWsStatus(connected) {
-            const dot = document.getElementById('wsStatus');
-            const text = document.getElementById('wsStatusText');
-            if (connected) {
-                dot.classList.add('connected');
-                text.textContent = 'WebSocket Connected';
-            } else {
-                dot.classList.remove('connected');
-                text.textContent = 'WebSocket Disconnected';
-            }
-        }
-
-        // Sessions
-        async function loadSessions() {
+        // Load Dashboard Data & Stats
+        async function loadDashboardData(silent = false) {
             try {
-                const response = await apiFetch(`${API_BASE}/sessions`);
-                const result = await response.json();
+                // 1. Fetch Sessions
+                const res = await apiFetch(`${API_BASE}/sessions`);
+                const result = await res.json();
 
                 if (result.success) {
-                    sessions = result.data;
-                    renderSessions();
-                    updateStats();
-                    updateQuickSendDropdown();
+                    sessions = result.data || [];
+                    renderDashboardMetrics(sessions);
+                    renderSessionsGrid(sessions);
 
                     // Subscribe to all sessions
                     if (socket && socket.connected) {
                         sessions.forEach(s => socket.emit('subscribe', s.sessionId));
                     }
                 }
-            } catch (error) {
-                console.error('Error loading sessions:', error);
+
+                // 2. Fetch WebSocket Stats
+                try {
+                    const wsRes = await fetch('/api/websocket/stats');
+                    const wsData = await wsRes.json();
+                    if (wsData.success && wsData.data) {
+                        document.getElementById('statWsClients').textContent = `${wsData.data.totalClients || 0} clients connected`;
+                    }
+                } catch (e) {}
+
+                // 3. Fetch Total Chats count for connected session
+                const connectedSession = sessions.find(s => s.status === 'connected');
+                if (connectedSession) {
+                    try {
+                        const overviewRes = await apiFetch(`${API_BASE}/chats/overview`, {
+                            method: 'POST',
+                            body: JSON.stringify({ sessionId: connectedSession.sessionId, limit: 1 })
+                        });
+                        const overviewData = await overviewRes.json();
+                        if (overviewData.success && overviewData.data) {
+                            document.getElementById('statTotalChats').textContent = overviewData.data.total || 0;
+                        }
+                    } catch (e) {}
+                } else {
+                    document.getElementById('statTotalChats').textContent = '0';
+                }
+
+            } catch (e) {
+                if (!silent) console.error('Failed to load dashboard data:', e);
             }
         }
 
-        function renderSessions() {
-            const container = document.getElementById('sessionsList');
+        function renderDashboardMetrics(sessionsList) {
+            const total = sessionsList.length;
+            const connected = sessionsList.filter(s => s.status === 'connected').length;
 
-            if (sessions.length === 0) {
+            document.getElementById('statTotalSessions').textContent = total;
+            document.getElementById('statConnectedSessions').textContent = connected;
+        }
+
+        function renderSessionsGrid(sessionsList) {
+            const container = document.getElementById('sessionsGridContainer');
+            const searchVal = (document.getElementById('sessionSearchInput')?.value || '').toLowerCase().trim();
+
+            const filtered = sessionsList.filter(s => {
+                if (!searchVal) return true;
+                const name = (s.name || '').toLowerCase();
+                const id = (s.sessionId || '').toLowerCase();
+                const phone = (s.phoneNumber || '').toLowerCase();
+                return name.includes(searchVal) || id.includes(searchVal) || phone.includes(searchVal);
+            });
+
+            if (filtered.length === 0) {
                 container.innerHTML = `
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📱</div>
-                        <p>No sessions yet</p>
-                        <p style="font-size: 13px; margin-top: 8px;">Create a new session to get started</p>
+                    <div class="col-span-full text-center py-16 bg-wa-input/40 border border-wa-border/50 rounded-2xl select-none">
+                        <i data-lucide="layers" class="w-8 h-8 mx-auto mb-2 opacity-30 text-primary"></i>
+                        <h4 class="text-xs font-semibold text-white">Tidak ada sesi ditemukan</h4>
+                        <p class="text-[11px] text-wa-muted mt-1">Buat sesi baru untuk menghubungkan akun WhatsApp Anda.</p>
+                        <button onclick="showCreateSessionModal()" class="mt-4 px-3.5 py-1.5 text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-xl transition-colors inline-flex items-center gap-1.5">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                            <span>Tambah Sesi Pertama</span>
+                        </button>
                     </div>
                 `;
+                lucide.createIcons();
                 return;
             }
 
-            container.innerHTML = sessions.map(session => {
-                const webhookCount = session.webhooks ? session.webhooks.length : 0;
-                return `
-                <div class="session-item">
-                    <div class="session-avatar">${session.name ? session.name[0].toUpperCase() : session.sessionId[0].toUpperCase()}</div>
-                    <div class="session-info">
-                        <div class="session-name">${session.name || session.sessionId}</div>
-                        <div class="session-phone">${session.phoneNumber || session.sessionId}</div>
-                        ${webhookCount > 0 ? `<div class="session-webhooks" style="font-size: 11px; color: #10b981;">🔗 ${webhookCount} webhook${webhookCount > 1 ? 's' : ''}</div>` : ''}
-                    </div>
-                    <div class="session-status ${session.status}">
-                        <div class="status-dot ${session.status === 'connected' ? 'connected' : ''}"></div>
-                        ${session.status}
-                    </div>
-                    <div class="session-actions">
-                        ${session.status === 'qr_ready' ? `
-                            <button class="btn btn-outline btn-icon" onclick="showQrForSession('${session.sessionId}')" title="Show QR">
-                                📷
-                            </button>
-                        ` : ''}
-                        ${session.status !== 'connected' ? `
-                            <button class="btn btn-outline btn-icon" onclick="reconnectSession('${session.sessionId}')" title="Reconnect">
-                                🔄
-                            </button>
-                        ` : ''}
-                        <button class="btn btn-outline btn-icon" onclick="showWebhooksModal('${session.sessionId}')" title="Manage Webhooks">
-                            🔗
-                        </button>
-                        <button class="btn btn-danger btn-icon" onclick="deleteSession('${session.sessionId}')" title="Delete">
-                            🗑️
-                        </button>
-                    </div>
-                </div>
-            `}).join('');
-        }
+            container.innerHTML = filtered.map(s => {
+                const title = s.name || s.sessionId;
+                const initial = title ? title[0].toUpperCase() : 'W';
+                const isConnected = s.status === 'connected';
+                const isQrReady = s.status === 'qr_ready';
 
-        function updateStats() {
-            const connected = sessions.filter(s => s.status === 'connected').length;
-            const disconnected = sessions.filter(s => s.status !== 'connected').length;
-
-            document.getElementById('statSessions').textContent = sessions.length;
-            document.getElementById('statConnected').textContent = connected;
-            document.getElementById('statDisconnected').textContent = disconnected;
-        }
-
-        async function loadWsStats() {
-            try {
-                const response = await fetch('/api/websocket/stats');
-                const result = await response.json();
-                if (result.success && result.data) {
-                    document.getElementById('statWsClients').textContent = result.data.totalConnections || 0;
+                let statusBadge = '';
+                if (isConnected) {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span>Connected</span>
+                        </span>
+                    `;
+                } else if (isQrReady) {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span>Scan QR Ready</span>
+                        </span>
+                    `;
+                } else {
+                    statusBadge = `
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                            <span>Offline</span>
+                        </span>
+                    `;
                 }
-            } catch (error) {
-                console.error('Error loading WS stats:', error);
-            }
+
+                return `
+                <div class="bg-wa-sidebarHeader/80 border border-wa-border rounded-2xl p-5 flex flex-col justify-between shadow-sm hover:border-wa-border/80 transition-all space-y-4">
+                    
+                    <!-- Card Top: Avatar, Name, Status -->
+                    <div class="space-y-3">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-2xl bg-wa-input flex items-center justify-center font-bold text-sm text-primary border border-wa-border shrink-0 shadow-inner">
+                                    ${initial}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="font-bold text-sm text-white truncate max-w-[160px]">${escapeHtml(title)}</div>
+                                    <div class="flex items-center gap-1.5 text-[11px] text-wa-muted font-mono mt-0.5">
+                                        <span>ID: ${escapeHtml(s.sessionId)}</span>
+                                        <button onclick="copyToClipboard('${escapeHtml(s.sessionId)}')" class="hover:text-primary transition-colors" title="Copy Session ID">
+                                            <i data-lucide="copy" class="w-3 h-3"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            ${statusBadge}
+                        </div>
+
+                        <!-- Card Mid: Phone Number -->
+                        <div class="p-2.5 rounded-xl bg-wa-input/60 border border-wa-border/50 flex items-center justify-between text-xs">
+                            <span class="text-wa-muted flex items-center gap-1.5">
+                                <i data-lucide="phone" class="w-3.5 h-3.5 text-primary"></i>
+                                <span>Nomor Telepon:</span>
+                            </span>
+                            <span class="font-semibold text-white font-mono">${s.phoneNumber ? '+' + s.phoneNumber : 'Belum Ditautkan'}</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Bottom: Action Buttons -->
+                    <div class="space-y-2 pt-2 border-t border-wa-border/60">
+                        <div class="flex items-center gap-2">
+                            <a href="/wa-web?session=${encodeURIComponent(s.sessionId)}" class="flex-1 py-2 text-center text-xs font-semibold bg-primary hover:bg-primary-600 text-white rounded-xl shadow-sm shadow-primary/20 transition-all flex items-center justify-center gap-1.5">
+                                <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                                <span>Buka di WA Web</span>
+                            </a>
+
+                            ${isQrReady || !isConnected ? `
+                                <button onclick="openSessionQr('${escapeHtml(s.sessionId)}')" class="px-3 py-2 text-xs font-semibold bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/25 rounded-xl transition-colors flex items-center gap-1" title="Scan QR Code">
+                                    <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                                    <span>QR</span>
+                                </button>
+                            ` : ''}
+
+                            ${!isConnected ? `
+                                <button onclick="connectSession('${escapeHtml(s.sessionId)}')" class="px-3 py-2 text-xs font-semibold bg-wa-input hover:bg-wa-border text-slate-200 border border-wa-border rounded-xl transition-colors flex items-center gap-1" title="Connect / Reconnect">
+                                    <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                                </button>
+                            ` : ''}
+
+                            <button onclick="deleteSessionConfirm('${escapeHtml(s.sessionId)}')" class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/20 rounded-xl transition-colors" title="Hapus Sesi">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
         }
 
-        function updateQuickSendDropdown() {
-            const select = document.getElementById('quickSession');
-            const connectedSessions = sessions.filter(s => s.status === 'connected');
-
-            select.innerHTML = '<option value="">Select session...</option>' +
-                connectedSessions.map(s => `<option value="${s.sessionId}">${s.name || s.sessionId}</option>`).join('');
+        function filterSessionsList() {
+            renderSessionsGrid(sessions);
         }
 
-        // Create Session
-        function showCreateSession() {
-            document.getElementById('createSessionModal').classList.add('active');
+        // Create Session Flow
+        function showCreateSessionModal() {
+            document.getElementById('createSessionModal').classList.remove('hidden');
+            document.getElementById('createSessionModal').classList.add('flex');
             document.getElementById('newSessionId').focus();
+            lucide.createIcons();
         }
 
         function closeCreateSessionModal() {
-            document.getElementById('createSessionModal').classList.remove('active');
+            document.getElementById('createSessionModal').classList.add('hidden');
+            document.getElementById('createSessionModal').classList.remove('flex');
             document.getElementById('newSessionId').value = '';
-            document.getElementById('newSessionWebhook').value = '';
-            document.getElementById('newSessionMetadata').value = '';
         }
 
-        async function createSession() {
-            const sessionId = document.getElementById('newSessionId').value.trim();
-            const webhookUrl = document.getElementById('newSessionWebhook').value.trim();
-            const metadataText = document.getElementById('newSessionMetadata').value.trim();
-
-            if (!sessionId) {
-                showToast('error', 'Please enter a session ID');
+        async function submitCreateSession() {
+            const rawId = document.getElementById('newSessionId').value.trim();
+            if (!rawId) {
+                notify('error', 'Session ID wajib diisi');
                 return;
             }
 
-            if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) {
-                showToast('error', 'Invalid session ID format');
-                return;
-            }
-
-            // Build request body
-            const body = {};
-
-            // Parse metadata if provided
-            if (metadataText) {
-                try {
-                    body.metadata = JSON.parse(metadataText);
-                } catch (e) {
-                    showToast('error', 'Invalid JSON in metadata field');
-                    return;
-                }
-            }
-
-            // Add webhook if provided
-            if (webhookUrl) {
-                try {
-                    new URL(webhookUrl);
-                    body.webhooks = [{ url: webhookUrl }];
-                } catch (e) {
-                    showToast('error', 'Invalid webhook URL');
-                    return;
-                }
-            }
+            const cleanId = rawId.replace(/[^a-zA-Z0-9_-]/g, '');
+            const btn = document.getElementById('btnSubmitCreateSession');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Membuat...</span>';
+            lucide.createIcons();
 
             try {
-                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/connect`, {
-                    method: 'POST',
-                    body: JSON.stringify(body)
-                });
-                const result = await response.json();
-
-                if (result.success) {
-                    closeCreateSessionModal();
-                    showToast('success', 'Session created! Scan QR code to connect.');
-
-                    // Subscribe to this session
-                    if (socket && socket.connected) {
-                        socket.emit('subscribe', sessionId);
-                    }
-
-                    loadSessions();
-
-                    // Show QR modal after a short delay
-                    setTimeout(() => showQrForSession(sessionId), 1000);
-                } else {
-                    showToast('error', result.message);
-                }
-            } catch (error) {
-                showToast('error', 'Failed to create session');
-            }
-        }
-
-        async function showQrForSession(sessionId) {
-            document.getElementById('qrSessionName').textContent = `Session: ${sessionId}`;
-            document.getElementById('qrContainer').innerHTML = '<div class="qr-loading"><div class="spinner"></div></div>';
-            document.getElementById('qrModal').classList.add('active');
-
-            try {
-                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/qr`);
-                const result = await response.json();
-
-                if (result.success && result.data?.qrCode) {
-                    showQrCode(sessionId, result.data.qrCode);
-                } else {
-                    document.getElementById('qrContainer').innerHTML = '<div class="qr-loading">QR not available</div>';
-                }
-            } catch (error) {
-                document.getElementById('qrContainer').innerHTML = '<div class="qr-loading">Failed to load QR</div>';
-            }
-        }
-
-        function showQrCode(sessionId, qrCode) {
-            document.getElementById('qrSessionName').textContent = `Session: ${sessionId}`;
-            document.getElementById('qrContainer').innerHTML = `<img src="${qrCode}" alt="QR Code">`;
-            document.getElementById('qrModal').classList.add('active');
-        }
-
-        function closeQrModal() {
-            document.getElementById('qrModal').classList.remove('active');
-        }
-
-        async function reconnectSession(sessionId) {
-            try {
-                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}/connect`, {
+                const res = await apiFetch(`${API_BASE}/sessions/${cleanId}/connect`, {
                     method: 'POST',
                     body: JSON.stringify({})
                 });
-                const result = await response.json();
+                const result = await res.json();
 
                 if (result.success) {
-                    showToast('success', 'Reconnecting...');
-                    loadSessions();
+                    closeCreateSessionModal();
+                    notify('success', `Sesi ${cleanId} berhasil diinisialisasi`);
+                    loadDashboardData();
+                    // Open QR Modal immediately
+                    openSessionQr(cleanId);
                 } else {
-                    showToast('error', result.message);
+                    notify('error', result.message || 'Gagal membuat sesi');
                 }
-            } catch (error) {
-                showToast('error', 'Failed to reconnect');
+            } catch (e) {
+                notify('error', 'Network failure: ' + e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="check" class="w-3.5 h-3.5"></i><span>Inisialisasi Sesi</span>';
+                lucide.createIcons();
             }
         }
 
-        async function deleteSession(sessionId) {
-            if (!confirm(`Are you sure you want to delete session "${sessionId}"?`)) {
-                return;
+        let qrPollInterval = null;
+        let qrPollCount = 0;
+
+        // QR Code Modal & Rendering with resilient polling
+        async function openSessionQr(sessionId) {
+            currentQrSessionId = sessionId;
+            document.getElementById('qrSessionLabel').textContent = `Session: ${sessionId}`;
+            document.getElementById('qrModal').classList.remove('hidden');
+            document.getElementById('qrModal').classList.add('flex');
+            document.getElementById('qrCanvasContainer').innerHTML = `
+                <div class="text-center text-xs text-wa-muted p-4">
+                    <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2 text-primary"></i>
+                    <p class="font-medium text-slate-300">Menghubungkan ke WhatsApp...</p>
+                    <p class="text-[11px] text-wa-muted mt-1">Menunggu QR Code dari server...</p>
+                </div>
+            `;
+            lucide.createIcons();
+
+            // Subscribe via WebSocket
+            if (socket && socket.connected) {
+                socket.emit('subscribe', sessionId);
             }
 
-            try {
-                const response = await apiFetch(`${API_BASE}/sessions/${sessionId}`, {
-                    method: 'DELETE'
-                });
-                const result = await response.json();
+            if (qrPollInterval) clearInterval(qrPollInterval);
+            qrPollCount = 0;
 
-                if (result.success) {
-                    showToast('success', 'Session deleted');
-                    loadSessions();
-                } else {
-                    showToast('error', result.message);
+            const fetchQr = async () => {
+                qrPollCount++;
+                try {
+                    const res = await apiFetch(`${API_BASE}/sessions/${sessionId}/qr`);
+                    const result = await res.json();
+                    if (result.success && result.data) {
+                        if (result.data.status === 'connected' || result.message === 'Already connected to WhatsApp') {
+                            if (qrPollInterval) clearInterval(qrPollInterval);
+                            closeQrModal();
+                            notify('success', `Sesi ${sessionId} berhasil terhubung!`);
+                            loadDashboardData(true);
+                            return;
+                        }
+
+                        if (result.data.qrCode) {
+                            if (qrPollInterval) clearInterval(qrPollInterval);
+                            renderQrCode(result.data.qrCode);
+                            return;
+                        }
+                    }
+
+                    if (qrPollCount > 30) {
+                        if (qrPollInterval) clearInterval(qrPollInterval);
+                        document.getElementById('qrCanvasContainer').innerHTML = `
+                            <div class="text-xs text-rose-400 text-center py-4 space-y-2">
+                                <p>QR generation timed out.</p>
+                                <button onclick="openSessionQr('${sessionId}')" class="px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-semibold">
+                                    Coba Lagi
+                                </button>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                    }
+                } catch (e) {}
+            };
+
+            fetchQr();
+            qrPollInterval = setInterval(fetchQr, 1500);
+        }
+
+        function renderQrCode(qrData) {
+            const container = document.getElementById('qrCanvasContainer');
+            if (qrData.startsWith('data:image')) {
+                container.innerHTML = `<img src="${qrData}" alt="WhatsApp QR Code" class="w-56 h-56 object-contain rounded-xl shadow mx-auto">`;
+            } else {
+                container.innerHTML = '<canvas id="qrCanvas" class="w-full h-full"></canvas>';
+                const canvas = document.getElementById('qrCanvas');
+                if (window.QRCode && canvas) {
+                    QRCode.toCanvas(canvas, qrData, {
+                        width: 220,
+                        margin: 1,
+                        color: { dark: '#000000', light: '#ffffff' }
+                    }, (error) => {
+                        if (error) console.error('QR Render error:', error);
+                    });
                 }
-            } catch (error) {
-                showToast('error', 'Failed to delete session');
             }
         }
 
-        // Quick Send
-        async function quickSend() {
-            const sessionId = document.getElementById('quickSession').value;
-            const phone = document.getElementById('quickPhone').value.trim();
-            const message = document.getElementById('quickMessage').value.trim();
-
-            if (!sessionId || !phone || !message) {
-                showToast('error', 'Please fill all fields');
-                return;
+        function closeQrModal() {
+            if (qrPollInterval) {
+                clearInterval(qrPollInterval);
+                qrPollInterval = null;
             }
+            document.getElementById('qrModal').classList.add('hidden');
+            document.getElementById('qrModal').classList.remove('flex');
+            currentQrSessionId = null;
+        }
 
+        // Connect & Delete Actions
+        async function connectSession(sessionId) {
+            notify('info', `Menghubungkan sesi ${sessionId}...`);
             try {
-                const response = await apiFetch(`${API_BASE}/chats/send-text`, {
+                const res = await apiFetch(`${API_BASE}/sessions/${sessionId}/connect`, {
                     method: 'POST',
-                    body: JSON.stringify({ sessionId, chatId: phone, message })
+                    body: JSON.stringify({})
                 });
-                const result = await response.json();
-
+                const result = await res.json();
                 if (result.success) {
-                    showToast('success', 'Message sent!');
-                    document.getElementById('quickMessage').value = '';
+                    notify('success', result.message || 'Proses koneksi dimulai');
+                    loadDashboardData();
                 } else {
-                    showToast('error', result.message);
+                    notify('error', result.message || 'Koneksi gagal');
                 }
-            } catch (error) {
-                showToast('error', 'Failed to send message');
+            } catch (e) {
+                notify('error', e.message);
             }
         }
 
-        // API Tester
+        function deleteSessionConfirm(sessionId) {
+            Swal.fire({
+                title: 'Hapus Sesi?',
+                text: `Apakah Anda yakin ingin menghapus sesi "${sessionId}"? Sesi akan diputuskan dan kredensial dihapus.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Hapus',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#e11d48',
+                customClass: { popup: 'swal-dark', cancelButton: 'btn-swal-cancel' }
+            }).then(async (res) => {
+                if (res.isConfirmed) {
+                    try {
+                        const r = await apiFetch(`${API_BASE}/sessions/${sessionId}`, { method: 'DELETE' });
+                        const result = await r.json();
+                        if (result.success) {
+                            notify('success', `Sesi ${sessionId} berhasil dihapus`);
+                            loadDashboardData();
+                        } else {
+                            notify('error', result.message || 'Gagal menghapus');
+                        }
+                    } catch (e) {
+                        notify('error', e.message);
+                    }
+                }
+            });
+        }
+
+        // Drawers Toggle
+        function toggleApiDrawer() {
+            const drawer = document.getElementById('apiDrawer');
+            drawer.classList.toggle('translate-x-full');
+            lucide.createIcons();
+        }
+
+        function toggleActivityDrawer() {
+            const drawer = document.getElementById('activityDrawer');
+            drawer.classList.toggle('translate-x-full');
+            document.getElementById('unreadEventsBadge').classList.add('hidden');
+            document.getElementById('unreadEventsBadge').textContent = '0';
+            lucide.createIcons();
+        }
+
+        function addEvent(type, text) {
+            const container = document.getElementById('activityLogContainer');
+            if (container.children.length === 1 && container.children[0].classList.contains('text-center')) {
+                container.innerHTML = '';
+            }
+
+            const item = document.createElement('div');
+            item.className = 'p-2 rounded-lg bg-wa-input border border-wa-border flex items-center justify-between text-[11px]';
+            const time = new Date().toLocaleTimeString();
+
+            item.innerHTML = `
+                <div class="flex items-center gap-2 truncate">
+                    <span class="w-1.5 h-1.5 rounded-full ${type === 'error' ? 'bg-rose-400' : (type === 'connection' ? 'bg-emerald-400' : 'bg-primary')}"></span>
+                    <span class="text-white font-medium">[${type.toUpperCase()}]</span>
+                    <span class="text-wa-muted truncate">${escapeHtml(text)}</span>
+                </div>
+                <span class="text-[10px] text-slate-500 shrink-0 ml-2">${time}</span>
+            `;
+            container.prepend(item);
+
+            const badge = document.getElementById('unreadEventsBadge');
+            const drawer = document.getElementById('activityDrawer');
+            if (drawer.classList.contains('translate-x-full')) {
+                badge.classList.remove('hidden');
+                badge.textContent = parseInt(badge.textContent || '0') + 1;
+            }
+        }
+
+        function clearActivityLog() {
+            document.getElementById('activityLogContainer').innerHTML = '<div class="text-center py-10 text-wa-muted font-sans text-xs">Log cleared</div>';
+        }
+
+        // Interactive API Tester Logic
+        function formatRequestBody() {
+            const area = document.getElementById('apiBody');
+            try {
+                const parsed = JSON.parse(area.value);
+                area.value = JSON.stringify(parsed, null, 2);
+                notify('success', 'JSON formatted');
+            } catch (e) {
+                notify('error', 'Malformed JSON: ' + e.message);
+            }
+        }
+
         function updateRequestBody() {
             const endpoint = document.getElementById('apiEndpoint').value;
             const [method, path] = endpoint.split('|');
-            const sessionIdGroup = document.getElementById('sessionIdGroup');
-            const jobIdGroup = document.getElementById('jobIdGroup');
+            const bodyGroup = document.getElementById('bodyGroup');
             const bodyTextarea = document.getElementById('apiBody');
-            const apiHelp = document.getElementById('apiHelp');
-
-            // Show/hide session ID input for URL params
-            if (path.includes('{sessionId}')) {
-                sessionIdGroup.style.display = 'block';
-            } else {
-                sessionIdGroup.style.display = 'none';
-            }
-
-            // Show/hide job ID input for URL params
-            if (path.includes('{jobId}')) {
-                jobIdGroup.style.display = 'block';
-            } else {
-                jobIdGroup.style.display = 'none';
-            }
 
             let body = {};
             let showBody = true;
-            let helpText = '';
 
-            // Sessions
-            if (path.includes('/sessions') && method === 'GET' && !path.includes('/qr/image')) {
-                showBody = false;
-                if (path.includes('/qr')) {
-                    helpText = '📱 Get QR code as base64 string in JSON format.';
-                } else if (path.includes('/status')) {
-                    helpText = '📊 Get current session connection status.';
-                }
-            } else if (path.includes('/sessions') && path.includes('/qr/image') && method === 'GET') {
-                showBody = false;
-                helpText = '🖼️ Get QR code as PNG image. Opens in new tab for easy scanning.';
-            } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'POST') {
-                body = {
-                    url: 'https://your-server.com/webhook',
-                    events: ['message', 'message_ack', 'presence']
-                };
-                helpText = `🔗 Add a webhook URL to receive events.<br>
-                    <code>url</code>: Your webhook endpoint<br>
-                    <code>events</code>: (optional) Array of events to receive. Available events:<br>
-                    <code>qr</code>, <code>ready</code>, <code>authenticated</code>, <code>disconnected</code>, <code>message</code>, <code>message_ack</code>, <code>message_revoke</code>, <code>presence</code>, <code>group_update</code>, <code>group_participants</code>`;
-            } else if (path.includes('/sessions') && path.includes('/webhooks') && method === 'DELETE') {
-                body = {
-                    url: 'https://your-server.com/webhook'
-                };
-                helpText = '🗑️ Remove a webhook by its URL.';
-            } else if (path.includes('/sessions') && path.includes('/config') && method === 'PATCH') {
-                body = {
-                    metadata: {
-                        appName: 'My App',
-                        userId: 'user123'
-                    },
-                    webhooks: [
-                        { url: 'https://your-server.com/webhook', events: ['message', 'message_ack'] }
-                    ]
-                };
-                helpText = `⚙️ Update session configuration.<br>
-                    <code>metadata</code>: Custom data to associate with session<br>
-                    <code>webhooks</code>: Array of webhook configurations`;
-            } else if (path.includes('/sessions') && method === 'DELETE') {
-                showBody = false;
-                helpText = '⚠️ This will delete the session and all associated data including media files.';
-            } else if (path.includes('/sessions') && path.includes('/connect')) {
-                showBody = false;
-                helpText = '📱 After connecting, scan the QR code to link your WhatsApp.';
-            }
-            // Messaging
-            else if (path.includes('/chats/send-text')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    message: 'Hello from Chatery API!',
-                    typingTime: 0,
-                    replyTo: null,
-                    mentions: []
-                };
-                helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to. <code>mentions</code>: Array of JIDs/phone numbers to mention.';
+            const firstSession = sessions[0]?.sessionId || 'test';
+
+            if (path.includes('/chats/send-text')) {
+                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', message: 'Hello from Chatery!' };
             } else if (path.includes('/chats/send-image')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    imageUrl: 'https://example.com/image.jpg',
-                    caption: 'Image caption',
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '🖼️ <code>imageUrl</code>: Direct URL to image. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to (optional).';
-            } else if (path.includes('/chats/send-document')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    documentUrl: 'https://example.com/document.pdf',
-                    filename: 'document.pdf',
-                    mimetype: 'application/pdf',
-                    caption: 'Document caption here',
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '📄 <code>caption</code>: Optional text caption. <code>mimetype</code>: MIME type. <code>replyTo</code>: Message ID to reply to (optional).';
-            } else if (path.includes('/chats/send-audio')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    audioUrl: 'https://example.com/audio.ogg',
-                    ptt: true,
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '🎵 <b>OGG format required!</b> <code>audioUrl</code>: Direct URL to .ogg audio file. <code>ptt</code>: true = voice note, false = audio file. Convert: <code>ffmpeg -i input.mp3 -c:a libopus output.ogg</code>';
-            } else if (path.includes('/chats/send-location')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    latitude: -6.2088,
-                    longitude: 106.8456,
-                    name: 'Jakarta, Indonesia',
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '📍 GPS coordinates. <code>replyTo</code>: Message ID to reply to (optional).';
-            } else if (path.includes('/chats/send-contact')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    contactName: 'John Doe',
-                    contactPhone: '628987654321',
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '👤 <code>contactPhone</code>: Contact phone number. <code>replyTo</code>: Message ID to reply to (optional).';
-            } else if (path.includes('/chats/send-poll')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    question: 'What is your favorite color?',
-                    options: ['Red', 'Blue', 'Green', 'Yellow'],
-                    selectableCount: 1,
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '📊 <code>options</code>: 2-12 choices. <code>selectableCount</code>: 1 for single choice, more for multiple. <code>replyTo</code>: Message ID to reply to (optional).';
-            } else if (path.includes('/chats/send-button')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    text: 'Please choose an option:',
-                    footer: 'Powered by Chatery',
-                    buttons: ['Option 1', 'Option 2', 'Option 3'],
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '⚠️ <b>DEPRECATED:</b> Buttons deprecated by WhatsApp. This now sends a Poll instead. Use <code>/send-poll</code> for better control.';
-            } else if (path.includes('/chats/send-reaction')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    messageId: 'ABCDEF123456',
-                    emoji: '👍'
-                };
-                helpText = '❤️ <code>emoji</code>: Emoji character to react with (e.g. 👍, ❤️, 😂). Pass empty string <code>""</code> to remove reaction.';
-            } else if (path.includes('/chats/delete-message')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    messageId: 'ABCDEF123456'
-                };
-                helpText = '🗑️ <code>messageId</code>: ID of the message to delete / revoke (delete for everyone).';
+                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Sample Photo' };
             } else if (path.includes('/chats/send-video')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    videoUrl: 'https://example.com/video.mp4',
-                    caption: 'Check this video!',
-                    gifPlayback: false,
-                    typingTime: 0,
-                    replyTo: null
-                };
-                helpText = '🎥 <code>videoUrl</code>: Direct URL to video. <code>gifPlayback</code>: Set true to play like a GIF.';
-            } else if (path.includes('/chats/send-sticker')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    stickerUrl: 'https://example.com/sticker.webp',
-                    replyTo: null
-                };
-                helpText = '✨ <code>stickerUrl</code>: Direct URL to webp/image sticker.';
-            } else if (path.includes('/chats/pin-message')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    messageId: 'ABCDEF123456',
-                    time: 604800,
-                    fromMe: false
-                };
-                helpText = '📌 <code>time</code>: Duration in seconds (86400 = 24h, 604800 = 7d, 2592000 = 30d, 0 = unpin).';
-            } else if (path.includes('/chats/star-message')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    messageId: 'ABCDEF123456',
-                    star: true,
-                    fromMe: false
-                };
-                helpText = '⭐ <code>star</code>: true to star, false to unstar message.';
-            } else if (path.endsWith('/chats/pin')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    pin: true
-                };
-                helpText = '📌 <code>pin</code>: true to pin chat to top of chat list, false to unpin.';
-            } else if (path.includes('/chats/archive')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    archive: true
-                };
-                helpText = '📦 <code>archive</code>: true to archive chat, false to unarchive.';
-            } else if (path.includes('/chats/mute')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    duration: 28800
-                };
-                helpText = '🔕 <code>duration</code>: Mute duration in seconds (28800 = 8h, 604800 = 1 week, -1 = forever, null/0 = unmute).';
-            } else if (path.includes('/chats/presence')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    presence: 'composing'
-                };
-                helpText = '✍️ <code>presence</code>: <code>composing</code> (typing), <code>recording</code> (recording audio), <code>paused</code>, <code>available</code>, <code>unavailable</code>';
-            } else if (path.includes('/chats/check-number')) {
-                body = {
-                    sessionId: '',
-                    phone: '628123456789'
-                };
-                helpText = '✅ Check if a phone number is registered on WhatsApp.';
-            } else if (path.includes('/chats/profile-picture')) {
-                body = {
-                    sessionId: '',
-                    phone: '628123456789'
-                };
-                helpText = '🖼️ Get the profile picture URL of a WhatsApp user.';
-            } else if (path.includes('/contacts/status')) {
-                body = {
-                    sessionId: '',
-                    phone: '628123456789'
-                };
-                helpText = '💬 Get the status / bio / About text of a contact.';
-            } else if (path.includes('/contacts/business-profile')) {
-                body = {
-                    sessionId: '',
-                    phone: '628123456789'
-                };
-                helpText = '🏢 Get WhatsApp Business profile (description, address, email, websites).';
-            } else if (path.includes('/contacts/blocklist')) {
-                body = {
-                    sessionId: ''
-                };
-                helpText = '🚫 Get list of blocked WhatsApp contacts.';
-            } else if (path.includes('/contacts/block')) {
-                body = {
-                    sessionId: '',
-                    phone: '628123456789',
-                    action: 'block'
-                };
-                helpText = '⛔ <code>action</code>: <code>block</code> or <code>unblock</code>.';
-            } else if (path.includes('/profile/status')) {
-                body = {
-                    sessionId: '',
-                    status: 'Hey there! I am using WhatsApp.'
-                };
-                helpText = '✍️ Update own account status / bio (About text).';
-            } else if (path.includes('/profile/name')) {
-                body = {
-                    sessionId: '',
-                    name: 'My Business'
-                };
-                helpText = '🏷️ Update own account display name.';
-            } else if (path.includes('/groups/invite-info')) {
-                body = {
-                    sessionId: '',
-                    inviteCode: 'https://chat.whatsapp.com/ABC123xyz'
-                };
-                helpText = 'ℹ️ Get group info and metadata from an invite link without joining.';
-            }
-            // Bulk Messaging
-            else if (path.includes('/chats/send-bulk') && !path.includes('image') && !path.includes('document')) {
-                body = {
-                    sessionId: '',
-                    recipients: ['628123456789', '628987654321', '628111222333'],
-                    message: 'Hello from Chatery Bulk API!',
-                    delay: 1000
-                };
-                helpText = `📤 Send bulk text messages (runs in background).<br>
-                    <code>recipients</code>: Array of phone numbers (max 100)<br>
-                    <code>message</code>: Text message to send<br>
-                    <code>delay</code>: Delay between messages in ms (default: 1000)<br>
-                    ⚡ Returns jobId immediately, use bulk-status to track progress.`;
-            } else if (path.includes('/chats/send-bulk-image')) {
-                body = {
-                    sessionId: '',
-                    recipients: ['628123456789', '628987654321', '628111222333'],
-                    imageUrl: 'https://example.com/image.jpg',
-                    caption: 'Bulk image caption',
-                    delay: 1500
-                };
-                helpText = `🖼️ Send bulk images (runs in background).<br>
-                    <code>recipients</code>: Array of phone numbers (max 100)<br>
-                    <code>imageUrl</code>: Direct URL to image<br>
-                    <code>caption</code>: Optional image caption<br>
-                    <code>delay</code>: Delay between messages in ms (default: 1000)<br>
-                    ⚡ Returns jobId immediately, use bulk-status to track progress.`;
-            } else if (path.includes('/chats/send-bulk-document')) {
-                body = {
-                    sessionId: '',
-                    recipients: ['628123456789', '628987654321', '628111222333'],
-                    documentUrl: 'https://example.com/document.pdf',
-                    filename: 'document.pdf',
-                    mimetype: 'application/pdf',
-                    delay: 1500
-                };
-                helpText = `📄 Send bulk documents (runs in background).<br>
-                    <code>recipients</code>: Array of phone numbers (max 100)<br>
-                    <code>documentUrl</code>: Direct URL to document<br>
-                    <code>filename</code>: Document filename<br>
-                    <code>mimetype</code>: MIME type (optional)<br>
-                    <code>delay</code>: Delay between messages in ms (default: 1000)<br>
-                    ⚡ Returns jobId immediately, use bulk-status to track progress.`;
-            } else if (path.includes('/chats/bulk-status')) {
-                showBody = false;
-                helpText = `📊 Get status of a bulk messaging job.<br>
-                    Replace <code>{jobId}</code> in the URL with your job ID.<br>
-                    Returns: status, progress, sent count, failed count, and results.`;
-            } else if (path.includes('/chats/bulk-jobs')) {
-                body = {
-                    sessionId: ''
-                };
-                helpText = `📋 Get all bulk messaging jobs for a session.<br>
-                    Returns: Array of all jobs with their status and progress.`;
-            }
-            // Chat History
-            else if (path.includes('/chats/overview')) {
-                body = {
-                    sessionId: '',
-                    limit: 50,
-                    offset: 0,
-                    type: 'all'
-                };
-                helpText = '💬 <code>type</code>: Filter by <code>all</code>, <code>personal</code>, or <code>group</code>';
-            } else if (path.includes('/contacts')) {
-                body = {
-                    sessionId: '',
-                    limit: 100,
-                    offset: 0,
-                    search: ''
-                };
-                helpText = '👥 <code>search</code>: Filter contacts by name or number';
+                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', caption: 'Sample Video' };
+            } else if (path.includes('/chats/send-document')) {
+                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Contract.pdf' };
+            } else if (path.includes('/chats/send-audio')) {
+                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', audioUrl: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.ogg', ptt: true };
+            } else if (path.includes('/chats/overview')) {
+                body = { sessionId: firstSession, limit: 50 };
             } else if (path.includes('/chats/messages')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789@c.us',
-                    limit: 50,
-                    cursor: null
-                };
-                helpText = '📜 <code>chatId</code>: Use @c.us for personal chats, @g.us for groups. <code>cursor</code>: Message ID for pagination.';
-            } else if (path.includes('/chats/info')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789@c.us'
-                };
-                helpText = 'ℹ️ Get detailed information about a chat or group.';
-            } else if (path.includes('/chats/mark-read')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789'
-                };
-                helpText = '✅ Mark all unread messages in a chat as read. Works for both personal and group chats.<br><code>chatId</code>: Phone number or group ID.<br>⚠️ Note: Only messages received after server start can be marked as read.';
-            }
-            // Groups - Basic
-            else if (path === 'POST|/api/whatsapp/groups' || path.endsWith('/groups')) {
-                body = {
-                    sessionId: ''
-                };
-                helpText = '👥 Get all groups you are participating in.';
-            } else if (path.includes('/groups/create')) {
-                body = {
-                    sessionId: '',
-                    name: 'My New Group',
-                    participants: ['628123456789', '628987654321']
-                };
-                helpText = '➕ <code>participants</code>: Array of phone numbers to add to the new group.';
-            } else if (path.includes('/groups/metadata')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us'
-                };
-                helpText = 'ℹ️ Get detailed group info including participants, admins, and settings.';
-            } else if (path.includes('/groups/leave')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us'
-                };
-                helpText = '🚪 Leave a group. You will need to be re-added by an admin to rejoin.';
-            } else if (path.includes('/groups/join')) {
-                body = {
-                    sessionId: '',
-                    inviteCode: 'https://chat.whatsapp.com/AbCdEfGhIjK'
-                };
-                helpText = '🔗 <code>inviteCode</code>: Can be full URL or just the code part.';
-            }
-            // Groups - Participants
-            else if (path.includes('/groups/participants/add')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    participants: ['628123456789', '628987654321']
-                };
-                helpText = '➕ Add new members to the group. You must be an admin.';
-            } else if (path.includes('/groups/participants/remove')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    participants: ['628123456789']
-                };
-                helpText = '➖ Remove members from the group. You must be an admin.';
-            } else if (path.includes('/groups/participants/promote')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    participants: ['628123456789']
-                };
-                helpText = '⬆️ Promote members to admin. You must be an admin.';
-            } else if (path.includes('/groups/participants/demote')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    participants: ['628123456789']
-                };
-                helpText = '⬇️ Demote admins to regular members. You must be an admin.';
-            }
-            // Groups - Settings
-            else if (path.includes('/groups/subject')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    subject: 'New Group Name'
-                };
-                helpText = '✏️ Update the group name/subject. Max 25 characters.';
-            } else if (path.includes('/groups/description')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    description: 'This is the group description'
-                };
-                helpText = '📝 Update group description. Can be empty to remove.';
-            } else if (path.includes('/groups/settings')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    setting: 'announcement'
-                };
-                helpText = `⚙️ <code>setting</code> options:<br>
-                    • <code>announcement</code> - Only admins can send messages<br>
-                    • <code>not_announcement</code> - All members can send<br>
-                    • <code>locked</code> - Only admins can edit group info<br>
-                    • <code>unlocked</code> - All members can edit group info`;
-            } else if (path.includes('/groups/picture')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us',
-                    imageUrl: 'https://example.com/group-pic.jpg'
-                };
-                helpText = '🖼️ Update group profile picture. Image should be square.';
-            } else if (path.includes('/groups/invite-code')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us'
-                };
-                helpText = '🔗 Get the current invite link for the group.';
-            } else if (path.includes('/groups/revoke-invite')) {
-                body = {
-                    sessionId: '',
-                    groupId: '123456789@g.us'
-                };
-                helpText = '🔄 Revoke current invite link and generate a new one.';
-            }
-            // Labels
-            else if (path === 'POST|/api/whatsapp/labels' || (path.endsWith('/labels') && !path.includes('/info') && !path.includes('/chat') && !path.includes('/message') && !path.includes('/chats') && !path.includes('/by-chat'))) {
-                body = {
-                    sessionId: ''
-                };
-                helpText = '🏷️ Get all labels for the WhatsApp Business account. Labels are only available for WhatsApp Business accounts.';
-            } else if (path.includes('/labels/info')) {
-                body = {
-                    sessionId: '',
-                    labelId: '1'
-                };
-                helpText = '🏷️ Get label details by ID.<br><code>labelId</code>: The label ID (e.g., "1", "2", etc.).';
-            } else if (path.includes('/labels/chat/add')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    labelId: '1'
-                };
-                helpText = '➕ Add a label to a chat.<br><code>chatId</code>: Phone number or group ID.<br><code>labelId</code>: The label ID to assign.';
-            } else if (path.includes('/labels/chat/remove')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    labelId: '1'
-                };
-                helpText = '➖ Remove a label from a chat.<br><code>chatId</code>: Phone number or group ID.<br><code>labelId</code>: The label ID to remove.';
-            } else if (path.includes('/labels/message/add')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    messageId: 'ABCDEF123456',
-                    labelId: '1'
-                };
-                helpText = '➕ Add a label to a specific message.<br><code>chatId</code>: Chat where the message is.<br><code>messageId</code>: The message ID.<br><code>labelId</code>: The label ID to assign.<br>⚠️ May not be supported in all Baileys versions.';
-            } else if (path.includes('/labels/message/remove')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789',
-                    messageId: 'ABCDEF123456',
-                    labelId: '1'
-                };
-                helpText = '➖ Remove a label from a specific message.<br><code>chatId</code>: Chat where the message is.<br><code>messageId</code>: The message ID.<br><code>labelId</code>: The label ID to remove.<br>⚠️ May not be supported in all Baileys versions.';
-            } else if (path.includes('/labels/chats')) {
-                body = {
-                    sessionId: '',
-                    labelId: '1'
-                };
-                helpText = '📋 Get all chats that have a specific label assigned.<br><code>labelId</code>: The label ID to filter by.';
-            } else if (path.includes('/labels/by-chat')) {
-                body = {
-                    sessionId: '',
-                    chatId: '628123456789@s.whatsapp.net'
-                };
-                helpText = '🏷️ Get all labels assigned to a specific chat.<br><code>chatId</code>: Use @s.whatsapp.net for personal chats, @g.us for groups.';
-            }
-            // System
-            else if (path.includes('/health') || path.includes('/websocket/stats')) {
+                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', limit: 50 };
+            } else if (method === 'GET') {
                 showBody = false;
+            } else {
+                body = { sessionId: firstSession };
             }
 
-            if (showBody) {
-                bodyTextarea.value = JSON.stringify(body, null, 2);
-                bodyTextarea.parentElement.style.display = 'block';
-            } else {
-                bodyTextarea.value = '';
-                bodyTextarea.parentElement.style.display = 'none';
-            }
-
-            // Show/hide help text
-            if (helpText) {
-                apiHelp.innerHTML = helpText;
-                apiHelp.style.display = 'block';
-            } else {
-                apiHelp.style.display = 'none';
-            }
+            bodyGroup.classList.toggle('hidden', !showBody);
+            bodyTextarea.value = showBody ? JSON.stringify(body, null, 2) : '';
         }
 
         async function sendApiRequest() {
@@ -2296,304 +1274,64 @@
             let [method, path] = endpoint.split('|');
             const bodyText = document.getElementById('apiBody').value;
             const responseBox = document.getElementById('apiResponse');
+            const badge = document.getElementById('responseStatusBadge');
             const btn = document.getElementById('btnSendApi');
-            const sessionIdInput = document.getElementById('apiSessionId');
-            const jobIdInput = document.getElementById('apiJobId');
-
-            // Replace {sessionId} placeholder if needed
-            if (path.includes('{sessionId}')) {
-                const sessionId = sessionIdInput.value.trim();
-                if (!sessionId) {
-                    showToast('error', 'Please enter a Session ID');
-                    return;
-                }
-                path = path.replace('{sessionId}', sessionId);
-            }
-
-            // Replace {jobId} placeholder if needed
-            if (path.includes('{jobId}')) {
-                const jobId = jobIdInput.value.trim();
-                if (!jobId) {
-                    showToast('error', 'Please enter a Job ID');
-                    return;
-                }
-                path = path.replace('{jobId}', jobId);
-            }
 
             btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Sending...';
-            responseBox.textContent = 'Loading...';
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Executing...</span>';
+            badge.classList.add('hidden');
+            responseBox.textContent = 'Executing request...';
+            lucide.createIcons();
 
             try {
-                // Special handling for QR image endpoint - open in new tab
-                if (path.includes('/qr/image')) {
-                    window.open(path, '_blank');
-                    responseBox.textContent = 'QR Image opened in new tab. Scan the QR code with your WhatsApp app.';
-                    showToast('success', 'QR Image opened in new tab');
-                    return;
-                }
-
-                const options = {
-                    method: method,
-                    headers: getApiHeaders(true)
-                };
-
-                // Special handling for DELETE webhooks - use query parameter
-                if (method === 'DELETE' && path.includes('/webhooks') && bodyText) {
-                    try {
-                        const bodyObj = JSON.parse(bodyText);
-                        if (bodyObj.url) {
-                            path = `${path}?url=${encodeURIComponent(bodyObj.url)}`;
-                        }
-                    } catch (e) {
-                        // Ignore JSON parse error
-                    }
-                } else if (method !== 'GET' && method !== 'DELETE' && bodyText) {
+                const options = { method, headers: getApiHeaders(true) };
+                if (method !== 'GET' && method !== 'DELETE' && bodyText) {
                     options.body = bodyText;
                 }
 
-                const response = await fetch(path, options);
-                const result = await response.json();
+                const res = await fetch(path, options);
+                const result = await res.json();
+
+                badge.textContent = `${res.status} ${res.statusText}`;
+                badge.className = `px-2 py-0.5 text-[10px] font-bold rounded-md ${res.ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`;
+                badge.classList.remove('hidden');
 
                 responseBox.textContent = JSON.stringify(result, null, 2);
-
-                if (result.success) {
-                    showToast('success', 'Request successful');
-                } else {
-                    showToast('error', result.message || 'Request failed');
-                }
-            } catch (error) {
-                responseBox.textContent = `Error: ${error.message}`;
-                showToast('error', error.message);
+                hljs.highlightElement(responseBox);
+                notify(res.ok ? 'success' : 'error', result.message || 'Request executed');
+            } catch (e) {
+                responseBox.textContent = JSON.stringify({ error: e.message }, null, 2);
+                hljs.highlightElement(responseBox);
+                notify('error', e.message);
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = 'Send Request';
+                btn.innerHTML = '<i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i><span>Send API Request</span>';
+                lucide.createIcons();
             }
         }
 
-        // Events Log
-        function addEvent(type, content) {
-            const log = document.getElementById('eventsLog');
-            const time = new Date().toLocaleTimeString();
-
-            // Remove empty state if exists
-            const emptyState = log.querySelector('.empty-state');
-            if (emptyState) {
-                emptyState.remove();
-            }
-
-            const eventHtml = `
-                <div class="event-item">
-                    <span class="event-time">${time}</span>
-                    <span class="event-type ${type}">${type}</span>
-                    <span class="event-content">${content}</span>
-                </div>
-            `;
-
-            log.insertAdjacentHTML('afterbegin', eventHtml);
-
-            // Keep only last 100 events
-            while (log.children.length > 100) {
-                log.removeChild(log.lastChild);
-            }
+        // Utility Helpers
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            notify('success', `Copied "${text}"`);
         }
 
-        function clearEvents() {
-            document.getElementById('eventsLog').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📡</div>
-                    <p>No events yet</p>
-                    <p style="font-size: 13px; margin-top: 8px;">Events will appear here in real-time</p>
-                </div>
-            `;
+        function escapeHtml(str) {
+            return (str || '').replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
         }
 
-        // Toast
-        function showToast(type, message) {
-            const container = document.getElementById('toastContainer');
-            const id = Date.now();
-
-            const icons = {
-                success: '✅',
-                error: '❌',
-                info: 'ℹ️'
-            };
-
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.id = `toast-${id}`;
-            toast.innerHTML = `
-                <span>${icons[type] || 'ℹ️'}</span>
-                <span>${message}</span>
-            `;
-
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 4000);
-        }
-
-        // Webhook Management
-        let currentWebhookSessionId = null;
-
-        function showWebhooksModal(sessionId) {
-            currentWebhookSessionId = sessionId;
-            document.getElementById('webhooksSessionName').textContent = `Session: ${sessionId}`;
-            document.getElementById('webhooksModal').classList.add('active');
-            document.getElementById('newWebhookUrl').value = '';
-            document.querySelectorAll('.webhook-event').forEach(cb => cb.checked = false);
-            loadWebhooks(sessionId);
-        }
-
-        function closeWebhooksModal() {
-            document.getElementById('webhooksModal').classList.remove('active');
-            currentWebhookSessionId = null;
-        }
-
-        async function loadWebhooks(sessionId) {
-            const container = document.getElementById('webhooksList');
-            container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;"><div class="spinner"></div></div>';
-
-            try {
-                const session = sessions.find(s => s.sessionId === sessionId);
-                const webhooks = session?.webhooks || [];
-
-                if (webhooks.length === 0) {
-                    container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">No webhooks configured</div>';
-                    return;
-                }
-
-                container.innerHTML = webhooks.map((wh, index) => `
-                    <div style="background: var(--card-bg); border-radius: 8px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div style="flex: 1; overflow: hidden;">
-                            <div style="font-size: 13px; font-weight: 500; word-break: break-all;">${wh.url}</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
-                                ${wh.events && wh.events.length > 0 ? `Events: ${wh.events.join(', ')}` : 'All events'}
-                            </div>
-                        </div>
-                        <button class="btn btn-danger btn-icon" data-webhook-url="${encodeURIComponent(wh.url)}" onclick="removeWebhook(decodeURIComponent(this.dataset.webhookUrl))" title="Remove" style="margin-left: 8px;">
-                            🗑️
-                        </button>
-                    </div>
-                `).join('');
-            } catch (error) {
-                container.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 16px;">Error loading webhooks</div>';
-                console.error('Error loading webhooks:', error);
-            }
-        }
-
-        async function addWebhook() {
-            const url = document.getElementById('newWebhookUrl').value.trim();
-
-            if (!url) {
-                showToast('error', 'Please enter a webhook URL');
-                return;
-            }
-
-            try {
-                new URL(url);
-            } catch {
-                showToast('error', 'Please enter a valid URL');
-                return;
-            }
-
-            const events = [];
-            document.querySelectorAll('.webhook-event:checked').forEach(cb => {
-                events.push(cb.value);
-            });
-
-            try {
-                const response = await apiFetch(`${API_BASE}/sessions/${currentWebhookSessionId}/webhooks`, {
-                    method: 'POST',
-                    body: JSON.stringify({ url, events: events.length > 0 ? events : undefined })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showToast('success', 'Webhook added successfully');
-                    document.getElementById('newWebhookUrl').value = '';
-                    document.querySelectorAll('.webhook-event').forEach(cb => cb.checked = false);
-
-                    // Update local session data
-                    const session = sessions.find(s => s.sessionId === currentWebhookSessionId);
-                    if (session) {
-                        session.webhooks = result.data?.webhooks || [];
-                    }
-
-                    loadWebhooks(currentWebhookSessionId);
-                    renderSessions();
-                } else {
-                    showToast('error', result.error || 'Failed to add webhook');
-                }
-            } catch (error) {
-                showToast('error', 'Failed to add webhook');
-                console.error('Error adding webhook:', error);
-            }
-        }
-
-        async function removeWebhook(url) {
-            console.log('removeWebhook called with:', url);
-            
-            if (!url) {
-                showToast('error', 'Webhook URL is missing');
-                console.error('removeWebhook: url is undefined or empty');
-                return;
-            }
-            
-            if (!confirm(`Remove webhook?\n${url}`)) {
-                return;
-            }
-
-            try {
-                // Use query parameter for DELETE (more reliable than body)
-                const encodedUrl = encodeURIComponent(url);
-                const fullUrl = `${API_BASE}/sessions/${currentWebhookSessionId}/webhooks?url=${encodedUrl}`;
-                console.log('DELETE request to:', fullUrl);
-                
-                const response = await apiFetch(fullUrl, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showToast('success', 'Webhook removed successfully');
-
-                    // Update local session data
-                    const session = sessions.find(s => s.sessionId === currentWebhookSessionId);
-                    if (session) {
-                        session.webhooks = result.data?.webhooks || [];
-                    }
-
-                    loadWebhooks(currentWebhookSessionId);
-                    renderSessions();
-                } else {
-                    showToast('error', result.error || 'Failed to remove webhook');
-                }
-            } catch (error) {
-                showToast('error', 'Failed to remove webhook');
-                console.error('Error removing webhook:', error);
-            }
-        }
-
-        // Keyboard shortcuts
+        // Global Esc Shortcut
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
-                closeQrModal();
                 closeCreateSessionModal();
-                closeWebhooksModal();
+                closeQrModal();
+                const drawer = document.getElementById('apiDrawer');
+                if (!drawer.classList.contains('translate-x-full')) drawer.classList.add('translate-x-full');
+                const actDrawer = document.getElementById('activityDrawer');
+                if (!actDrawer.classList.contains('translate-x-full')) actDrawer.classList.add('translate-x-full');
             }
-        });
-
-        // Close modals on overlay click
-        document.querySelectorAll('.modal-overlay').forEach(overlay => {
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.classList.remove('active');
-                }
-            });
         });
     </script>
 </body>

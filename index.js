@@ -34,9 +34,14 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from public folder (for media access)
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 
-// Serve Dashboard
+// Serve Dashboard (Overview & Session Management)
 app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+// Serve WhatsApp Web Client
+app.get('/wa-web', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'wa-web.html'));
 });
 
 // Serve WebSocket test page
@@ -83,7 +88,8 @@ app.post('/api/dashboard/login', (req, res) => {
     if (username === validUsername && password === validPassword) {
         res.json({
             success: true,
-            message: 'Login successful'
+            message: 'Login successful',
+            apiKey: process.env.API_KEY || ''
         });
     } else {
         res.status(401).json({
@@ -117,7 +123,8 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({
         success: false,
-        message: 'Internal Server Error'
+        message: err.message || 'Internal Server Error',
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 
