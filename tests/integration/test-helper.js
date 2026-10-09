@@ -91,6 +91,12 @@ function createMockSession(sessionId, overrides = {}) {
         async sendPoll(chatId, question, options = [], selectableCount = 1, typingTime = 0, replyTo = null) {
             return { success: true, message: 'Poll sent', data: { messageId: 'msg_test_poll_1' } };
         },
+        async sendReaction(chatId, messageId, emoji = '', fromMe = false) {
+            return { success: true, message: emoji ? 'Reaction sent' : 'Reaction removed', data: { chatId, messageId, emoji } };
+        },
+        async deleteMessage(chatId, messageId) {
+            return { success: true, message: 'Message deleted', data: { chatId, messageId } };
+        },
         async sendPresenceUpdate(chatId, presence = 'composing') {
             return { success: true, message: `Presence '${presence}' sent` };
         },

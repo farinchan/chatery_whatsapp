@@ -648,6 +648,77 @@
 
 /**
  * @swagger
+ * /api/whatsapp/chats/send-reaction:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Send reaction to a message
+ *     description: React to a specific message with an emoji, or send empty string to remove reaction
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *               - messageId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *               messageId:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *               emoji:
+ *                 type: string
+ *                 example: "👍"
+ *                 description: Emoji character, or empty string to remove reaction
+ *               fromMe:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       200:
+ *         description: Reaction sent or removed successfully
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/chats/delete-message:
+ *   post:
+ *     tags: [Messaging]
+ *     summary: Delete (revoke) message for everyone
+ *     description: Delete a previously sent message for all participants
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - chatId
+ *               - messageId
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *               messageId:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *     responses:
+ *       200:
+ *         description: Message deleted successfully
+ */
+
+/**
+ * @swagger
  * /api/whatsapp/chats/bulk-status/{jobId}:
  *   get:
  *     tags: [Bulk Messaging]

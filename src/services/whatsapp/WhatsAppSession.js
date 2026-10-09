@@ -193,6 +193,10 @@ class WhatsAppSession {
                 logger: pino({ level: 'silent' }),
                 browser: ['Chatery API', 'Chrome', '1.0.0'],
                 syncFullHistory: true,
+                connectTimeoutMs: 60_000,
+                defaultQueryTimeoutMs: 60_000,
+                keepAliveIntervalMs: 30_000,
+                generateHighQualityLinkPreview: true,
                 getMessage: async (key) => {
                     if (this.store) {
                         const msg = this.store.getMessage(key.remoteJid, key.id);
@@ -704,7 +708,7 @@ class WhatsAppSession {
         }
     }
 
-    async sendTextMessage(chatId, message, typingTime = 0, replyTo = null) {
+    async sendTextMessage(chatId, message, typingTime = 0, replyTo = null, mentions = []) {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {
                 return { success: false, message: 'Session not connected' };
@@ -715,7 +719,12 @@ class WhatsAppSession {
             // Simulate typing if typingTime > 0
             await this._simulateTyping(jid, typingTime);
             
-            const messageContent = { text: message };
+            const messageContent = { 
+                text: message,
+                ...(Array.isArray(mentions) && mentions.length > 0 ? {
+                    mentions: mentions.map(m => this.formatPhoneNumber(m).replace('@c.us', '@s.whatsapp.net'))
+                } : {})
+            };
             const messageOptions = {};
             
             // Add quoted message for reply
@@ -1148,6 +1157,89 @@ class WhatsAppSession {
                     messageId: result.key.id,
                     chatId: jid,
                     timestamp: new Date().toISOString()
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Send reaction to a message
+     * @param {string} chatId - Chat ID
+     * @param {string} messageId - Message ID to react to
+     * @param {string} emoji - Emoji to react with (empty string to remove reaction)
+     * @param {boolean} fromMe - Whether the target message was sent by me
+     */
+    async sendReaction(chatId, messageId, emoji = '', fromMe = false) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!chatId || !messageId) {
+                return { success: false, message: 'chatId and messageId are required' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            const key = {
+                remoteJid: jid,
+                id: messageId,
+                fromMe: fromMe
+            };
+
+            const result = await this.socket.sendMessage(jid, {
+                react: {
+                    text: emoji,
+                    key: key
+                }
+            });
+
+            return {
+                success: true,
+                message: emoji ? 'Reaction sent successfully' : 'Reaction removed successfully',
+                data: {
+                    messageId: result.key.id,
+                    targetMessageId: messageId,
+                    chatId: jid,
+                    emoji: emoji
+                }
+            };
+        } catch (error) {
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Delete (revoke) a message for everyone
+     * @param {string} chatId - Chat ID
+     * @param {string} messageId - Message ID to delete
+     */
+    async deleteMessage(chatId, messageId) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!chatId || !messageId) {
+                return { success: false, message: 'chatId and messageId are required' };
+            }
+
+            const jid = this.formatChatId(chatId);
+            const key = {
+                remoteJid: jid,
+                id: messageId,
+                fromMe: true
+            };
+
+            await this.socket.sendMessage(jid, { delete: key });
+
+            return {
+                success: true,
+                message: 'Message deleted successfully',
+                data: {
+                    chatId: jid,
+                    messageId: messageId
                 }
             };
         } catch (error) {
@@ -1823,24 +1915,38 @@ class WhatsAppSession {
 
             console.log(`[${this.sessionId}] markChatRead: jid=${jid}, isGroup=${isGroup}`);
 
-            // Get messages from store
-            const storeMessages = this.store?.getMessages(jid, { limit: 50 }) || [];
-            console.log(`[${this.sessionId}] Found ${storeMessages.length} messages in store for ${jid}`);
-            
             // Collect message keys to mark as read
             const keysToRead = [];
-            for (const msg of storeMessages) {
-                // Only mark incoming messages (not from me)
-                if (msg?.key && !msg.key.fromMe && msg.key.id) {
-                    const readKey = {
-                        remoteJid: jid,
-                        id: msg.key.id
-                    };
-                    // Add participant for group messages
-                    if (isGroup && msg.key.participant) {
+            if (messageId) {
+                const readKey = {
+                    remoteJid: jid,
+                    id: messageId
+                };
+                if (isGroup) {
+                    const msg = this.store?.getMessage(jid, messageId);
+                    if (msg?.key?.participant) {
                         readKey.participant = msg.key.participant;
                     }
-                    keysToRead.push(readKey);
+                }
+                keysToRead.push(readKey);
+            } else {
+                // Get messages from store
+                const storeMessages = this.store?.getMessages(jid, { limit: 50 }) || [];
+                console.log(`[${this.sessionId}] Found ${storeMessages.length} messages in store for ${jid}`);
+                
+                for (const msg of storeMessages) {
+                    // Only mark incoming messages (not from me)
+                    if (msg?.key && !msg.key.fromMe && msg.key.id) {
+                        const readKey = {
+                            remoteJid: jid,
+                            id: msg.key.id
+                        };
+                        // Add participant for group messages
+                        if (isGroup && msg.key.participant) {
+                            readKey.participant = msg.key.participant;
+                        }
+                        keysToRead.push(readKey);
+                    }
                 }
             }
             
@@ -1889,7 +1995,7 @@ class WhatsAppSession {
                 message,
                 'buffer',
                 {},
-                { logger: console, reuploadRequest: this.socket?.updateMediaMessage }
+                { logger: console, reuploadRequest: (msg) => this.socket?.updateMediaMessage(msg) }
             );
 
             // Create media folder structure: public/media/{sessionId}/{chatId}/
@@ -2351,6 +2457,9 @@ class WhatsAppSession {
 
             const gid = this.formatJid(groupId, true);
             const metadata = await this.socket.groupMetadata(gid);
+            if (this.store) {
+                this.store.groupMetadata.set(gid, metadata);
+            }
 
             return {
                 success: true,
@@ -2390,6 +2499,11 @@ class WhatsAppSession {
             }
 
             const groups = await this.socket.groupFetchAllParticipating();
+            if (this.store) {
+                for (const group of Object.values(groups)) {
+                    this.store.groupMetadata.set(group.id, group);
+                }
+            }
             
             const groupList = Object.values(groups).map(g => ({
                 id: g.id,

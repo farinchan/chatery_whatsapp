@@ -569,10 +569,10 @@ class BaileysStore {
     const { limit = 100, offset = 0, search = '' } = options;
     
     let contacts = Array.from(this.contacts.values())
-      .filter(c => c.id.endsWith('@c.us'))
+      .filter(c => c.id && (c.id.endsWith('@c.us') || c.id.endsWith('@s.whatsapp.net')))
       .map(c => ({
         id: c.id,
-        name: c.name || c.notify || c.id.replace('@c.us', ''),
+        name: c.name || c.notify || c.id.replace('@c.us', '').replace('@s.whatsapp.net', ''),
         notify: c.notify,
         verifiedName: c.verifiedName,
         profilePicture: this.profilePictures.get(c.id) || null

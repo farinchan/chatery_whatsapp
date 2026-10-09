@@ -337,7 +337,7 @@ const checkSession = (req, res, next) => {
 // Send text message
 router.post('/chats/send-text', checkSession, async (req, res) => {
     try {
-        const { chatId, message, typingTime = 0, replyTo = null } = req.body;
+        const { chatId, message, typingTime = 0, replyTo = null, mentions = [] } = req.body;
         
         if (!chatId || !message) {
             return res.status(400).json({
@@ -346,7 +346,7 @@ router.post('/chats/send-text', checkSession, async (req, res) => {
             });
         }
 
-        const result = await req.session.sendTextMessage(chatId, message, typingTime, replyTo);
+        const result = await req.session.sendTextMessage(chatId, message, typingTime, replyTo, mentions);
         res.json(result);
     } catch (error) {
         res.status(500).json({
@@ -517,6 +517,50 @@ router.post('/chats/send-poll', checkSession, async (req, res) => {
         }
 
         const result = await req.session.sendPoll(chatId, question, options, selectableCount, typingTime, replyTo);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Send reaction to a message
+router.post('/chats/send-reaction', checkSession, async (req, res) => {
+    try {
+        const { chatId, messageId, emoji = '', fromMe = false } = req.body;
+        
+        if (!chatId || !messageId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, messageId'
+            });
+        }
+
+        const result = await req.session.sendReaction(chatId, messageId, emoji, fromMe);
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+// Delete (revoke) a message for everyone
+router.post('/chats/delete-message', checkSession, async (req, res) => {
+    try {
+        const { chatId, messageId } = req.body;
+        
+        if (!chatId || !messageId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: chatId, messageId'
+            });
+        }
+
+        const result = await req.session.deleteMessage(chatId, messageId);
         res.json(result);
     } catch (error) {
         res.status(500).json({

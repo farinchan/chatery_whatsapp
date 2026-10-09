@@ -908,6 +908,10 @@
                                         poll message</option>
                                     <option value="POST|/api/whatsapp/chats/send-button">POST /chats/send-button - Send
                                         button (⚠️ deprecated, uses Poll)</option>
+                                    <option value="POST|/api/whatsapp/chats/send-reaction">POST /chats/send-reaction - Send
+                                        emoji reaction</option>
+                                    <option value="POST|/api/whatsapp/chats/delete-message">POST /chats/delete-message -
+                                        Delete / revoke message</option>
                                     <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Send typing
                                         indicator</option>
                                     <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number -
@@ -1769,9 +1773,10 @@
                     chatId: '628123456789',
                     message: 'Hello from Chatery API!',
                     typingTime: 0,
-                    replyTo: null
+                    replyTo: null,
+                    mentions: []
                 };
-                helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to (optional, set null to disable).';
+                helpText = '📝 <code>chatId</code>: Phone number or group ID. <code>typingTime</code>: Typing duration in ms. <code>replyTo</code>: Message ID to reply to. <code>mentions</code>: Array of JIDs/phone numbers to mention.';
             } else if (path.includes('/chats/send-image')) {
                 body = {
                     sessionId: '',
@@ -1847,6 +1852,21 @@
                     replyTo: null
                 };
                 helpText = '⚠️ <b>DEPRECATED:</b> Buttons deprecated by WhatsApp. This now sends a Poll instead. Use <code>/send-poll</code> for better control.';
+            } else if (path.includes('/chats/send-reaction')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    messageId: 'ABCDEF123456',
+                    emoji: '👍'
+                };
+                helpText = '❤️ <code>emoji</code>: Emoji character to react with (e.g. 👍, ❤️, 😂). Pass empty string <code>""</code> to remove reaction.';
+            } else if (path.includes('/chats/delete-message')) {
+                body = {
+                    sessionId: '',
+                    chatId: '628123456789',
+                    messageId: 'ABCDEF123456'
+                };
+                helpText = '🗑️ <code>messageId</code>: ID of the message to delete / revoke (delete for everyone).';
             } else if (path.includes('/chats/presence')) {
                 body = {
                     sessionId: '',

@@ -217,6 +217,40 @@ describe('Messaging & Bulk API Integration Tests', () => {
             assert.strictEqual(res3.data.success, true);
         });
 
+        it('POST /chats/send-reaction: should validate chatId and messageId', async () => {
+            // Missing messageId
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/send-reaction', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us' }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            // Valid reaction
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/send-reaction', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', messageId: 'msg_123', emoji: '👍' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
+        it('POST /chats/delete-message: should validate chatId and messageId', async () => {
+            // Missing messageId
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/delete-message', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us' }
+            });
+            assert.strictEqual(res1.status, 400);
+
+            // Valid delete
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/chats/delete-message', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, chatId: '628123@c.us', messageId: 'msg_123' }
+            });
+            assert.strictEqual(res2.status, 200);
+            assert.strictEqual(res2.data.success, true);
+        });
+
         it('POST /chats/presence: should validate chatId and valid presence options', async () => {
             // Missing chatId
             const res1 = await apiRequest(baseUrl, '/api/whatsapp/chats/presence', {
