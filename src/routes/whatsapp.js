@@ -1549,7 +1549,7 @@ router.post('/labels/delete', checkSession, async (req, res) => {
 // Add label to chat
 router.post('/labels/chat/add', checkSession, async (req, res) => {
     try {
-        const { chatId, labelId } = req.body;
+        let { chatId, labelId } = req.body;
 
         if (!chatId || !labelId) {
             return res.status(400).json({
@@ -1577,7 +1577,7 @@ router.post('/labels/chat/add', checkSession, async (req, res) => {
 // Remove label from chat
 router.post('/labels/chat/remove', checkSession, async (req, res) => {
     try {
-        const { chatId, labelId } = req.body;
+        let { chatId, labelId } = req.body;
 
         if (!chatId || !labelId) {
             return res.status(400).json({
@@ -1605,7 +1605,7 @@ router.post('/labels/chat/remove', checkSession, async (req, res) => {
 // Get labels for a chat
 router.post('/labels/chat', checkSession, async (req, res) => {
     try {
-        const { chatId } = req.body;
+        let { chatId } = req.body;
 
         if (!chatId) {
             return res.status(400).json({

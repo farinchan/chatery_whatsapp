@@ -17,6 +17,9 @@ class WhatsAppManager {
      * Load existing sessions on startup
      */
     async initExistingSessions() {
+        if (process.env.NODE_ENV === 'test') {
+            return;
+        }
         try {
             if (!fs.existsSync(this.sessionsFolder)) {
                 fs.mkdirSync(this.sessionsFolder, { recursive: true });

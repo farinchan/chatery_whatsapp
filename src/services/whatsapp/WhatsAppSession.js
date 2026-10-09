@@ -192,7 +192,17 @@ class WhatsAppSession {
                 auth: state,
                 logger: pino({ level: 'silent' }),
                 browser: ['Chatery API', 'Chrome', '1.0.0'],
-                syncFullHistory: true
+                syncFullHistory: true,
+                getMessage: async (key) => {
+                    if (this.store) {
+                        const msg = this.store.getMessage(key.remoteJid, key.id);
+                        return msg?.message || undefined;
+                    }
+                    return undefined;
+                },
+                cachedGroupMetadata: async (jid) => {
+                    return this.store?.getGroupMetadata(jid) || undefined;
+                }
             });
 
             // Bind store to socket events

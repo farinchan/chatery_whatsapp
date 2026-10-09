@@ -675,7 +675,7 @@ class BaileysStore {
       if (value instanceof Uint8Array || value instanceof ArrayBuffer) {
         return undefined;
       }
-      if (Buffer.isBuffer && Buffer.isBuffer(value)) {
+      if ((Buffer.isBuffer && Buffer.isBuffer(value)) || (value && value.type === 'Buffer' && Array.isArray(value.data))) {
         return undefined;
       }
       

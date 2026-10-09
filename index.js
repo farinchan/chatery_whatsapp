@@ -122,8 +122,13 @@ app.use((err, req, res, next) => {
 });
 
 // Start Server
-server.listen(PORT, () => {
-    console.log(`Chatery WhatsApp API running on http://localhost:${PORT}`);
-    console.log(`WebSocket server running on ws://localhost:${PORT}`);
-    console.log(`API Documentation: http://localhost:${PORT}`);
-});
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`Chatery WhatsApp API running on http://localhost:${PORT}`);
+        console.log(`WebSocket server running on ws://localhost:${PORT}`);
+        console.log(`API Documentation: http://localhost:${PORT}`);
+    });
+}
+
+module.exports = { app, server };
+

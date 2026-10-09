@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test tests/**/*.test.js",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:websocket": "node --test tests/websocket/*.test.js"
   },
   "repository": {
     "type": "git",
@@ -22,14 +25,14 @@
   },
   "homepage": "https://github.com/farinchan/chatery_whatsapp#readme",
   "dependencies": {
-    "@whiskeysockets/baileys": "^7.0.0-rc.9",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.6",
     "express": "^5.2.1",
-    "pino": "^10.1.0",
+    "pino": "^10.4.0",
     "qrcode": "^1.5.4",
-    "socket.io": "^4.8.1",
-    "swagger-jsdoc": "^6.2.8",
+    "socket.io": "^4.8.4",
+    "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"
   }
 }
