@@ -1914,4 +1914,382 @@
  *               enum: [offer, ringing, timeout, reject, accept]
  */
 
+// ==================== LABELS ====================
+
+/**
+ * @swagger
+ * /api/whatsapp/labels:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Get all labels
+ *     description: Get all labels for a WhatsApp Business session
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *     responses:
+ *       200:
+ *         description: Labels retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Labels retrieved
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     labels:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     total:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/info:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Get label by ID
+ *     description: Get detailed information about a specific label
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, labelId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               labelId:
+ *                 type: string
+ *                 example: "1"
+ *     responses:
+ *       200:
+ *         description: Label information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     color:
+ *                       type: string
+ *                     predefinedId:
+ *                       type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/chat/add:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Add label to chat
+ *     description: Add a label to a specific chat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId, labelId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *               labelId:
+ *                 type: string
+ *                 example: "1"
+ *     responses:
+ *       200:
+ *         description: Label added to chat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Label added to chat
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatId:
+ *                       type: string
+ *                     labelId:
+ *                       type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/chat/remove:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Remove label from chat
+ *     description: Remove a label from a specific chat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId, labelId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *               labelId:
+ *                 type: string
+ *                 example: "1"
+ *     responses:
+ *       200:
+ *         description: Label removed from chat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Label removed from chat
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatId:
+ *                       type: string
+ *                     labelId:
+ *                       type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/message/add:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Add label to message
+ *     description: Add a label to a specific message
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId, messageId, labelId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *               messageId:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *               labelId:
+ *                 type: string
+ *                 example: "1"
+ *     responses:
+ *       200:
+ *         description: Label added to message
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Label added to message
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatId:
+ *                       type: string
+ *                     messageId:
+ *                       type: string
+ *                     labelId:
+ *                       type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/message/remove:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Remove label from message
+ *     description: Remove a label from a specific message
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId, messageId, labelId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *               messageId:
+ *                 type: string
+ *                 example: "3EB0B430A2B52B67D0"
+ *               labelId:
+ *                 type: string
+ *                 example: "1"
+ *     responses:
+ *       200:
+ *         description: Label removed from message
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Label removed from message
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatId:
+ *                       type: string
+ *                     messageId:
+ *                       type: string
+ *                     labelId:
+ *                       type: string
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/chats:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Get chats by label
+ *     description: Get all chats that have a specific label
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, labelId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               labelId:
+ *                 type: string
+ *                 example: "1"
+ *     responses:
+ *       200:
+ *         description: Chats with label
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     label:
+ *                       type: object
+ *                     chats:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     total:
+ *                       type: integer
+ */
+
+/**
+ * @swagger
+ * /api/whatsapp/labels/by-chat:
+ *   post:
+ *     tags: [Labels]
+ *     summary: Get labels for a chat
+ *     description: Get all labels assigned to a specific chat
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [sessionId, chatId]
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               chatId:
+ *                 type: string
+ *                 example: "628123456789"
+ *     responses:
+ *       200:
+ *         description: Labels for chat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     chatId:
+ *                       type: string
+ *                     labels:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                     total:
+ *                       type: integer
+ */
+
 module.exports = {};
