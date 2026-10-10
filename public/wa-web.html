@@ -1982,6 +1982,9 @@
             const bodyTextarea = document.getElementById('apiBody');
             const apiHelp = document.getElementById('apiHelp');
 
+            const sid = activeSessionId || '';
+            const targetChat = activeChat?.id || '628123456789';
+
             sessionIdGroup.classList.toggle('hidden', !path.includes('{sessionId}'));
             jobIdGroup.classList.toggle('hidden', !path.includes('{jobId}'));
 
@@ -1989,41 +1992,146 @@
             let showBody = true;
             let helpText = '';
 
+            // Direct Messaging
             if (path.includes('/chats/send-text')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', message: 'Hello from Chatery!' };
-                helpText = 'Dispatches text message. Pass typingTime to simulate typing.';
+                body = { sessionId: sid, chatId: targetChat, message: 'Hello from Chatery!' };
+                helpText = 'Dispatches text message. Pass typingTime (ms) to simulate typing presence.';
             } else if (path.includes('/chats/send-image')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Sample Photo' };
-                helpText = 'Dispatches image from public URL with optional caption.';
+                body = { sessionId: sid, chatId: targetChat, imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Sample Photo' };
+                helpText = 'Dispatches image from direct public URL with optional caption.';
             } else if (path.includes('/chats/send-video')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', caption: 'Sample Video', gifPlayback: false };
-                helpText = 'Dispatches MP4 video file.';
+                body = { sessionId: sid, chatId: targetChat, videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', caption: 'Sample Video', gifPlayback: false };
+                helpText = 'Dispatches MP4 video file from public URL.';
             } else if (path.includes('/chats/send-document')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Contract.pdf' };
-                helpText = 'Dispatches document file.';
+                body = { sessionId: sid, chatId: targetChat, documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Contract.pdf' };
+                helpText = 'Dispatches document file (PDF, Docx, etc.) with custom filename.';
             } else if (path.includes('/chats/send-audio')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', audioUrl: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.ogg', ptt: true };
-                helpText = 'Dispatches OGG audio note.';
+                body = { sessionId: sid, chatId: targetChat, audioUrl: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.ogg', ptt: true };
+                helpText = 'Dispatches audio or PTT (Push To Talk / voice note).';
             } else if (path.includes('/chats/send-sticker')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', stickerUrl: 'https://raw.githubusercontent.com/WhatsApp/stickers/master/iOS/Sticker/1.webp' };
-                helpText = 'Dispatches WebP sticker.';
+                body = { sessionId: sid, chatId: targetChat, stickerUrl: 'https://raw.githubusercontent.com/WhatsApp/stickers/master/iOS/Sticker/1.webp' };
+                helpText = 'Dispatches WebP sticker file.';
+            } else if (path.includes('/chats/send-location')) {
+                body = { sessionId: sid, chatId: targetChat, latitude: -6.2088, longitude: 106.8456, name: 'Jakarta, Indonesia', address: 'Central Jakarta' };
+                helpText = 'Dispatches GPS location pin with coordinates and label.';
+            } else if (path.includes('/chats/send-contact')) {
+                body = { sessionId: sid, chatId: targetChat, contact: { displayName: 'John Doe', vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL;waid=628123456789:+62 812-345-6789\nEND:VCARD' } };
+                helpText = 'Dispatches vCard contact details.';
+            } else if (path.includes('/chats/send-poll')) {
+                body = { sessionId: sid, chatId: targetChat, pollName: 'Lunch Choice?', options: ['Pizza', 'Burger', 'Sushi'], selectableCount: 1 };
+                helpText = 'Dispatches interactive voting poll.';
             } else if (path.includes('/chats/send-reaction')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', messageId: '3EB0B430A2B52B67D0', emoji: '' };
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0', emoji: '👍' };
                 helpText = 'Applies reaction to message. Empty string removes reaction.';
             } else if (path.includes('/chats/delete-message')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', messageId: '3EB0B430A2B52B67D0' };
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0' };
                 helpText = 'Revokes/deletes message for everyone.';
+            } else if (path.includes('/chats/pin-message')) {
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0', duration: 86400 };
+                helpText = 'Pins a message inside the chat for a duration in seconds.';
+            } else if (path.includes('/chats/star-message')) {
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0', star: true };
+                helpText = 'Stars or unstars target message.';
+            } else if (path.includes('/chats/pin')) {
+                body = { sessionId: sid, chatId: targetChat, pin: true };
+                helpText = 'Pins or unpins the conversation in the chat list.';
+            } else if (path.includes('/chats/archive')) {
+                body = { sessionId: sid, chatId: targetChat, archive: true };
+                helpText = 'Archives or unarchives the conversation.';
+            } else if (path.includes('/chats/mute')) {
+                body = { sessionId: sid, chatId: targetChat, mute: 86400 };
+                helpText = 'Mutes chat notifications for duration in seconds (null or 0 to unmute).';
+            } else if (path.includes('/chats/presence')) {
+                body = { sessionId: sid, chatId: targetChat, presence: 'composing' };
+                helpText = 'Updates chat presence: composing, recording, available, unavailable.';
+            } else if (path.includes('/chats/check-number')) {
+                body = { sessionId: sid, phone: '628123456789' };
+                helpText = 'Verifies whether a phone number is registered on WhatsApp.';
+            } else if (path.includes('/chats/profile-picture')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Retrieves profile photo avatar URL for given contact or group.';
+            // Bulk Messaging
+            } else if (path.includes('/chats/send-bulk-image')) {
+                body = { sessionId: sid, recipients: ['628123456789'], imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Broadcast Image', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk image broadcast to multiple recipients.';
+            } else if (path.includes('/chats/send-bulk-document')) {
+                body = { sessionId: sid, recipients: ['628123456789'], documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Doc.pdf', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk document broadcast.';
+            } else if (path.includes('/chats/send-bulk')) {
+                body = { sessionId: sid, recipients: ['628123456789', '628987654321'], message: 'Broadcast Message', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk text broadcast to multiple recipients.';
+            } else if (path.includes('/chats/bulk-jobs')) {
+                body = { sessionId: sid };
+                helpText = 'Lists recent asynchronous background broadcast jobs.';
+            // Contacts & Profiles
+            } else if (path.includes('/contacts/status')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Fetches contact "About / Bio" status text.';
+            } else if (path.includes('/contacts/business-profile')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Fetches WhatsApp Business profile info (description, email, website).';
+            } else if (path.includes('/contacts/blocklist')) {
+                body = { sessionId: sid };
+                helpText = 'Fetches all blocked contacts for this account.';
+            } else if (path.includes('/contacts/block')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net', action: 'block' };
+                helpText = 'Blocks or unblocks a contact.';
+            } else if (path.includes('/profile/status')) {
+                body = { sessionId: sid, status: 'Available' };
+                helpText = 'Updates account status bio message.';
+            } else if (path.includes('/profile/name')) {
+                body = { sessionId: sid, name: 'Chatery Account' };
+                helpText = 'Updates account display name push name.';
+            } else if (path.includes('/contacts')) {
+                body = { sessionId: sid, limit: 50 };
+                helpText = 'Fetches contact address book list.';
+            // Chat History
             } else if (path.includes('/chats/overview')) {
-                body = { sessionId: activeSessionId || '', limit: 50 };
-                helpText = 'Fetches list of active conversations.';
+                body = { sessionId: sid, limit: 50 };
+                helpText = 'Fetches list of active conversations with last messages and avatars.';
             } else if (path.includes('/chats/messages')) {
-                body = { sessionId: activeSessionId || '', chatId: activeChat?.id || '628123456789', limit: 50 };
-                helpText = 'Fetches message history for target chat.';
+                body = { sessionId: sid, chatId: targetChat, limit: 50 };
+                helpText = 'Fetches message history log for target chat.';
+            } else if (path.includes('/chats/info')) {
+                body = { sessionId: sid, chatId: targetChat };
+                helpText = 'Retrieves conversation metadata and overview details.';
+            } else if (path.includes('/chats/mark-read')) {
+                body = { sessionId: sid, chatId: targetChat };
+                helpText = 'Marks target conversation as read.';
+            // Groups
+            } else if (path.includes('/groups/create')) {
+                body = { sessionId: sid, subject: 'New Group', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Creates a new group with specified participants.';
+            } else if (path.includes('/groups/metadata')) {
+                body = { sessionId: sid, groupId: '1203630@g.us' };
+                helpText = 'Fetches group details, participant list, and permissions.';
+            } else if (path.includes('/groups/invite-info')) {
+                body = { sessionId: sid, code: 'XXXXXX' };
+                helpText = 'Fetches group info preview using an invite code.';
+            } else if (path.includes('/groups/participants/add')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Adds participants to group.';
+            } else if (path.includes('/groups/participants/remove')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Removes participants from group.';
+            } else if (path.includes('/groups/subject')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', subject: 'Updated Title' };
+                helpText = 'Updates group subject title.';
+            } else if (path.includes('/groups/description')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', description: 'Updated Description' };
+                helpText = 'Updates group description.';
+            } else if (path.includes('/groups/invite-code')) {
+                body = { sessionId: sid, groupId: '1203630@g.us' };
+                helpText = 'Generates or retrieves group invite link code.';
+            } else if (path.includes('/groups')) {
+                body = { sessionId: sid };
+                helpText = 'Lists all groups the account belongs to.';
+            // Fallback & GET
             } else if (method === 'GET') {
                 showBody = false;
                 helpText = 'GET request does not require request payload.';
             } else {
-                body = { sessionId: activeSessionId || '' };
+                body = { sessionId: sid };
                 helpText = 'API endpoint documentation reference.';
             }
 

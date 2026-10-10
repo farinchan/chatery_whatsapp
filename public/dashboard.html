@@ -63,7 +63,7 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
     <!-- Highlight.js (CDN) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
 
@@ -508,64 +508,121 @@
 
     <!-- ==================== DRAWERS ==================== -->
 
-    <!-- API Tester Drawer -->
-    <div id="apiDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[500px] bg-white border-l border-slate-200 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
-        <div class="h-14 px-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
+    <!-- ==================== SLIDE-OVER: INTERACTIVE API TESTER ==================== -->
+    <aside id="apiDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-[500px] lg:w-[560px] bg-white border-l border-slate-200 shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="h-14 px-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
             <div class="flex items-center gap-2">
                 <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
-                <span class="font-bold text-xs text-slate-900">Interactive REST API Explorer</span>
+                <h3 class="font-bold text-sm text-slate-900">Interactive API Tester</h3>
             </div>
-            <button onclick="toggleApiDrawer()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
-                <i data-lucide="x" class="w-4 h-4"></i>
-            </button>
+            <div class="flex items-center gap-2">
+                <button onclick="formatRequestBody()" class="text-xs text-slate-600 hover:text-slate-900 px-2.5 py-1 bg-white rounded-lg border border-slate-200 shadow-2xs font-medium">Format JSON</button>
+                <button onclick="toggleApiDrawer()" class="p-1.5 text-slate-400 hover:text-slate-900 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-4">
+        <div class="flex-1 overflow-y-auto p-5 space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Select Endpoint</label>
-                <select id="apiEndpoint" onchange="updateRequestBody()" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-primary transition-colors">
-                    <optgroup label="Send Messages">
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Select Endpoint</label>
+                <select id="apiEndpoint" onchange="updateRequestBody()" class="w-full bg-white text-xs text-slate-800 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                    <optgroup label="Direct Messaging">
                         <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text</option>
                         <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send image</option>
                         <option value="POST|/api/whatsapp/chats/send-video">POST /chats/send-video - Send video</option>
-                        <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document - Send file</option>
-                        <option value="POST|/api/whatsapp/chats/send-audio">POST /chats/send-audio - Send voice note</option>
+                        <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document - Send document</option>
+                        <option value="POST|/api/whatsapp/chats/send-audio">POST /chats/send-audio - Send voice / audio</option>
+                        <option value="POST|/api/whatsapp/chats/send-sticker">POST /chats/send-sticker - Send sticker</option>
+                        <option value="POST|/api/whatsapp/chats/send-location">POST /chats/send-location - Send location</option>
+                        <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact - Send contact card</option>
+                        <option value="POST|/api/whatsapp/chats/send-poll">POST /chats/send-poll - Send poll</option>
+                        <option value="POST|/api/whatsapp/chats/send-reaction">POST /chats/send-reaction - Send reaction</option>
+                        <option value="POST|/api/whatsapp/chats/delete-message">POST /chats/delete-message - Revoke message</option>
+                        <option value="POST|/api/whatsapp/chats/pin-message">POST /chats/pin-message - Pin message</option>
+                        <option value="POST|/api/whatsapp/chats/star-message">POST /chats/star-message - Star message</option>
+                        <option value="POST|/api/whatsapp/chats/pin">POST /chats/pin - Pin chat</option>
+                        <option value="POST|/api/whatsapp/chats/archive">POST /chats/archive - Archive chat</option>
+                        <option value="POST|/api/whatsapp/chats/mute">POST /chats/mute - Mute chat</option>
+                        <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Typing presence</option>
+                        <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number - Verify number</option>
+                        <option value="POST|/api/whatsapp/chats/profile-picture">POST /chats/profile-picture - Get avatar</option>
                     </optgroup>
-                    <optgroup label="Chat History & Overview">
-                        <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Overview list</option>
-                        <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Message log</option>
+                    <optgroup label="Bulk Messaging">
+                        <option value="POST|/api/whatsapp/chats/send-bulk">POST /chats/send-bulk - Bulk text</option>
+                        <option value="POST|/api/whatsapp/chats/send-bulk-image">POST /chats/send-bulk-image - Bulk image</option>
+                        <option value="POST|/api/whatsapp/chats/send-bulk-document">POST /chats/send-bulk-document - Bulk doc</option>
+                        <option value="GET|/api/whatsapp/chats/bulk-status/{jobId}">GET /chats/bulk-status/:jobId - Job status</option>
+                        <option value="POST|/api/whatsapp/chats/bulk-jobs">POST /chats/bulk-jobs - List jobs</option>
+                    </optgroup>
+                    <optgroup label="Contacts & Profiles">
                         <option value="POST|/api/whatsapp/contacts">POST /contacts - Contact list</option>
+                        <option value="POST|/api/whatsapp/contacts/status">POST /contacts/status - Bio status</option>
+                        <option value="POST|/api/whatsapp/contacts/business-profile">POST /contacts/business-profile - Business info</option>
+                        <option value="POST|/api/whatsapp/contacts/block">POST /contacts/block - Block contact</option>
+                        <option value="POST|/api/whatsapp/contacts/blocklist">POST /contacts/blocklist - Blocklist</option>
+                        <option value="POST|/api/whatsapp/profile/status">POST /profile/status - Update bio</option>
+                        <option value="POST|/api/whatsapp/profile/name">POST /profile/name - Update name</option>
+                    </optgroup>
+                    <optgroup label="Chat History & Read State">
+                        <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Overview</option>
+                        <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Message log</option>
+                        <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Chat details</option>
+                        <option value="POST|/api/whatsapp/chats/mark-read">POST /chats/mark-read - Mark read</option>
+                    </optgroup>
+                    <optgroup label="Groups">
+                        <option value="POST|/api/whatsapp/groups">POST /groups - List groups</option>
+                        <option value="POST|/api/whatsapp/groups/create">POST /groups/create - Create group</option>
+                        <option value="POST|/api/whatsapp/groups/metadata">POST /groups/metadata - Metadata</option>
+                        <option value="POST|/api/whatsapp/groups/invite-info">POST /groups/invite-info - Invite preview</option>
+                        <option value="POST|/api/whatsapp/groups/participants/add">POST /groups/participants/add - Add members</option>
+                        <option value="POST|/api/whatsapp/groups/participants/remove">POST /groups/participants/remove - Remove members</option>
+                        <option value="POST|/api/whatsapp/groups/subject">POST /groups/subject - Update title</option>
+                        <option value="POST|/api/whatsapp/groups/description">POST /groups/description - Update desc</option>
+                        <option value="POST|/api/whatsapp/groups/invite-code">POST /groups/invite-code - Invite code</option>
                     </optgroup>
                     <optgroup label="Sessions & Diagnostics">
                         <option value="GET|/api/whatsapp/sessions">GET /sessions - List sessions</option>
+                        <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET /sessions/:id/status - Status</option>
+                        <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET /sessions/:id/qr - QR JSON</option>
+                        <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST /sessions/:id/connect - Connect</option>
                         <option value="GET|/api/websocket/stats">GET /websocket/stats - Stats</option>
                         <option value="GET|/api/health">GET /health - Healthcheck</option>
                     </optgroup>
                 </select>
             </div>
 
-            <div id="bodyGroup">
-                <div class="flex items-center justify-between mb-1">
-                    <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Payload (JSON)</label>
-                    <button onclick="formatRequestBody()" class="text-[11px] text-primary hover:underline font-semibold">Format JSON</button>
-                </div>
-                <textarea id="apiBody" rows="7" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 rounded-xl p-2.5 font-mono focus:outline-none focus:border-primary transition-colors"></textarea>
+            <div id="sessionIdGroup" class="hidden">
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Session ID Parameter</label>
+                <input type="text" id="apiSessionId" class="w-full bg-white text-xs text-slate-800 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-primary">
             </div>
 
-            <button onclick="sendApiRequest()" id="btnSendApi" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white font-semibold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+            <div id="jobIdGroup" class="hidden">
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Job ID Parameter</label>
+                <input type="text" id="apiJobId" class="w-full bg-white text-xs text-slate-800 border border-slate-200 rounded-xl p-2.5 focus:outline-none focus:border-primary">
+            </div>
+
+            <div id="bodyGroup">
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">JSON Payload</label>
+                <textarea id="apiBody" rows="6" class="w-full bg-slate-900 text-xs font-mono text-emerald-400 border border-slate-700 rounded-xl p-3 focus:outline-none focus:border-primary"></textarea>
+            </div>
+
+            <div id="apiHelp" class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3"></div>
+
+            <button onclick="sendApiRequest()" id="btnSendApi" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-2">
                 <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
                 <span>Send API Request</span>
             </button>
 
-            <div class="space-y-1.5">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Response Payload</span>
-                    <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md"></span>
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Output Response</label>
+                    <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-600 border border-slate-200">200 OK</span>
                 </div>
-                <pre class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-[11px] font-mono text-slate-100 overflow-x-auto max-h-64"><code id="apiResponse" class="language-json">// Response will render here</code></pre>
+                <pre class="bg-slate-900 border border-slate-700 rounded-xl p-3 overflow-x-auto max-h-56"><code id="apiResponse" class="language-json font-mono text-xs text-slate-200">Ready for execution.</code></pre>
             </div>
         </div>
-    </div>
+    </aside>
 
     <!-- Activity Stream Drawer -->
     <div id="activityDrawer" class="fixed inset-y-0 right-0 w-full sm:w-[420px] bg-white border-l border-slate-200 z-40 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
@@ -1178,6 +1235,9 @@
         function toggleApiDrawer() {
             const drawer = document.getElementById('apiDrawer');
             drawer.classList.toggle('translate-x-full');
+            if (!drawer.classList.contains('translate-x-full')) {
+                updateRequestBody();
+            }
             lucide.createIcons();
         }
 
@@ -1222,6 +1282,16 @@
         }
 
         // Interactive API Tester Logic
+        function getSelectedSessionId() {
+            const inputVal = document.getElementById('apiSessionId')?.value?.trim();
+            if (inputVal) return inputVal;
+            if (sessions && sessions.length > 0) {
+                const conn = sessions.find(s => s.isConnected || s.status === 'connected');
+                return conn ? conn.sessionId : sessions[0].sessionId;
+            }
+            return '';
+        }
+
         function formatRequestBody() {
             const area = document.getElementById('apiBody');
             try {
@@ -1236,36 +1306,170 @@
         function updateRequestBody() {
             const endpoint = document.getElementById('apiEndpoint').value;
             const [method, path] = endpoint.split('|');
+            const sessionIdGroup = document.getElementById('sessionIdGroup');
+            const jobIdGroup = document.getElementById('jobIdGroup');
             const bodyGroup = document.getElementById('bodyGroup');
             const bodyTextarea = document.getElementById('apiBody');
+            const apiHelp = document.getElementById('apiHelp');
+
+            const sid = getSelectedSessionId();
+            if (document.getElementById('apiSessionId') && !document.getElementById('apiSessionId').value) {
+                document.getElementById('apiSessionId').value = sid;
+            }
+
+            sessionIdGroup.classList.toggle('hidden', !path.includes('{sessionId}'));
+            jobIdGroup.classList.toggle('hidden', !path.includes('{jobId}'));
 
             let body = {};
             let showBody = true;
+            let helpText = '';
 
-            const firstSession = sessions[0]?.sessionId || 'test';
-
+            // Direct Messaging
             if (path.includes('/chats/send-text')) {
-                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', message: 'Hello from Chatery!' };
+                body = { sessionId: sid, chatId: '628123456789', message: 'Hello from Chatery!' };
+                helpText = 'Dispatches text message. Pass typingTime to simulate typing.';
             } else if (path.includes('/chats/send-image')) {
-                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Sample Photo' };
+                body = { sessionId: sid, chatId: '628123456789', imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Sample Photo' };
+                helpText = 'Dispatches image from public URL with optional caption.';
             } else if (path.includes('/chats/send-video')) {
-                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', caption: 'Sample Video' };
+                body = { sessionId: sid, chatId: '628123456789', videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', caption: 'Sample Video', gifPlayback: false };
+                helpText = 'Dispatches MP4 video file.';
             } else if (path.includes('/chats/send-document')) {
-                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Contract.pdf' };
+                body = { sessionId: sid, chatId: '628123456789', documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Contract.pdf' };
+                helpText = 'Dispatches document file.';
             } else if (path.includes('/chats/send-audio')) {
-                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', audioUrl: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.ogg', ptt: true };
+                body = { sessionId: sid, chatId: '628123456789', audioUrl: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.ogg', ptt: true };
+                helpText = 'Dispatches OGG audio note (PTT voice note).';
+            } else if (path.includes('/chats/send-sticker')) {
+                body = { sessionId: sid, chatId: '628123456789', stickerUrl: 'https://raw.githubusercontent.com/WhatsApp/stickers/master/iOS/Sticker/1.webp' };
+                helpText = 'Dispatches WebP sticker.';
+            } else if (path.includes('/chats/send-location')) {
+                body = { sessionId: sid, chatId: '628123456789', latitude: -6.2088, longitude: 106.8456, name: 'Jakarta', address: 'Indonesia' };
+                helpText = 'Dispatches GPS location coordinates.';
+            } else if (path.includes('/chats/send-contact')) {
+                body = { sessionId: sid, chatId: '628123456789', contact: { displayName: 'John Doe', vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL;waid=628123456789:+62 812-345-6789\nEND:VCARD' } };
+                helpText = 'Dispatches vCard contact details.';
+            } else if (path.includes('/chats/send-poll')) {
+                body = { sessionId: sid, chatId: '628123456789', pollName: 'Lunch Choice?', options: ['Pizza', 'Burger', 'Sushi'], selectableCount: 1 };
+                helpText = 'Dispatches interactive voting poll.';
+            } else if (path.includes('/chats/send-reaction')) {
+                body = { sessionId: sid, chatId: '628123456789', messageId: '3EB0B430A2B52B67D0', emoji: '👍' };
+                helpText = 'Applies reaction to message. Empty string removes reaction.';
+            } else if (path.includes('/chats/delete-message')) {
+                body = { sessionId: sid, chatId: '628123456789', messageId: '3EB0B430A2B52B67D0' };
+                helpText = 'Revokes/deletes message for everyone.';
+            } else if (path.includes('/chats/pin-message')) {
+                body = { sessionId: sid, chatId: '628123456789', messageId: '3EB0B430A2B52B67D0', duration: 86400 };
+                helpText = 'Pins a message inside the chat for a duration in seconds.';
+            } else if (path.includes('/chats/star-message')) {
+                body = { sessionId: sid, chatId: '628123456789', messageId: '3EB0B430A2B52B67D0', star: true };
+                helpText = 'Stars or unstars target message.';
+            } else if (path.includes('/chats/pin')) {
+                body = { sessionId: sid, chatId: '628123456789', pin: true };
+                helpText = 'Pins or unpins the conversation in the chat list.';
+            } else if (path.includes('/chats/archive')) {
+                body = { sessionId: sid, chatId: '628123456789', archive: true };
+                helpText = 'Archives or unarchives the conversation.';
+            } else if (path.includes('/chats/mute')) {
+                body = { sessionId: sid, chatId: '628123456789', mute: 86400 };
+                helpText = 'Mutes chat notifications for duration in seconds (null or 0 to unmute).';
+            } else if (path.includes('/chats/presence')) {
+                body = { sessionId: sid, chatId: '628123456789', presence: 'composing' };
+                helpText = 'Updates chat presence: composing, recording, available, unavailable.';
+            } else if (path.includes('/chats/check-number')) {
+                body = { sessionId: sid, phone: '628123456789' };
+                helpText = 'Verifies whether a phone number is registered on WhatsApp.';
+            } else if (path.includes('/chats/profile-picture')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Retrieves profile photo avatar URL for given contact or group.';
+            // Bulk Messaging
+            } else if (path.includes('/chats/send-bulk-image')) {
+                body = { sessionId: sid, recipients: ['628123456789'], imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Broadcast Image', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk image broadcast to multiple recipients.';
+            } else if (path.includes('/chats/send-bulk-document')) {
+                body = { sessionId: sid, recipients: ['628123456789'], documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Doc.pdf', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk document broadcast.';
+            } else if (path.includes('/chats/send-bulk')) {
+                body = { sessionId: sid, recipients: ['628123456789', '628987654321'], message: 'Broadcast Message', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk text broadcast to multiple recipients.';
+            } else if (path.includes('/chats/bulk-jobs')) {
+                body = { sessionId: sid };
+                helpText = 'Lists recent asynchronous background broadcast jobs.';
+            // Contacts & Profiles
+            } else if (path.includes('/contacts/status')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Fetches contact "About / Bio" status text.';
+            } else if (path.includes('/contacts/business-profile')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Fetches WhatsApp Business profile info (description, email, website).';
+            } else if (path.includes('/contacts/blocklist')) {
+                body = { sessionId: sid };
+                helpText = 'Fetches all blocked contacts for this account.';
+            } else if (path.includes('/contacts/block')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net', action: 'block' };
+                helpText = 'Blocks or unblocks a contact.';
+            } else if (path.includes('/profile/status')) {
+                body = { sessionId: sid, status: 'Available' };
+                helpText = 'Updates account status bio message.';
+            } else if (path.includes('/profile/name')) {
+                body = { sessionId: sid, name: 'Chatery Account' };
+                helpText = 'Updates account display name push name.';
+            } else if (path.includes('/contacts')) {
+                body = { sessionId: sid, limit: 50 };
+                helpText = 'Fetches contact address book list.';
+            // Chat History
             } else if (path.includes('/chats/overview')) {
-                body = { sessionId: firstSession, limit: 50 };
+                body = { sessionId: sid, limit: 50 };
+                helpText = 'Fetches list of active conversations with last messages and avatars.';
             } else if (path.includes('/chats/messages')) {
-                body = { sessionId: firstSession, chatId: '628123456789@s.whatsapp.net', limit: 50 };
+                body = { sessionId: sid, chatId: '628123456789', limit: 50 };
+                helpText = 'Fetches message history log for target chat.';
+            } else if (path.includes('/chats/info')) {
+                body = { sessionId: sid, chatId: '628123456789' };
+                helpText = 'Retrieves conversation metadata and overview details.';
+            } else if (path.includes('/chats/mark-read')) {
+                body = { sessionId: sid, chatId: '628123456789' };
+                helpText = 'Marks target conversation as read.';
+            // Groups
+            } else if (path.includes('/groups/create')) {
+                body = { sessionId: sid, subject: 'New Group', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Creates a new group with specified participants.';
+            } else if (path.includes('/groups/metadata')) {
+                body = { sessionId: sid, groupId: '1203630@g.us' };
+                helpText = 'Fetches group details, participant list, and permissions.';
+            } else if (path.includes('/groups/invite-info')) {
+                body = { sessionId: sid, code: 'XXXXXX' };
+                helpText = 'Fetches group info preview using an invite code.';
+            } else if (path.includes('/groups/participants/add')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Adds participants to group.';
+            } else if (path.includes('/groups/participants/remove')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Removes participants from group.';
+            } else if (path.includes('/groups/subject')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', subject: 'Updated Title' };
+                helpText = 'Updates group subject title.';
+            } else if (path.includes('/groups/description')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', description: 'Updated Description' };
+                helpText = 'Updates group description.';
+            } else if (path.includes('/groups/invite-code')) {
+                body = { sessionId: sid, groupId: '1203630@g.us' };
+                helpText = 'Generates or retrieves group invite link code.';
+            } else if (path.includes('/groups')) {
+                body = { sessionId: sid };
+                helpText = 'Lists all groups the account belongs to.';
+            // Fallback & GET
             } else if (method === 'GET') {
                 showBody = false;
+                helpText = 'GET request does not require request payload.';
             } else {
-                body = { sessionId: firstSession };
+                body = { sessionId: sid };
+                helpText = 'API endpoint documentation reference.';
             }
 
             bodyGroup.classList.toggle('hidden', !showBody);
             bodyTextarea.value = showBody ? JSON.stringify(body, null, 2) : '';
+            apiHelp.innerHTML = helpText;
         }
 
         async function sendApiRequest() {
@@ -1275,6 +1479,20 @@
             const responseBox = document.getElementById('apiResponse');
             const badge = document.getElementById('responseStatusBadge');
             const btn = document.getElementById('btnSendApi');
+
+            const currentSession = getSelectedSessionId();
+
+            if (path.includes('{sessionId}')) {
+                const s = document.getElementById('apiSessionId').value.trim() || currentSession;
+                if (!s) { notify('error', 'Session ID required'); return; }
+                path = path.replace('{sessionId}', s);
+            }
+
+            if (path.includes('{jobId}')) {
+                const j = document.getElementById('apiJobId').value.trim();
+                if (!j) { notify('error', 'Job ID required'); return; }
+                path = path.replace('{jobId}', j);
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Executing...</span>';
