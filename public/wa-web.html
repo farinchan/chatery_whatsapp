@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -15,7 +15,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -33,16 +32,16 @@
                             900: '#002F57',
                         },
                         wa: {
-                            bg: '#0B0F19',
-                            sidebar: '#101726',
-                            sidebarHeader: '#121A2B',
-                            chatBg: '#090D16',
-                            chatHeader: '#121A2B',
-                            bubbleOut: '#0B3F6E',
-                            bubbleIn: '#16233B',
-                            border: '#1B273D',
-                            input: '#0D1424',
-                            muted: '#94A3B8'
+                            bg: '#F0F2F5',
+                            sidebar: '#FFFFFF',
+                            sidebarHeader: '#F0F2F5',
+                            chatBg: '#EFEAE2',
+                            chatHeader: '#F0F2F5',
+                            bubbleOut: '#D9F2FF',
+                            bubbleIn: '#FFFFFF',
+                            border: '#E2E8F0',
+                            input: '#FFFFFF',
+                            muted: '#64748B'
                         }
                     },
                     fontFamily: {
@@ -74,44 +73,45 @@
     <style>
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
+            width: 6px;
+            height: 6px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1B273D;
+            background: #CBD5E1;
             border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #2D3E5E;
+            background: #94A3B8;
         }
 
-        /* Subtle Pattern for Chat Wallpaper */
+        /* Subtle Pattern for Chat Wallpaper (Light Mode) */
         .chat-wallpaper {
-            background-color: #090D16;
-            background-image: radial-gradient(#1B273D 0.75px, transparent 0.75px), radial-gradient(#1B273D 0.75px, #090D16 0.75px);
+            background-color: #EFEAE2;
+            background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px), radial-gradient(#CBD5E1 0.75px, #EFEAE2 0.75px);
             background-size: 30px 30px;
             background-position: 0 0, 15px 15px;
         }
 
-        /* SweetAlert2 Dark Theme Customization */
-        .swal2-popup.swal-dark {
-            background: #121A2B !important;
-            border: 1px solid #1B273D !important;
-            color: #F8FAFC !important;
+        /* SweetAlert2 Light Theme Customization */
+        .swal2-popup.swal-dark,
+        .swal2-popup.swal-light {
+            background: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            color: #0F172A !important;
             border-radius: 1rem !important;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
             font-family: 'Inter', sans-serif !important;
         }
         .swal2-title {
-            color: #F8FAFC !important;
+            color: #0F172A !important;
             font-size: 1.15rem !important;
             font-weight: 700 !important;
         }
         .swal2-html-container {
-            color: #94A3B8 !important;
+            color: #64748B !important;
             font-size: 0.9rem !important;
         }
         .swal2-confirm.btn-swal-confirm {
@@ -122,8 +122,8 @@
             padding: 0.5rem 1.25rem !important;
         }
         .swal2-cancel.btn-swal-cancel {
-            background: #1B273D !important;
-            color: #94A3B8 !important;
+            background: #F1F5F9 !important;
+            color: #64748B !important;
             border-radius: 0.5rem !important;
             font-weight: 600 !important;
             padding: 0.5rem 1.25rem !important;
@@ -131,25 +131,25 @@
     </style>
 </head>
 
-<body class="bg-wa-bg text-slate-100 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-primary/30 selection:text-white">
+<body class="bg-wa-bg text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-primary/20 selection:text-primary">
 
     <!-- ==================== TOP NAVIGATION BAR ==================== -->
-    <header class="h-14 bg-wa-sidebarHeader border-b border-wa-border px-4 flex items-center justify-between z-30 select-none">
+    <header class="h-14 bg-white border-b border-wa-border px-4 flex items-center justify-between z-30 select-none shrink-0 shadow-xs">
         
         <!-- Left: Logo & Nav Links -->
         <div class="flex items-center gap-3">
             <a href="/dashboard" class="flex items-center gap-2.5 group">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-blue-700 flex items-center justify-center text-white shadow-md shadow-primary/20">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center text-white shadow-sm shadow-primary/20">
                     <i data-lucide="message-square" class="w-4 h-4"></i>
                 </div>
                 <div class="flex items-center gap-2">
-                    <span class="font-bold text-sm tracking-tight text-white group-hover:text-primary transition-colors">Chatery</span>
+                    <span class="font-bold text-sm tracking-tight text-slate-900 group-hover:text-primary transition-colors">Chatery</span>
                 </div>
             </a>
 
             <!-- Navigation Bar Tabs -->
             <nav class="flex items-center gap-1 ml-2 pl-3 border-l border-wa-border">
-                <a href="/dashboard" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-wa-muted hover:text-white hover:bg-wa-input transition-colors">
+                <a href="/dashboard" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-wa-muted hover:text-slate-900 hover:bg-slate-100 transition-colors">
                     <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
                     <span>Dashboard & Sessions</span>
                 </a>
@@ -162,7 +162,7 @@
             <!-- Session Selector -->
             <div class="flex items-center gap-1.5 sm:gap-2 ml-1 pl-2 sm:pl-3 border-l border-wa-border">
                 <div class="relative">
-                    <select id="sessionSelector" onchange="switchSession(this.value)" class="bg-wa-input text-xs font-medium text-slate-200 border border-wa-border rounded-lg pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 focus:outline-none focus:border-primary appearance-none cursor-pointer max-w-[130px] sm:max-w-[180px] md:max-w-[220px] truncate" title="Pilih Sesi WhatsApp Aktif">
+                    <select id="sessionSelector" onchange="switchSession(this.value)" class="bg-slate-50 text-xs font-medium text-slate-700 border border-wa-border rounded-lg pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 focus:outline-none focus:border-primary appearance-none cursor-pointer max-w-[130px] sm:max-w-[180px] md:max-w-[220px] truncate" title="Pilih Sesi WhatsApp Aktif">
                         <option value="">Belum ada sesi</option>
                     </select>
                     <div class="absolute right-2 top-2 pointer-events-none text-wa-muted">
@@ -171,9 +171,9 @@
                 </div>
 
                 <!-- Session Status Badge -->
-                <div id="sessionStatusPill" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-wa-input border border-wa-border text-[11px] text-wa-muted">
+                <div id="sessionStatusPill" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-wa-border text-[11px] text-wa-muted">
                     <span id="sessionStatusDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
-                    <span id="sessionStatusText" class="font-medium">Disconnected</span>
+                    <span id="sessionStatusText" class="font-medium text-slate-700">Disconnected</span>
                 </div>
             </div>
         </div>
@@ -182,30 +182,30 @@
         <div class="flex items-center gap-1.5">
 
             <!-- Pair / Scan QR Button -->
-            <button onclick="openCurrentSessionQr()" id="btnScanQr" class="hidden flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-semibold transition-colors" title="Pindai QR Code WhatsApp">
+            <button onclick="openCurrentSessionQr()" id="btnScanQr" class="hidden flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-lg text-xs font-semibold transition-colors" title="Pindai QR Code WhatsApp">
                 <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
                 <span class="hidden sm:inline">Scan QR</span>
             </button>
 
             <!-- Toggle API Explorer Drawer -->
-            <button onclick="toggleApiDrawer()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary hover:text-primary-300 bg-primary/10 hover:bg-primary/20 border border-primary/25 rounded-lg transition-colors" title="Interactive REST API Tester">
+            <button onclick="toggleApiDrawer()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary hover:text-primary-700 bg-primary/10 hover:bg-primary/20 border border-primary/25 rounded-lg transition-colors" title="Interactive REST API Tester">
                 <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
                 <span class="hidden sm:inline">API Tester</span>
             </button>
 
             <!-- Toggle Live Activity Drawer -->
-            <button onclick="toggleActivityDrawer()" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-wa-muted hover:text-white bg-wa-input hover:bg-wa-border border border-wa-border rounded-lg transition-colors" title="Live WebSocket Events">
-                <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+            <button onclick="toggleActivityDrawer()" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-wa-muted hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-wa-border rounded-lg transition-colors" title="Live WebSocket Events">
+                <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
                 <span id="unreadEventsBadge" class="hidden text-[10px] bg-primary text-white font-bold px-1.5 rounded-full">0</span>
             </button>
 
             <!-- Swagger Docs -->
-            <a href="/" target="_blank" class="p-2 text-wa-muted hover:text-white hover:bg-wa-border/50 rounded-lg transition-colors" title="OpenAPI Documentation">
+            <a href="/" target="_blank" class="p-2 text-wa-muted hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="OpenAPI Documentation">
                 <i data-lucide="book-open" class="w-4 h-4"></i>
             </a>
 
             <!-- Logout -->
-            <button onclick="logout()" class="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors" title="Logout Dashboard">
+            <button onclick="logout()" class="p-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Logout Dashboard">
                 <i data-lucide="log-out" class="w-4 h-4"></i>
             </button>
         </div>
@@ -215,38 +215,38 @@
     <div class="flex-1 flex overflow-hidden relative">
 
         <!-- ==================== LEFT PANEL: CHATS LIST (Sidebar) ==================== -->
-        <aside class="w-full md:w-80 lg:w-96 bg-wa-sidebar border-r border-wa-border flex flex-col shrink-0 select-none">
+        <aside class="w-full md:w-80 lg:w-96 bg-white border-r border-wa-border flex flex-col shrink-0 select-none">
             
             <!-- Sidebar Header -->
             <div class="h-16 px-4 bg-wa-sidebarHeader flex items-center justify-between border-b border-wa-border">
                 <div class="flex items-center gap-3">
-                    <div id="currentUserAvatar" class="w-9 h-9 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center font-bold text-xs ring-2 ring-wa-border">
+                    <div id="currentUserAvatar" class="w-9 h-9 rounded-full bg-primary/10 text-primary border border-primary/25 flex items-center justify-center font-bold text-xs ring-2 ring-slate-100">
                         U
                     </div>
                     <div class="min-w-0">
-                        <div id="currentUserName" class="font-semibold text-xs text-white truncate max-w-[130px] sm:max-w-[160px]">My WhatsApp</div>
+                        <div id="currentUserName" class="font-semibold text-xs text-slate-900 truncate max-w-[130px] sm:max-w-[160px]">My WhatsApp</div>
                         <div id="currentUserPhone" class="text-[11px] text-wa-muted truncate max-w-[130px] sm:max-w-[160px]">Loading...</div>
                     </div>
                 </div>
 
                 <!-- Chat Actions -->
                 <div class="flex items-center gap-1">
-                    <button onclick="openNewChatModal()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Pesan Baru">
+                    <button onclick="openNewChatModal()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Pesan Baru">
                         <i data-lucide="message-square-plus" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="loadChatsOverview()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Muat Ulang Percakapan">
+                    <button onclick="loadChatsOverview()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Muat Ulang Percakapan">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
-                    <button onclick="openNewGroupModal()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Buat Grup">
+                    <button onclick="openNewGroupModal()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Buat Grup">
                         <i data-lucide="users-round" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
 
             <!-- Search & Filters Bar -->
-            <div class="p-3 border-b border-wa-border space-y-2">
+            <div class="p-3 border-b border-wa-border space-y-2 bg-white">
                 <div class="relative">
-                    <input type="text" id="chatSearchInput" oninput="filterChatList(this.value)" placeholder="Search or start new chat" class="w-full bg-wa-input text-xs text-slate-200 border border-wa-border rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-primary transition-colors">
+                    <input type="text" id="chatSearchInput" oninput="filterChatList(this.value)" placeholder="Search or start new chat" class="w-full bg-slate-100 text-xs text-slate-800 border border-wa-border rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-primary focus:bg-white transition-colors">
                     <div class="absolute left-2.5 top-2.5 text-wa-muted">
                         <i data-lucide="search" class="w-3.5 h-3.5"></i>
                     </div>
@@ -255,14 +255,14 @@
                 <!-- Chat Type Filters -->
                 <div class="flex items-center gap-1 text-[11px]">
                     <button onclick="setChatFilter('all')" class="chat-filter-btn px-2.5 py-1 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20" data-filter="all">All</button>
-                    <button onclick="setChatFilter('unread')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-white hover:bg-wa-input" data-filter="unread">Unread</button>
-                    <button onclick="setChatFilter('personal')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-white hover:bg-wa-input" data-filter="personal">Personal</button>
-                    <button onclick="setChatFilter('groups')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-white hover:bg-wa-input" data-filter="groups">Groups</button>
+                    <button onclick="setChatFilter('unread')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-slate-800 hover:bg-slate-100" data-filter="unread">Unread</button>
+                    <button onclick="setChatFilter('personal')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-slate-800 hover:bg-slate-100" data-filter="personal">Personal</button>
+                    <button onclick="setChatFilter('groups')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-slate-800 hover:bg-slate-100" data-filter="groups">Groups</button>
                 </div>
             </div>
 
             <!-- Chat Conversation List -->
-            <div id="chatsContainer" class="flex-1 overflow-y-auto divide-y divide-wa-border/40">
+            <div id="chatsContainer" class="flex-1 overflow-y-auto divide-y divide-wa-border/60 bg-white">
                 <!-- Chat items populated dynamically -->
                 <div class="text-center py-16 text-wa-muted">
                     <i data-lucide="message-square" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
@@ -276,20 +276,20 @@
 
             <!-- EMPTY STATE (When no chat is selected, matching WhatsApp Web) -->
             <div id="emptyChatScreen" class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center select-none bg-wa-bg">
-                <div class="w-20 h-20 rounded-3xl bg-wa-sidebarHeader border border-wa-border flex items-center justify-center mb-6 shadow-xl shadow-black/40">
+                <div class="w-20 h-20 rounded-3xl bg-white border border-wa-border flex items-center justify-center mb-6 shadow-md shadow-slate-200">
                     <i data-lucide="message-square" class="w-10 h-10 text-primary"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-white mb-2">Chatery WhatsApp Web</h2>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Chatery WhatsApp Web</h2>
                 <p class="text-xs text-wa-muted max-w-sm leading-relaxed mb-6">
                     Send and receive messages in real time with high reliability. Powered by Express.js, Baileys v7, and Socket.IO.
                 </p>
 
                 <div class="flex items-center gap-3">
-                    <button onclick="openNewChatModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-lg shadow-primary/20 transition-all">
+                    <button onclick="openNewChatModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 transition-all">
                         <i data-lucide="message-square-plus" class="w-4 h-4"></i>
                         <span>Start Conversation</span>
                     </button>
-                    <button onclick="toggleApiDrawer()" class="flex items-center gap-2 px-4 py-2 bg-wa-sidebarHeader hover:bg-wa-border border border-wa-border text-slate-300 text-xs font-semibold rounded-xl transition-colors">
+                    <button onclick="toggleApiDrawer()" class="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-wa-border text-slate-700 text-xs font-semibold rounded-xl shadow-sm transition-colors">
                         <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
                         <span>Open API Tester</span>
                     </button>
@@ -307,27 +307,27 @@
                 <!-- Chat Header -->
                 <div class="h-16 px-4 bg-wa-chatHeader border-b border-wa-border flex items-center justify-between shrink-0 select-none z-10">
                     <div class="flex items-center gap-3">
-                        <div id="activeChatAvatar" class="w-10 h-10 rounded-full bg-wa-border flex items-center justify-center font-bold text-sm text-primary ring-2 ring-wa-border shrink-0">
+                        <div id="activeChatAvatar" class="w-10 h-10 rounded-full bg-slate-100 border border-wa-border flex items-center justify-center font-bold text-sm text-primary ring-2 ring-white shrink-0">
                             C
                         </div>
                         <div class="min-w-0">
-                            <div id="activeChatTitle" class="font-semibold text-sm text-white truncate max-w-[200px] sm:max-w-md">Contact Name</div>
+                            <div id="activeChatTitle" class="font-semibold text-sm text-slate-900 truncate max-w-[200px] sm:max-w-md">Contact Name</div>
                             <div id="activeChatSubtitle" class="text-xs text-wa-muted truncate">Active conversation</div>
                         </div>
                     </div>
 
                     <!-- Chat Header Options -->
                     <div class="flex items-center gap-1">
-                        <button onclick="pinActiveChat()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Pin Conversation">
+                        <button onclick="pinActiveChat()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Pin Conversation">
                             <i data-lucide="pin" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="archiveActiveChat()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Archive Conversation">
+                        <button onclick="archiveActiveChat()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Archive Conversation">
                             <i data-lucide="archive" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="muteActiveChat()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Mute Notifications">
+                        <button onclick="muteActiveChat()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Mute Notifications">
                             <i data-lucide="bell-off" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="markActiveChatRead()" class="p-2 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Mark as Read">
+                        <button onclick="markActiveChatRead()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Mark as Read">
                             <i data-lucide="check-check" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -343,46 +343,46 @@
                     
                     <!-- Media / Attachment Options Toggle -->
                     <div class="relative">
-                        <button onclick="toggleAttachMenu()" id="btnAttach" class="p-2.5 text-wa-muted hover:text-white hover:bg-wa-input rounded-full transition-colors" title="Attach Media">
+                        <button onclick="toggleAttachMenu()" id="btnAttach" class="p-2.5 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Attach Media">
                             <i data-lucide="paperclip" class="w-5 h-5"></i>
                         </button>
 
                         <!-- Attach Dropdown Menu -->
-                        <div id="attachMenu" class="absolute bottom-12 left-0 w-48 bg-wa-sidebarHeader border border-wa-border rounded-xl shadow-2xl p-1.5 hidden flex-col gap-1 z-30">
-                            <button onclick="openMediaModal('image')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-wa-border rounded-lg transition-colors w-full text-left">
+                        <div id="attachMenu" class="absolute bottom-12 left-0 w-48 bg-white border border-wa-border rounded-xl shadow-xl p-1.5 hidden flex-col gap-1 z-30">
+                            <button onclick="openMediaModal('image')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
                                 <i data-lucide="image" class="w-4 h-4 text-primary"></i>
                                 <span>Send Image</span>
                             </button>
-                            <button onclick="openMediaModal('video')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-wa-border rounded-lg transition-colors w-full text-left">
-                                <i data-lucide="video" class="w-4 h-4 text-cyan-400"></i>
+                            <button onclick="openMediaModal('video')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="video" class="w-4 h-4 text-cyan-500"></i>
                                 <span>Send Video</span>
                             </button>
-                            <button onclick="openMediaModal('document')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-wa-border rounded-lg transition-colors w-full text-left">
-                                <i data-lucide="file-text" class="w-4 h-4 text-amber-400"></i>
+                            <button onclick="openMediaModal('document')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i>
                                 <span>Send Document</span>
                             </button>
-                            <button onclick="openMediaModal('audio')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-wa-border rounded-lg transition-colors w-full text-left">
-                                <i data-lucide="mic" class="w-4 h-4 text-rose-400"></i>
+                            <button onclick="openMediaModal('audio')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="mic" class="w-4 h-4 text-rose-500"></i>
                                 <span>Send Audio / PTT</span>
                             </button>
-                            <button onclick="openMediaModal('sticker')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-wa-border rounded-lg transition-colors w-full text-left">
-                                <i data-lucide="smile" class="w-4 h-4 text-purple-400"></i>
+                            <button onclick="openMediaModal('sticker')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="smile" class="w-4 h-4 text-purple-500"></i>
                                 <span>Send Sticker</span>
                             </button>
-                            <button onclick="openMediaModal('location')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-300 hover:text-white hover:bg-wa-border rounded-lg transition-colors w-full text-left">
-                                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-400"></i>
+                            <button onclick="openMediaModal('location')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i>
                                 <span>Send Location</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Text Message Input Box -->
-                    <div class="flex-1 bg-wa-input border border-wa-border rounded-xl px-3.5 py-2 flex items-center gap-2">
-                        <textarea id="messageTextInput" rows="1" onkeydown="handleInputKeydown(event)" placeholder="Type a message..." class="w-full bg-transparent text-sm text-slate-100 placeholder-wa-muted focus:outline-none resize-none max-h-32 leading-relaxed"></textarea>
+                    <div class="flex-1 bg-white border border-wa-border rounded-xl px-3.5 py-2 flex items-center gap-2 shadow-xs">
+                        <textarea id="messageTextInput" rows="1" onkeydown="handleInputKeydown(event)" placeholder="Type a message..." class="w-full bg-transparent text-sm text-slate-800 placeholder-wa-muted focus:outline-none resize-none max-h-32 leading-relaxed"></textarea>
                     </div>
 
                     <!-- Send Message Button -->
-                    <button onclick="sendChatMessage()" id="btnSendMessage" class="w-10 h-10 rounded-xl bg-primary hover:bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary/25 transition-all shrink-0" title="Send Message">
+                    <button onclick="sendChatMessage()" id="btnSendMessage" class="w-10 h-10 rounded-xl bg-primary hover:bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary/20 transition-all shrink-0" title="Send Message">
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -390,15 +390,15 @@
         </main>
 
         <!-- ==================== SLIDE-OVER: INTERACTIVE API TESTER ==================== -->
-        <aside id="apiDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-[500px] lg:w-[560px] bg-wa-sidebarHeader border-l border-wa-border shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
-            <div class="h-14 px-5 border-b border-wa-border flex items-center justify-between">
+        <aside id="apiDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-[500px] lg:w-[560px] bg-white border-l border-wa-border shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="h-14 px-5 bg-slate-50 border-b border-wa-border flex items-center justify-between">
                 <div class="flex items-center gap-2">
                     <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
-                    <h3 class="font-bold text-sm text-white">Interactive API Tester</h3>
+                    <h3 class="font-bold text-sm text-slate-900">Interactive API Tester</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="formatRequestBody()" class="text-xs text-wa-muted hover:text-white px-2 py-1 bg-wa-input rounded border border-wa-border">Format JSON</button>
-                    <button onclick="toggleApiDrawer()" class="p-1.5 text-wa-muted hover:text-white rounded-lg">
+                    <button onclick="formatRequestBody()" class="text-xs text-slate-600 hover:text-slate-900 px-2.5 py-1 bg-white rounded-lg border border-wa-border shadow-2xs">Format JSON</button>
+                    <button onclick="toggleApiDrawer()" class="p-1.5 text-wa-muted hover:text-slate-900 rounded-lg">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -406,8 +406,8 @@
 
             <div class="flex-1 overflow-y-auto p-5 space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1.5">Select Endpoint</label>
-                    <select id="apiEndpoint" onchange="updateRequestBody()" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Select Endpoint</label>
+                    <select id="apiEndpoint" onchange="updateRequestBody()" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
                         <optgroup label="Direct Messaging">
                             <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text</option>
                             <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send image</option>
@@ -474,21 +474,21 @@
                 </div>
 
                 <div id="sessionIdGroup" class="hidden">
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Session ID Parameter</label>
-                    <input type="text" id="apiSessionId" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Session ID Parameter</label>
+                    <input type="text" id="apiSessionId" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
                 </div>
 
                 <div id="jobIdGroup" class="hidden">
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Job ID Parameter</label>
-                    <input type="text" id="apiJobId" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Job ID Parameter</label>
+                    <input type="text" id="apiJobId" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
                 </div>
 
                 <div id="bodyGroup">
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">JSON Payload</label>
-                    <textarea id="apiBody" rows="6" class="w-full bg-wa-input text-xs font-mono text-emerald-400 border border-wa-border rounded-xl p-3 focus:outline-none focus:border-primary"></textarea>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">JSON Payload</label>
+                    <textarea id="apiBody" rows="6" class="w-full bg-slate-900 text-xs font-mono text-emerald-400 border border-slate-700 rounded-xl p-3 focus:outline-none focus:border-primary"></textarea>
                 </div>
 
-                <div id="apiHelp" class="text-xs text-wa-muted bg-wa-input border border-wa-border rounded-xl p-3"></div>
+                <div id="apiHelp" class="text-xs text-slate-600 bg-slate-50 border border-wa-border rounded-xl p-3"></div>
 
                 <button onclick="sendApiRequest()" id="btnSendApi" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-2">
                     <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
@@ -497,32 +497,32 @@
 
                 <div>
                     <div class="flex items-center justify-between mb-1.5">
-                        <label class="text-xs font-semibold text-wa-muted uppercase tracking-wider">Output Response</label>
-                        <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md bg-wa-border text-wa-muted">200 OK</span>
+                        <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Output Response</label>
+                        <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-600 border border-wa-border">200 OK</span>
                     </div>
-                    <pre class="bg-wa-input border border-wa-border rounded-xl p-3 overflow-x-auto max-h-56"><code id="apiResponse" class="language-json font-mono text-xs text-slate-300">Ready for execution.</code></pre>
+                    <pre class="bg-slate-900 border border-slate-700 rounded-xl p-3 overflow-x-auto max-h-56"><code id="apiResponse" class="language-json font-mono text-xs text-slate-200">Ready for execution.</code></pre>
                 </div>
             </div>
         </aside>
 
         <!-- ==================== SLIDE-OVER: LIVE ACTIVITY STREAM ==================== -->
-        <aside id="activityDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-96 bg-wa-sidebarHeader border-l border-wa-border shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
-            <div class="h-14 px-4 border-b border-wa-border flex items-center justify-between">
+        <aside id="activityDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-96 bg-white border-l border-wa-border shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="h-14 px-4 bg-slate-50 border-b border-wa-border flex items-center justify-between">
                 <div class="flex items-center gap-2">
-                    <i data-lucide="activity" class="w-4 h-4 text-emerald-400"></i>
-                    <h3 class="font-bold text-sm text-white">Live Activity Stream</h3>
+                    <i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i>
+                    <h3 class="font-bold text-sm text-slate-900">Live Activity Stream</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="clearEvents()" class="text-xs text-wa-muted hover:text-white px-2 py-1 bg-wa-input rounded border border-wa-border">Clear</button>
-                    <button onclick="toggleActivityDrawer()" class="p-1.5 text-wa-muted hover:text-white rounded-lg">
+                    <button onclick="clearEvents()" class="text-xs text-slate-600 hover:text-slate-900 px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg border border-wa-border shadow-2xs">Clear</button>
+                    <button onclick="toggleActivityDrawer()" class="p-1.5 text-wa-muted hover:text-slate-900 rounded-lg">
                         <i data-lucide="x" class="w-4 h-4"></i>
                     </button>
                 </div>
             </div>
 
-            <div id="eventsLog" class="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-xs">
+            <div id="eventsLog" class="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-xs bg-slate-50">
                 <div class="text-center py-16 text-wa-muted font-sans">
-                    <i data-lucide="radio" class="w-6 h-6 mx-auto mb-2 opacity-30"></i>
+                    <i data-lucide="radio" class="w-6 h-6 mx-auto mb-2 opacity-40"></i>
                     <p class="text-xs">Listening for Socket.IO events...</p>
                 </div>
             </div>
@@ -533,69 +533,69 @@
     <!-- ==================== MODALS ==================== -->
 
     <!-- NEW CHAT MODAL -->
-    <div id="newChatModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+    <div id="newChatModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="font-bold text-sm text-white">Start New Conversation</h3>
-                <button onclick="closeNewChatModal()" class="text-wa-muted hover:text-white p-1 rounded-lg">
+                <h3 class="font-bold text-sm text-slate-900">Start New Conversation</h3>
+                <button onclick="closeNewChatModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Target Phone Number</label>
-                    <input type="text" id="newChatPhone" placeholder="628123456789" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Target Phone Number</label>
+                    <input type="text" id="newChatPhone" placeholder="628123456789" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary">
                     <p class="text-[11px] text-wa-muted mt-1">Country code prefix without leading zeros or plus</p>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Initial Message (Optional)</label>
-                    <textarea id="newChatInitialMsg" rows="2" placeholder="Hello!" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary"></textarea>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Initial Message (Optional)</label>
+                    <textarea id="newChatInitialMsg" rows="2" placeholder="Hello!" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary"></textarea>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 pt-1">
-                <button onclick="closeNewChatModal()" class="flex-1 py-2 bg-wa-input hover:bg-wa-border text-slate-300 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="closeNewChatModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancel</button>
                 <button onclick="submitNewChat()" class="flex-1 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25">Open Chat</button>
             </div>
         </div>
     </div>
 
     <!-- NEW GROUP MODAL -->
-    <div id="newGroupModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+    <div id="newGroupModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
-                <h3 class="font-bold text-sm text-white">Create WhatsApp Group</h3>
-                <button onclick="closeNewGroupModal()" class="text-wa-muted hover:text-white p-1 rounded-lg">
+                <h3 class="font-bold text-sm text-slate-900">Create WhatsApp Group</h3>
+                <button onclick="closeNewGroupModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Group Subject / Title *</label>
-                    <input type="text" id="newGroupName" placeholder="Support Team" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Group Subject / Title *</label>
+                    <input type="text" id="newGroupName" placeholder="Support Team" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Participant Phone Numbers *</label>
-                    <textarea id="newGroupParticipants" rows="2" placeholder="628123456789, 628987654321" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary"></textarea>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Participant Phone Numbers *</label>
+                    <textarea id="newGroupParticipants" rows="2" placeholder="628123456789, 628987654321" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary"></textarea>
                     <p class="text-[11px] text-wa-muted mt-1">Comma-separated phone numbers</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 pt-1">
-                <button onclick="closeNewGroupModal()" class="flex-1 py-2 bg-wa-input hover:bg-wa-border text-slate-300 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="closeNewGroupModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancel</button>
                 <button onclick="submitNewGroup()" class="flex-1 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25">Create Group</button>
             </div>
         </div>
     </div>
 
     <!-- SEND MEDIA MODAL -->
-    <div id="mediaModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+    <div id="mediaModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
             <div class="flex items-center justify-between">
-                <h3 id="mediaModalTitle" class="font-bold text-sm text-white">Send Media Attachment</h3>
-                <button onclick="closeMediaModal()" class="text-wa-muted hover:text-white p-1 rounded-lg">
+                <h3 id="mediaModalTitle" class="font-bold text-sm text-slate-900">Send Media Attachment</h3>
+                <button onclick="closeMediaModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
@@ -605,7 +605,7 @@
             </div>
 
             <div class="flex items-center gap-2 pt-1">
-                <button onclick="closeMediaModal()" class="flex-1 py-2 bg-wa-input hover:bg-wa-border text-slate-300 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="closeMediaModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancel</button>
                 <button onclick="submitMediaSend()" class="flex-1 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25">Send Attachment</button>
             </div>
         </div>
@@ -614,66 +614,66 @@
 
 
     <!-- QR SCAN MODAL -->
-    <div id="qrModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
+    <div id="qrModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
             <div class="flex items-center justify-between pb-2 border-b border-wa-border">
                 <div class="flex items-center gap-2 text-left">
-                    <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center">
+                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
                         <i data-lucide="qr-code" class="w-4 h-4"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-white">Scan WhatsApp QR</h3>
+                        <h3 class="font-bold text-sm text-slate-900">Scan WhatsApp QR</h3>
                         <p id="qrSessionLabel" class="text-xs text-wa-muted font-mono">Session: -</p>
                     </div>
                 </div>
-                <button onclick="closeQrModal()" class="text-wa-muted hover:text-white p-1 rounded-lg">
+                <button onclick="closeQrModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <div id="qrContainer" class="bg-white p-4 rounded-xl flex items-center justify-center min-h-[250px] shadow-inner relative overflow-hidden">
-                <div class="text-slate-400 text-xs flex flex-col items-center gap-2">
+            <div id="qrContainer" class="bg-slate-50 p-4 rounded-xl flex items-center justify-center min-h-[250px] border border-wa-border shadow-inner relative overflow-hidden">
+                <div class="text-slate-500 text-xs flex flex-col items-center gap-2">
                     <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-primary"></i>
                     <span>Menghubungkan ke WhatsApp...</span>
                 </div>
             </div>
 
-            <div class="text-[11px] text-wa-muted text-left bg-wa-input p-3 rounded-xl border border-wa-border space-y-1">
-                <div class="font-semibold text-slate-200">Petunjuk Tautkan Perangkat:</div>
+            <div class="text-[11px] text-slate-600 text-left bg-slate-50 p-3 rounded-xl border border-wa-border space-y-1">
+                <div class="font-semibold text-slate-800">Petunjuk Tautkan Perangkat:</div>
                 <div>1. Buka aplikasi WhatsApp di HP</div>
                 <div>2. Masuk ke Perangkat Tertaut &gt; Tautkan Perangkat</div>
                 <div>3. Pindai kode QR yang tampil di atas</div>
             </div>
 
-            <button onclick="closeQrModal()" class="w-full py-2 bg-wa-input hover:bg-wa-border text-white text-xs font-semibold rounded-xl">Done</button>
+            <button onclick="closeQrModal()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Done</button>
         </div>
     </div>
 
     <!-- LOGIN MODAL -->
-    <div id="loginModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden items-center justify-center p-4">
-        <div class="bg-wa-sidebarHeader border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-5">
+    <div id="loginModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-5">
             <div class="text-center space-y-2">
-                <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-lg shadow-primary/20">
+                <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-md shadow-primary/10">
                     <i data-lucide="shield-check" class="w-6 h-6"></i>
                 </div>
-                <h3 class="font-bold text-base text-white">Chatery Dashboard Login</h3>
+                <h3 class="font-bold text-base text-slate-900">Chatery Dashboard Login</h3>
                 <p class="text-xs text-wa-muted">Enter credentials to unlock web gateway</p>
             </div>
 
             <div class="space-y-3">
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Username</label>
-                    <input type="text" id="loginUsername" placeholder="admin" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Username</label>
+                    <input type="text" id="loginUsername" placeholder="admin" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">Password</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-wa-muted uppercase tracking-wider mb-1">API Key (Optional)</label>
-                    <input type="password" id="loginApiKey" placeholder="X-Api-Key" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">API Key (Optional)</label>
+                    <input type="password" id="loginApiKey" placeholder="X-Api-Key" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
                 </div>
-                <div id="loginError" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5"></div>
+                <div id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-2.5"></div>
             </div>
 
             <button onclick="handleLogin()" id="btnLogin" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25 transition-all">
@@ -963,9 +963,9 @@
                             <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center mx-auto">
                                 <i data-lucide="layers" class="w-6 h-6"></i>
                             </div>
-                            <h4 class="text-xs font-semibold text-white">Belum Ada Sesi</h4>
+                            <h4 class="text-xs font-semibold text-slate-800">Belum Ada Sesi</h4>
                             <p class="text-[11px] text-wa-muted">Buat dan kelola sesi WhatsApp di halaman Dashboard.</p>
-                            <a href="/dashboard" class="mt-2 px-3.5 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md transition-all inline-flex items-center gap-1.5">
+                            <a href="/dashboard" class="mt-2 px-3.5 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-sm transition-all inline-flex items-center gap-1.5">
                                 <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
                                 <span>Buka Dashboard</span>
                             </a>
@@ -1045,15 +1045,15 @@
 
             if (!session || sessions.length === 0) {
                 container.innerHTML = `
-                    <div class="w-20 h-20 rounded-3xl bg-wa-sidebarHeader border border-wa-border flex items-center justify-center mb-6 shadow-xl shadow-black/40">
+                    <div class="w-20 h-20 rounded-3xl bg-white border border-wa-border flex items-center justify-center mb-6 shadow-md shadow-slate-200">
                         <i data-lucide="layers" class="w-10 h-10 text-primary"></i>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Belum Ada Sesi WhatsApp</h2>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Belum Ada Sesi WhatsApp</h2>
                     <p class="text-xs text-wa-muted max-w-sm leading-relaxed mb-6">
                         Belum ada sesi WhatsApp yang terdaftar. Buka halaman Dashboard untuk membuat dan menghubungkan akun WhatsApp Anda.
                     </p>
                     <div class="flex items-center gap-3">
-                        <a href="/dashboard" class="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-lg shadow-primary/20 transition-all">
+                        <a href="/dashboard" class="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 transition-all">
                             <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                             <span>Buka Dashboard & Manajemen Sesi</span>
                         </a>
@@ -1065,28 +1065,28 @@
 
             if (session.status !== 'connected') {
                 container.innerHTML = `
-                    <div class="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center mb-6 shadow-xl shadow-black/40 text-amber-400">
+                    <div class="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center mb-6 shadow-md text-amber-600">
                         <i data-lucide="qr-code" class="w-10 h-10"></i>
                     </div>
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold mb-3">
-                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold mb-3">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
                         <span>Sesi Belum Terhubung: ${escapeHtml(session.sessionId)}</span>
                     </div>
-                    <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Tautkan Perangkat WhatsApp</h2>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Tautkan Perangkat WhatsApp</h2>
                     <p class="text-xs text-wa-muted max-w-md leading-relaxed mb-6">
-                        Sesi <span class="text-white font-mono font-semibold">${escapeHtml(session.sessionId)}</span> belum terhubung ke akun WhatsApp. Anda dapat memindai QR code di sini atau mengelolanya dari Dashboard.
+                        Sesi <span class="text-slate-900 font-mono font-semibold">${escapeHtml(session.sessionId)}</span> belum terhubung ke akun WhatsApp. Anda dapat memindai QR code di sini atau mengelolanya dari Dashboard.
                     </p>
                     <div class="flex items-center gap-3">
-                        <button onclick="openCurrentSessionQr('${escapeHtml(session.sessionId)}')" class="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all">
+                        <button onclick="openCurrentSessionQr('${escapeHtml(session.sessionId)}')" class="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all">
                             <i data-lucide="qr-code" class="w-4 h-4"></i>
                             <span>Pindai Kode QR</span>
                         </button>
-                        <a href="/dashboard" class="flex items-center gap-2 px-4 py-2.5 bg-wa-sidebarHeader hover:bg-wa-border border border-wa-border text-slate-300 text-xs font-semibold rounded-xl transition-colors">
+                        <a href="/dashboard" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-wa-border text-slate-700 text-xs font-semibold rounded-xl transition-colors shadow-sm">
                             <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                             <span>Buka Dashboard</span>
                         </a>
                     </div>
-                    <div class="mt-8 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-60">
+                    <div class="mt-8 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-70">
                         <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
                         <span>Koneksi aman multi-perangkat Baileys v7</span>
                     </div>
@@ -1097,26 +1097,26 @@
 
             // Default connected screen
             container.innerHTML = `
-                <div class="w-20 h-20 rounded-3xl bg-wa-sidebarHeader border border-wa-border flex items-center justify-center mb-6 shadow-xl shadow-black/40">
+                <div class="w-20 h-20 rounded-3xl bg-white border border-wa-border flex items-center justify-center mb-6 shadow-md shadow-slate-200">
                     <i data-lucide="message-square" class="w-10 h-10 text-primary"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-white mb-2">Chatery WhatsApp Web</h2>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Chatery WhatsApp Web</h2>
                 <p class="text-xs text-wa-muted max-w-sm leading-relaxed mb-6">
                     Kirim dan terima pesan secara instan dan andal. Didukung oleh Express.js, Baileys v7, dan Socket.IO.
                 </p>
 
                 <div class="flex items-center gap-3">
-                    <button onclick="openNewChatModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-lg shadow-primary/20 transition-all">
+                    <button onclick="openNewChatModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 transition-all">
                         <i data-lucide="message-square-plus" class="w-4 h-4"></i>
                         <span>Mulai Percakapan</span>
                     </button>
-                    <button onclick="toggleApiDrawer()" class="flex items-center gap-2 px-4 py-2 bg-wa-sidebarHeader hover:bg-wa-border border border-wa-border text-slate-300 text-xs font-semibold rounded-xl transition-colors">
+                    <button onclick="toggleApiDrawer()" class="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-wa-border text-slate-700 text-xs font-semibold rounded-xl transition-colors shadow-sm">
                         <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
                         <span>Buka API Tester</span>
                     </button>
                 </div>
 
-                <div class="mt-12 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-60">
+                <div class="mt-12 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-70">
                     <i data-lucide="lock" class="w-3.5 h-3.5"></i>
                     <span>Sinkronisasi terenkripsi end-to-end</span>
                 </div>
@@ -1129,15 +1129,15 @@
             if (!container) return;
             container.innerHTML = `
                 <div class="text-center py-12 px-4 text-wa-muted select-none space-y-3">
-                    <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center mx-auto">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto">
                         <i data-lucide="qr-code" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <h4 class="text-xs font-semibold text-white">Sesi Belum Terhubung</h4>
+                        <h4 class="text-xs font-semibold text-slate-800">Sesi Belum Terhubung</h4>
                         <p class="text-[11px] text-wa-muted mt-1 max-w-[220px] mx-auto">Pindai kode QR untuk menghubungkan akun WhatsApp dan memuat pesan.</p>
                     </div>
                     <div class="pt-2 flex flex-col gap-2 items-center">
-                        <button onclick="openCurrentSessionQr('${escapeHtml(session.sessionId)}')" class="px-4 py-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/30 text-xs font-semibold rounded-xl transition-all inline-flex items-center gap-1.5">
+                        <button onclick="openCurrentSessionQr('${escapeHtml(session.sessionId)}')" class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 text-xs font-semibold rounded-xl transition-all inline-flex items-center gap-1.5">
                             <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
                             <span>Pindai QR Code</span>
                         </button>
@@ -1244,22 +1244,22 @@
 
                 return `
                 <div onclick="selectChat('${encodeURIComponent(JSON.stringify(chat))}')" class="px-3.5 py-3 flex items-center gap-3 cursor-pointer transition-colors ${
-                    isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'hover:bg-wa-sidebarHeader/60'
+                    isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'hover:bg-slate-50'
                 }">
-                    <div class="w-11 h-11 rounded-full bg-wa-border flex items-center justify-center font-bold text-sm text-primary shrink-0 relative overflow-hidden">
+                    <div class="w-11 h-11 rounded-full bg-slate-100 border border-wa-border flex items-center justify-center font-bold text-sm text-primary shrink-0 relative overflow-hidden">
                         ${chat.profilePicture ? `<img src="${chat.profilePicture}" class="w-full h-full rounded-full object-cover" onerror="this.style.display='none'">` : initial}
-                        ${chat.isGroup ? `<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-wa-sidebarHeader rounded-full flex items-center justify-center text-[10px] text-wa-muted border border-wa-border"><i data-lucide="users" class="w-2.5 h-2.5"></i></span>` : ''}
+                        ${chat.isGroup ? `<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center text-[10px] text-wa-muted border border-wa-border shadow-2xs"><i data-lucide="users" class="w-2.5 h-2.5"></i></span>` : ''}
                     </div>
 
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center justify-between mb-1">
-                            <span class="font-semibold text-xs text-white truncate max-w-[160px]">${escapeHtml(title)}</span>
+                            <span class="font-semibold text-xs text-slate-800 truncate max-w-[160px]">${escapeHtml(title)}</span>
                             <span class="text-[10px] text-wa-muted whitespace-nowrap">${time}</span>
                         </div>
                         <div class="flex items-center justify-between text-xs text-wa-muted">
                             <div class="flex items-center gap-1 truncate text-[11px] max-w-[190px]">
                                 ${fromMe ? `<i data-lucide="check-check" class="w-3 h-3 text-primary shrink-0"></i>` : ''}
-                                <span class="truncate">${escapeHtml(preview)}</span>
+                                <span class="truncate text-slate-500">${escapeHtml(preview)}</span>
                             </div>
                             ${chat.unreadCount > 0 ? `
                                 <span class="px-1.5 py-0.5 rounded-full bg-primary text-white text-[10px] font-bold shrink-0">
@@ -1280,7 +1280,7 @@
             document.querySelectorAll('.chat-filter-btn').forEach(btn => {
                 const isMatch = btn.dataset.filter === filter;
                 btn.className = `chat-filter-btn px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                    isMatch ? 'bg-primary/10 text-primary font-semibold border border-primary/20' : 'text-wa-muted hover:text-white hover:bg-wa-input'
+                    isMatch ? 'bg-primary/10 text-primary font-semibold border border-primary/20' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`;
             });
             renderChatList();
@@ -1377,19 +1377,19 @@
             const fromMe = Boolean(msg.fromMe === true || msg.fromMe === 'true' || msg.key?.fromMe === true);
             const time = msg.timestamp ? formatTimestamp(msg.timestamp) : '';
             const bubbleBg = fromMe 
-                ? 'bg-wa-bubbleOut text-white rounded-2xl rounded-tr-none border border-primary/20' 
-                : 'bg-wa-bubbleIn text-slate-100 rounded-2xl rounded-tl-none border border-wa-border';
+                ? 'bg-wa-bubbleOut text-slate-900 rounded-2xl rounded-tr-none border border-primary/20 shadow-xs' 
+                : 'bg-wa-bubbleIn text-slate-900 rounded-2xl rounded-tl-none border border-wa-border shadow-xs';
 
             let mediaContent = '';
             if (msg.type === 'image') {
                 if (msg.mediaUrl) {
-                    mediaContent = `<div class="mb-1.5"><img src="${msg.mediaUrl}" class="rounded-lg max-h-64 max-w-xs object-cover border border-black/20" onerror="this.parentElement.innerHTML='<span class=\\'text-wa-muted text-[11px]\\'>[Photo attachment]</span>'"></div>`;
+                    mediaContent = `<div class="mb-1.5"><img src="${msg.mediaUrl}" class="rounded-lg max-h-64 max-w-xs object-cover border border-black/10" onerror="this.parentElement.innerHTML='<span class=\\'text-wa-muted text-[11px]\\'>[Photo attachment]</span>'"></div>`;
                 } else {
                     mediaContent = `<div class="mb-1.5 flex items-center gap-1.5 text-wa-muted text-xs"><i data-lucide="image" class="w-4 h-4 text-primary"></i><span>Photo</span></div>`;
                 }
             } else if (msg.type === 'video') {
                 if (msg.mediaUrl) {
-                    mediaContent = `<div class="mb-1.5"><video src="${msg.mediaUrl}" controls class="rounded-lg max-h-64 max-w-xs border border-black/20"></video></div>`;
+                    mediaContent = `<div class="mb-1.5"><video src="${msg.mediaUrl}" controls class="rounded-lg max-h-64 max-w-xs border border-black/10"></video></div>`;
                 } else {
                     mediaContent = `<div class="mb-1.5 flex items-center gap-1.5 text-wa-muted text-xs"><i data-lucide="video" class="w-4 h-4 text-primary"></i><span>Video</span></div>`;
                 }
@@ -1401,11 +1401,11 @@
                 }
             } else if (msg.type === 'document') {
                 mediaContent = `
-                    <div class="flex items-center gap-2 p-2 rounded-lg bg-black/20 mb-1.5 border border-wa-border/50">
-                        <i data-lucide="file-text" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-black/5 mb-1.5 border border-slate-200">
+                        <i data-lucide="file-text" class="w-5 h-5 text-amber-500 shrink-0"></i>
                         <div class="min-w-0 text-xs">
-                            <div class="truncate font-medium">${escapeHtml(msg.filename || msg.fileName || 'Document')}</div>
-                            ${msg.mediaUrl ? `<a href="${msg.mediaUrl}" target="_blank" class="text-primary hover:underline text-[11px]">Download</a>` : ''}
+                            <div class="truncate font-medium text-slate-800">${escapeHtml(msg.filename || msg.fileName || 'Document')}</div>
+                            ${msg.mediaUrl ? `<a href="${msg.mediaUrl}" target="_blank" class="text-primary hover:underline text-[11px] font-medium">Download</a>` : ''}
                         </div>
                     </div>
                 `;
@@ -1419,12 +1419,12 @@
                 const lat = msg.content.latitude;
                 const lng = msg.content.longitude;
                 mediaContent = `
-                    <div class="p-2 rounded-lg bg-black/20 mb-1.5 border border-wa-border/50">
+                    <div class="p-2 rounded-lg bg-black/5 mb-1.5 border border-slate-200">
                         <div class="flex items-center gap-1.5 font-semibold text-xs text-primary mb-1">
                             <i data-lucide="map-pin" class="w-4 h-4"></i>
                             <span>${escapeHtml(msg.content.name || 'Location')}</span>
                         </div>
-                        ${msg.content.address ? `<div class="text-[11px] text-wa-muted mb-1">${escapeHtml(msg.content.address)}</div>` : ''}
+                        ${msg.content.address ? `<div class="text-[11px] text-slate-600 mb-1">${escapeHtml(msg.content.address)}</div>` : ''}
                         <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" class="text-primary hover:underline text-[11px] font-medium flex items-center gap-1">
                             View on Google Maps <i data-lucide="external-link" class="w-3 h-3"></i>
                         </a>
@@ -1432,13 +1432,13 @@
                 `;
             } else if (msg.type === 'contact' && msg.content) {
                 mediaContent = `
-                    <div class="p-2.5 rounded-lg bg-black/20 mb-1.5 border border-wa-border/50 flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-full bg-wa-border flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                    <div class="p-2.5 rounded-lg bg-black/5 mb-1.5 border border-slate-200 flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                             <i data-lucide="user" class="w-4 h-4"></i>
                         </div>
                         <div class="min-w-0 text-xs">
-                            <div class="font-semibold truncate">${escapeHtml(msg.content.displayName || 'Contact')}</div>
-                            <div class="text-[10px] text-wa-muted">Contact card</div>
+                            <div class="font-semibold truncate text-slate-800">${escapeHtml(msg.content.displayName || 'Contact')}</div>
+                            <div class="text-[10px] text-slate-500">Contact card</div>
                         </div>
                     </div>
                 `;
@@ -1453,11 +1453,11 @@
             return `
             <div class="w-full flex ${fromMe ? 'justify-end' : 'justify-start'}" data-msg-id="${escapeHtml(msgId)}">
                 <div class="flex flex-col max-w-[85%] sm:max-w-md lg:max-w-lg ${fromMe ? 'items-end ml-auto' : 'items-start mr-auto'}">
-                    <div class="px-3.5 py-2 text-xs shadow-md ${bubbleBg} relative group">
+                    <div class="px-3.5 py-2 text-xs shadow-sm ${bubbleBg} relative group">
                         ${senderDisplay ? `<div class="text-[10px] font-bold text-primary mb-1">${escapeHtml(senderDisplay)}</div>` : ''}
                         ${mediaContent}
                         ${text}
-                        <div class="flex items-center justify-end gap-1.5 text-[10px] ${fromMe ? 'text-blue-200/80' : 'text-slate-400'} mt-1 select-none">
+                        <div class="flex items-center justify-end gap-1.5 text-[10px] ${fromMe ? 'text-slate-500' : 'text-slate-400'} mt-1 select-none">
                             <span>${time}</span>
                             ${fromMe ? `<i data-lucide="check-check" class="w-3.5 h-3.5 text-primary"></i>` : ''}
                         </div>
@@ -1574,36 +1574,36 @@
 
             if (type === 'image') {
                 fields.innerHTML = `
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Image Direct URL *</label><input type="url" id="mUrl" placeholder="https://example.com/photo.jpg" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Caption (Optional)</label><input type="text" id="mCaption" placeholder="Photo caption" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Image Direct URL *</label><input type="url" id="mUrl" placeholder="https://example.com/photo.jpg" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Caption (Optional)</label><input type="text" id="mCaption" placeholder="Photo caption" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
                 `;
             } else if (type === 'video') {
                 fields.innerHTML = `
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">MP4 Video URL *</label><input type="url" id="mUrl" placeholder="https://example.com/video.mp4" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Caption (Optional)</label><input type="text" id="mCaption" placeholder="Video caption" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
-                    <label class="flex items-center gap-2 cursor-pointer pt-1"><input type="checkbox" id="mGif" class="rounded bg-wa-input text-primary"><span>Loop as GIF</span></label>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">MP4 Video URL *</label><input type="url" id="mUrl" placeholder="https://example.com/video.mp4" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Caption (Optional)</label><input type="text" id="mCaption" placeholder="Video caption" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <label class="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-700"><input type="checkbox" id="mGif" class="rounded border-slate-300 text-primary focus:ring-primary/20"><span>Loop as GIF</span></label>
                 `;
             } else if (type === 'document') {
                 fields.innerHTML = `
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Document File URL *</label><input type="url" id="mUrl" placeholder="https://example.com/file.pdf" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Display Filename *</label><input type="text" id="mFilename" placeholder="Contract.pdf" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Document File URL *</label><input type="url" id="mUrl" placeholder="https://example.com/file.pdf" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Display Filename *</label><input type="text" id="mFilename" placeholder="Contract.pdf" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
                 `;
             } else if (type === 'audio') {
                 fields.innerHTML = `
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">OGG Opus Audio URL *</label><input type="url" id="mUrl" placeholder="https://example.com/voice.ogg" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
-                    <label class="flex items-center gap-2 cursor-pointer pt-1"><input type="checkbox" id="mPtt" checked class="rounded bg-wa-input text-primary"><span>Push to Talk (Voice Note)</span></label>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">OGG Opus Audio URL *</label><input type="url" id="mUrl" placeholder="https://example.com/voice.ogg" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <label class="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-700"><input type="checkbox" id="mPtt" checked class="rounded border-slate-300 text-primary focus:ring-primary/20"><span>Push to Talk (Voice Note)</span></label>
                 `;
             } else if (type === 'sticker') {
                 fields.innerHTML = `
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">WebP Sticker URL *</label><input type="url" id="mUrl" placeholder="https://example.com/sticker.webp" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">WebP Sticker URL *</label><input type="url" id="mUrl" placeholder="https://example.com/sticker.webp" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
                 `;
             } else if (type === 'location') {
                 fields.innerHTML = `
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Latitude *</label><input type="number" step="any" id="mLat" placeholder="-6.2088" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
-                        <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Longitude *</label><input type="number" step="any" id="mLng" placeholder="106.8456" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
+                        <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Latitude *</label><input type="number" step="any" id="mLat" placeholder="-6.2088" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                        <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Longitude *</label><input type="number" step="any" id="mLng" placeholder="106.8456" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
                     </div>
-                    <div><label class="block mb-1 text-wa-muted font-semibold uppercase tracking-wider">Location Name</label><input type="text" id="mLocName" placeholder="Jakarta, Indonesia" class="w-full bg-wa-input text-xs text-white border border-wa-border rounded-xl p-2.5"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Location Name</label><input type="text" id="mLocName" placeholder="Jakarta, Indonesia" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
                 `;
             }
 
@@ -1942,7 +1942,7 @@
             item.innerHTML = `
                 <span class="text-[10px] text-wa-muted font-mono whitespace-nowrap mt-0.5">${time}</span>
                 <span class="px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded border ${badgeColor} whitespace-nowrap">${type}</span>
-                <span class="text-slate-300 font-sans break-all text-[11px]">${content}</span>
+                <span class="text-slate-700 font-sans break-all text-[11px]">${content}</span>
             `;
 
             log.insertBefore(item, log.firstChild);
