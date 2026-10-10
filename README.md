@@ -3,11 +3,28 @@
 ![Chatery](https://sgp.cloud.appwrite.io/v1/storage/buckets/6941a5b70012d918c7aa/files/6941a69000028dec52d2/view?project=694019b0000abc694483&token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbklkIjoiNjk0MWE4NjRjZGNhZGUxOTZmNTMiLCJyZXNvdXJjZUlkIjoiNjk0MWE1YjcwMDEyZDkxOGM3YWE6Njk0MWE2OTAwMDAyOGRlYzUyZDIiLCJyZXNvdXJjZVR5cGUiOiJmaWxlcyIsInJlc291cmNlSW50ZXJuYWxJZCI6IjE0NTE6MSIsImlhdCI6MTc2NTkxMDYyOH0.6DyBMKwzA6x__pQZn3vICDLdBfo0mEUlyMVAc3qEnyo)
 A powerful WhatsApp API backend built with Express.js and Baileys library. Supports multi-session management, real-time WebSocket events, group management, and media handling.
 
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)
 ![Express.js](https://img.shields.io/badge/Express.js-5.x-blue.svg)
 ![Baileys](https://img.shields.io/badge/Baileys-7.x-orange.svg)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.x-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+---
+
+## 🏢 Official Sponsor
+
+Special thanks to our official sponsor for supporting the development and infrastructure of **Chatery WhatsApp API**:
+
+<p align="center">
+  <a href="https://nagastra.org/" target="_blank" rel="noopener noreferrer">
+    <img src="https://nagastra.org/storage/setting/logo.png" alt="PT Nagari Sastra Group" height="80" style="max-height: 80px; object-fit: contain;" />
+  </a>
+  <br />
+  <strong><a href="https://nagastra.org/" target="_blank" rel="noopener noreferrer">PT Nagari Sastra Group</a></strong>
+  <br />
+  <a href="https://nagastra.org/" target="_blank" rel="noopener noreferrer">https://nagastra.org/</a>
+</p>
 
 ---
 
@@ -29,7 +46,7 @@ A powerful WhatsApp API backend built with Express.js and Baileys library. Suppo
 - 🔐 **Session Persistence** - Sessions survive server restarts
 - 🎛️ **Admin Dashboard** - Web-based dashboard with real-time monitoring and interactive API tester
 - 📄 **Swagger UI** - Interactive OpenAPI documentation at root URL
-- 🧪 **Automated Testing** - Complete native test suite with 160+ unit, WebSocket, and integration tests
+- 🧪 **Automated Testing** - Complete native test suite with 179+ unit, WebSocket, and integration tests
 
 ## 📖 Full Documentation
 
@@ -44,6 +61,7 @@ For complete and detailed documentation, please visit:
 
 ## 📋 Table of Contents
 
+- [Official Sponsor](#-official-sponsor)
 - [Full Documentation](#-full-documentation)
 - [Installation](#-installation)
   - [Standard Installation](#option-1-standard-installation)
@@ -2189,6 +2207,9 @@ If you find this project helpful, consider supporting the development:
 </p>
 
 Your support helps me maintain and improve this project! ❤️
+
+### 🏢 Official Sponsor
+Proudly sponsored by **[PT Nagari Sastra Group](https://nagastra.org/)** — Empowering digital transformation & enterprise software development.
 
 ---
 
