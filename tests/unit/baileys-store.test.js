@@ -566,5 +566,51 @@ describe('BaileysStore', () => {
             // Verify corrupted file was removed
             assert.equal(fs.existsSync(corruptedPath), false);
         });
+
+        it('should track isDirty state and write asynchronously with writeToFileAsync', async () => {
+            const freshStore = new BaileysStore('dirty-test');
+            assert.equal(freshStore.isDirty, false);
+
+            freshStore.registerIdentity('dirty@lid', '628999@s.whatsapp.net');
+            assert.equal(freshStore.isDirty, true);
+
+            const asyncFilePath = path.join(tempDir, 'async_store.json');
+            const asyncResult = await freshStore.writeToFileAsync(asyncFilePath);
+            assert.equal(asyncResult, true);
+            assert.equal(freshStore.isDirty, false);
+            assert.equal(fs.existsSync(asyncFilePath), true);
+
+            // Subsequent write when not dirty should skip writing and return true
+            const skipResult = await freshStore.writeToFileAsync(asyncFilePath);
+            assert.equal(skipResult, true);
+        });
+
+        it('should bound in-memory messages to maxMessagesPerChat to prevent memory leaks', () => {
+            const storeBounded = new BaileysStore('bound-test');
+            storeBounded.maxMessagesPerChat = 5;
+
+            const fakeEv = new EventEmitter();
+            storeBounded.bind(fakeEv);
+
+            const chatId = 'bound_chat@s.whatsapp.net';
+            for (let i = 1; i <= 8; i++) {
+                fakeEv.emit('messages.upsert', {
+                    messages: [{
+                        key: { id: `msg_${i}`, remoteJid: chatId },
+                        message: { conversation: `Msg ${i}` },
+                        messageTimestamp: 1000 + i
+                    }],
+                    type: 'notify'
+                });
+            }
+
+            const chatMap = storeBounded.messages.get(chatId);
+            assert.equal(chatMap.size, 5);
+            assert.equal(chatMap.has('msg_1'), false);
+            assert.equal(chatMap.has('msg_2'), false);
+            assert.equal(chatMap.has('msg_3'), false);
+            assert.equal(chatMap.has('msg_4'), true);
+            assert.equal(chatMap.has('msg_8'), true);
+        });
     });
 });

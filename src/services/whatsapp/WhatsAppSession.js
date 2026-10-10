@@ -26,6 +26,8 @@ class WhatsAppSession {
         this.name = null;
         this.store = null;
         this.storeInterval = null;
+        this.reconnectTimeout = null;
+        this.reconnectAttempts = 0;
         
         // Custom metadata and webhook
         this.metadata = options.metadata || {};
@@ -155,30 +157,47 @@ class WhatsAppSession {
 
     async connect() {
         try {
+            // Cancel any pending reconnect timer
+            if (this.reconnectTimeout) {
+                clearTimeout(this.reconnectTimeout);
+                this.reconnectTimeout = null;
+            }
+
+            // Clear any existing store interval to prevent timer leaks
+            if (this.storeInterval) {
+                clearInterval(this.storeInterval);
+                this.storeInterval = null;
+            }
+
             // Pastikan folder auth ada
             if (!fs.existsSync(this.authFolder)) {
                 fs.mkdirSync(this.authFolder, { recursive: true });
             }
 
-            // Initialize custom in-memory store with sessionId
-            this.store = new BaileysStore(this.sessionId);
+            // Initialize custom in-memory store with sessionId only once
+            if (!this.store) {
+                this.store = new BaileysStore(this.sessionId);
 
-            // Load existing store data if available
-            if (fs.existsSync(this.storeFile)) {
-                try {
-                    this.store.readFromFile(this.storeFile);
-                    console.log(`📂 [${this.sessionId}] Store data loaded from file`);
-                } catch (e) {
-                    console.log(`⚠️ [${this.sessionId}] Could not load store file:`, e.message);
+                // Load existing store data if available
+                if (fs.existsSync(this.storeFile)) {
+                    try {
+                        this.store.readFromFile(this.storeFile);
+                        console.log(`📂 [${this.sessionId}] Store data loaded from file`);
+                    } catch (e) {
+                        console.log(`⚠️ [${this.sessionId}] Could not load store file:`, e.message);
+                    }
                 }
             }
 
-            // Save store periodically (every 30 seconds) and cleanup old media
-            this.storeInterval = setInterval(() => {
+            // Save store periodically (every 30 seconds) using async non-blocking write
+            this.storeInterval = setInterval(async () => {
                 try {
-                    // Cleanup old media files before saving (keep only last 100 per chat)
-                    this.store.cleanupOldMedia(100);
-                    this.store.writeToFile(this.storeFile);
+                    if (this.store) {
+                        this.store.cleanupOldMedia(100);
+                        if (this.store.isDirty) {
+                            await this.store.writeToFileAsync(this.storeFile);
+                        }
+                    }
                 } catch (e) {
                     // Silent fail
                 }
@@ -192,11 +211,11 @@ class WhatsAppSession {
                 auth: state,
                 logger: pino({ level: 'silent' }),
                 browser: Browsers.ubuntu('Chrome'),
-                syncFullHistory: true,
+                syncFullHistory: process.env.SYNC_FULL_HISTORY === 'true',
                 connectTimeoutMs: 60_000,
                 defaultQueryTimeoutMs: 60_000,
                 keepAliveIntervalMs: 30_000,
-                generateHighQualityLinkPreview: true,
+                generateHighQualityLinkPreview: false,
                 getMessage: async (key) => {
                     if (this.store) {
                         const msg = this.store.getMessage(key.remoteJid, key.id);
@@ -218,6 +237,10 @@ class WhatsAppSession {
             return { success: true, message: 'Initializing connection...' };
         } catch (error) {
             console.error(`[${this.sessionId}] Error connecting:`, error);
+            if (this.storeInterval) {
+                clearInterval(this.storeInterval);
+                this.storeInterval = null;
+            }
             this.connectionStatus = 'error';
             return { success: false, message: error.message };
         }
@@ -243,6 +266,12 @@ class WhatsAppSession {
                 console.log(`❌ [${this.sessionId}] Connection closed:`, lastDisconnect?.error?.message);
                 this.connectionStatus = 'disconnected';
                 this.qrCode = null;
+
+                // Clear store interval immediately on disconnect
+                if (this.storeInterval) {
+                    clearInterval(this.storeInterval);
+                    this.storeInterval = null;
+                }
                 
                 // Emit connection status to WebSocket
                 wsManager.emitConnectionStatus(this.sessionId, 'disconnected', {
@@ -258,17 +287,40 @@ class WhatsAppSession {
                 });
                 
                 if (shouldReconnect) {
-                    console.log(`🔄 [${this.sessionId}] Reconnecting...`);
-                    setTimeout(() => this.connect(), 5000);
+                    if (this.reconnectTimeout) {
+                        clearTimeout(this.reconnectTimeout);
+                        this.reconnectTimeout = null;
+                    }
+                    const baseDelay = Math.min(2000 * Math.pow(2, this.reconnectAttempts || 0), 60000);
+                    const jitter = Math.floor(Math.random() * 2000);
+                    const delay = baseDelay + jitter;
+                    this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
+                    console.log(`🔄 [${this.sessionId}] Reconnecting in ${(delay / 1000).toFixed(1)}s (attempt ${this.reconnectAttempts})...`);
+                    this.reconnectTimeout = setTimeout(() => this.connect(), delay);
                 } else {
                     console.log(`🚪 [${this.sessionId}] Logged out.`);
+                    if (this.reconnectTimeout) {
+                        clearTimeout(this.reconnectTimeout);
+                        this.reconnectTimeout = null;
+                    }
+                    this.reconnectAttempts = 0;
+                    if (this.store) {
+                        this.store.clear();
+                        this.store = null;
+                    }
                     wsManager.emitLoggedOut(this.sessionId);
                     this.deleteAuthFolder();
+                    this.deleteMediaFolder();
                 }
             } else if (connection === 'open') {
                 console.log(`✅ [${this.sessionId}] WhatsApp Connected Successfully!`);
                 this.connectionStatus = 'connected';
                 this.qrCode = null;
+                this.reconnectAttempts = 0;
+                if (this.reconnectTimeout) {
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
+                }
                 
                 if (this.socket.user) {
                     this.phoneNumber = this.socket.user.id.split(':')[0];
@@ -498,13 +550,21 @@ class WhatsAppSession {
 
     async logout() {
         try {
+            if (this.reconnectTimeout) {
+                clearTimeout(this.reconnectTimeout);
+                this.reconnectTimeout = null;
+            }
+            this.reconnectAttempts = 0;
+
             if (this.storeInterval) {
                 clearInterval(this.storeInterval);
+                this.storeInterval = null;
             }
             
             // Clear store and delete all media files
             if (this.store) {
                 this.store.clear();
+                this.store = null;
             }
             
             // Delete media folder for this session
@@ -2327,6 +2387,10 @@ class WhatsAppSession {
      * Auto-save media when message received
      */
     async _autoSaveMedia(message) {
+        if (process.env.AUTO_DOWNLOAD_MEDIA === 'false') {
+            return null;
+        }
+
         try {
             if (!message.message) return null;
 
@@ -2338,21 +2402,34 @@ class WhatsAppSession {
             const mediaContent = message.message[contentType];
             if (!mediaContent) return null;
 
-            // Download media
-            const buffer = await downloadMediaMessage(
+            // Skip large media files (default max 25MB) to protect container memory
+            const fileLength = mediaContent.fileLength;
+            const maxSizeBytes = (parseInt(process.env.MAX_MEDIA_DOWNLOAD_SIZE_MB, 10) || 25) * 1024 * 1024;
+            if (fileLength && Number(fileLength) > maxSizeBytes) {
+                console.log(`⚠️ [${this.sessionId}] Skipping media download: file size exceeds limit (${fileLength} bytes)`);
+                return null;
+            }
+
+            // Download media with timeout to prevent hanging the event loop
+            const downloadPromise = downloadMediaMessage(
                 message,
                 'buffer',
                 {},
-                { logger: console, reuploadRequest: (msg) => this.socket?.updateMediaMessage(msg) }
+                { logger: pino({ level: 'silent' }), reuploadRequest: (msg) => this.socket?.updateMediaMessage(msg) }
             );
+
+            const buffer = await Promise.race([
+                downloadPromise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Media download timeout')), 15000))
+            ]);
+
+            if (!buffer || !Buffer.isBuffer(buffer)) return null;
 
             // Create media folder structure: public/media/{sessionId}/{chatId}/
             const chatId = message.key.remoteJid.replace('@c.us', '').replace('@g.us', '');
             const mediaDir = path.join(this.mediaFolder, chatId);
             
-            if (!fs.existsSync(mediaDir)) {
-                fs.mkdirSync(mediaDir, { recursive: true });
-            }
+            await fs.promises.mkdir(mediaDir, { recursive: true });
 
             // Generate filename
             const mimetype = mediaContent.mimetype || this._getMimetype(contentType);
@@ -2360,8 +2437,8 @@ class WhatsAppSession {
             const filename = mediaContent.fileName || `${message.key.id}.${ext}`;
             const filePath = path.join(mediaDir, filename);
 
-            // Save file
-            fs.writeFileSync(filePath, buffer);
+            // Save file asynchronously (non-blocking)
+            await fs.promises.writeFile(filePath, buffer);
 
             // Register media file in store for cleanup tracking
             if (this.store) {

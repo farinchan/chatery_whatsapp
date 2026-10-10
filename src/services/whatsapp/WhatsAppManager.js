@@ -27,6 +27,7 @@ class WhatsAppManager {
             }
 
             const sessionDirs = fs.readdirSync(this.sessionsFolder);
+            let delayMs = 0;
             for (const sessionId of sessionDirs) {
                 const sessionPath = path.join(this.sessionsFolder, sessionId);
                 if (fs.statSync(sessionPath).isDirectory()) {
@@ -34,7 +35,13 @@ class WhatsAppManager {
                     // Session will load its own config from file
                     const session = new WhatsAppSession(sessionId, {});
                     this.sessions.set(sessionId, session);
+                    
+                    // Stagger session initialization to avoid CPU spike on startup
+                    if (delayMs > 0) {
+                        await new Promise(res => setTimeout(res, delayMs));
+                    }
                     await session.connect();
+                    delayMs = 1500; // 1.5s delay before connecting next session
                 }
             }
         } catch (error) {
