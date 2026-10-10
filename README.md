@@ -1900,9 +1900,9 @@ socket.on('connection.update', (data) => {
 });
 ```
 
-### WebSocket Test Page
+### Live WebSocket Event Monitoring
 
-Open `http://localhost:3000/ws-test` in your browser for an interactive WebSocket testing interface.
+Open `http://localhost:3000/dashboard` or `http://localhost:3000/wa-web` and click on the Activity Drawer icon to stream live WebSocket events.
 
 ---
 
@@ -2047,7 +2047,7 @@ chatery_whatsapp/
 ├── README.md                    # Documentation
 ├── public/
 │   ├── dashboard.html           # Admin dashboard & interactive API tester
-│   ├── websocket-test.html      # WebSocket live test page
+│   ├── wa-web.html              # Authentic WhatsApp Web chat interface
 │   └── media/                   # Auto-saved media files
 │       └── {sessionId}/
 │           └── {chatId}/
@@ -2216,8 +2216,8 @@ Your support helps me maintain and improve this project! ❤️
 |----------|-----|
 | 📄 Swagger UI (API Docs) | http://localhost:3000 |
 | 🎛️ Dashboard | http://localhost:3000/dashboard |
+| 💬 WhatsApp Web | http://localhost:3000/wa-web |
 | 📚 API Base URL | http://localhost:3000/api/whatsapp |
-| 🔌 WebSocket Test | http://localhost:3000/ws-test |
 | 📊 WebSocket Stats | http://localhost:3000/api/websocket/stats |
 | ❤️ Health Check | http://localhost:3000/api/health |
 | 📋 OpenAPI JSON | http://localhost:3000/api-docs.json |

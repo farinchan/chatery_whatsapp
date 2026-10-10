@@ -44,11 +44,6 @@ app.get('/wa-web', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'wa-web.html'));
 });
 
-// Serve WebSocket test page
-app.get('/ws-test', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'websocket-test.html'));
-});
-
 // Swagger UI Options
 const swaggerUiOptions = {
     customCss: `
