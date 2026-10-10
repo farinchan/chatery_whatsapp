@@ -646,22 +646,20 @@
             lucide.createIcons();
         }
 
-        async function attemptAutoLogin() {
+        async function fetchSession() {
             try {
-                const res = await fetch('/api/dashboard/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: 'admin', password: 'admin' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    sessionStorage.setItem('dashboard_auth', 'authenticated');
-                    apiKey = data.apiKey || '';
-                    if (apiKey) sessionStorage.setItem('api_key', apiKey);
-                    return true;
+                const res = await fetch('/api/dashboard/session');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.authenticated) {
+                        apiKey = data.apiKey || sessionStorage.getItem('api_key') || '';
+                        sessionStorage.setItem('api_key', apiKey);
+                        sessionStorage.setItem('dashboard_auth', 'authenticated');
+                        return true;
+                    }
                 }
             } catch (e) {
-                console.warn('Auto-login could not be performed:', e);
+                console.warn('Session check error:', e);
             }
             return false;
         }
@@ -711,7 +709,7 @@
             }
         }
 
-        function logout() {
+        async function logout() {
             Swal.fire({
                 title: 'Sign Out',
                 text: 'Keluar dari sesi Chatery Dashboard?',
@@ -720,26 +718,25 @@
                 confirmButtonText: 'Keluar',
                 cancelButtonText: 'Batal',
                 customClass: { popup: 'swal-dark', confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' }
-            }).then((res) => {
+            }).then(async (res) => {
                 if (res.isConfirmed) {
+                    try {
+                        await fetch('/api/dashboard/logout', { method: 'POST' });
+                    } catch {}
                     sessionStorage.removeItem('dashboard_auth');
                     sessionStorage.removeItem('api_key');
-                    window.location.reload();
+                    window.location.href = '/login';
                 }
             });
         }
 
         // Initialize App on DOMContentLoaded
         document.addEventListener('DOMContentLoaded', async () => {
-            if (checkAuth() && apiKey) {
+            const hasSession = await fetchSession();
+            if (hasSession) {
                 initDashboard();
             } else {
-                const loggedIn = await attemptAutoLogin();
-                if (loggedIn) {
-                    initDashboard();
-                } else {
-                    showLoginModal();
-                }
+                window.location.href = '/login?redirect=/dashboard';
             }
             lucide.createIcons();
         });

@@ -745,24 +745,20 @@
             lucide.createIcons();
         }
 
-        async function attemptAutoLogin() {
+        async function fetchSession() {
             try {
-                const res = await fetch('/api/dashboard/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: 'admin', password: 'admin' })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    sessionStorage.setItem('dashboard_auth', 'authenticated');
-                    apiKey = data.apiKey || '';
-                    if (apiKey) {
+                const res = await fetch('/api/dashboard/session');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.authenticated) {
+                        apiKey = data.apiKey || sessionStorage.getItem('api_key') || '';
                         sessionStorage.setItem('api_key', apiKey);
+                        sessionStorage.setItem('dashboard_auth', 'authenticated');
+                        return true;
                     }
-                    return true;
                 }
             } catch (e) {
-                console.warn('Auto-login could not be performed:', e);
+                console.warn('Session verification error:', e);
             }
             return false;
         }
@@ -814,7 +810,7 @@
             }
         }
 
-        function logout() {
+        async function logout() {
             Swal.fire({
                 title: 'Sign Out',
                 text: 'End your session on Chatery Web?',
@@ -823,26 +819,25 @@
                 confirmButtonText: 'Sign Out',
                 cancelButtonText: 'Cancel',
                 customClass: { popup: 'swal-dark', confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' }
-            }).then((res) => {
+            }).then(async (res) => {
                 if (res.isConfirmed) {
+                    try {
+                        await fetch('/api/dashboard/logout', { method: 'POST' });
+                    } catch {}
                     sessionStorage.removeItem('dashboard_auth');
                     sessionStorage.removeItem('api_key');
-                    window.location.reload();
+                    window.location.href = '/login';
                 }
             });
         }
 
         // Initialize App
         document.addEventListener('DOMContentLoaded', async () => {
-            if (checkAuth() && apiKey) {
+            const hasSession = await fetchSession();
+            if (hasSession) {
                 initApp();
             } else {
-                const loggedIn = await attemptAutoLogin();
-                if (loggedIn) {
-                    initApp();
-                } else {
-                    showLoginModal();
-                }
+                window.location.href = '/login?redirect=/wa-web';
             }
             lucide.createIcons();
         });
