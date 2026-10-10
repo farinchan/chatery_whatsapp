@@ -44,9 +44,12 @@ USER chatery
 # Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+# Health check using lightweight /api/health endpoint instead of Swagger UI HTML
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start the application with the legacy OpenSSL provider to fix EPROTO/SSL Alert 0
-CMD ["node", "--openssl-legacy-provider", "index.js"]
+# Configure default Node.js memory and OpenSSL provider
+ENV NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048"
+
+# Start the application
+CMD ["node", "index.js"]

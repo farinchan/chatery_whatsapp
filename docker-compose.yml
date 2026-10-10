@@ -16,6 +16,10 @@ services:
       - DASHBOARD_USERNAME=${DASHBOARD_USERNAME:-admin}
       - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-admin123}
       - API_KEY=${API_KEY:-}
+      - SYNC_FULL_HISTORY=${SYNC_FULL_HISTORY:-false}
+      - AUTO_DOWNLOAD_MEDIA=${AUTO_DOWNLOAD_MEDIA:-true}
+      - MAX_MESSAGES_PER_CHAT=${MAX_MESSAGES_PER_CHAT:-100}
+      - NODE_OPTIONS=--openssl-legacy-provider --max-old-space-size=2048
     volumes:
       # Persist WhatsApp sessions
       - chatery_sessions:/app/sessions
@@ -24,9 +28,9 @@ services:
       # Persist message store
       - chatery_store:/app/store
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
       start_period: 10s
     logging:

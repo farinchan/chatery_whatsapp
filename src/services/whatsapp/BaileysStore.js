@@ -35,6 +35,32 @@ class BaileysStore {
     this.lastOverviewUpdate = 0;
     this.lastContactsUpdate = 0;
     this.cacheTimeout = 30000; // 30 seconds cache validity
+
+    // Dirty state tracking to prevent unnecessary disk writes & event loop blocking
+    this.isDirty = false;
+    this._isWriting = false;
+    this.maxMessagesPerChat = parseInt(process.env.MAX_MESSAGES_PER_CHAT, 10) || 100;
+  }
+
+  /**
+   * Store a message in memory with strict per-chat limit to prevent memory bloat
+   */
+  _storeMessage(chatId, msg) {
+    if (!this.messages.has(chatId)) {
+      this.messages.set(chatId, new Map());
+    }
+    const chatMap = this.messages.get(chatId);
+    chatMap.set(msg.key.id, msg);
+
+    // Prune oldest messages from Map if exceeding maxMessagesPerChat
+    if (chatMap.size > this.maxMessagesPerChat) {
+      const excess = chatMap.size - this.maxMessagesPerChat;
+      const iter = chatMap.keys();
+      for (let i = 0; i < excess; i++) {
+        chatMap.delete(iter.next().value);
+      }
+    }
+    this.isDirty = true;
   }
 
   /**
@@ -54,6 +80,7 @@ class BaileysStore {
         chat.id = resolvedId;
         this.chats.set(resolvedId, chat);
       }
+      this.isDirty = true;
       this._invalidateOverviewCache();
     });
 
@@ -70,6 +97,7 @@ class BaileysStore {
         this.chats.set(resolvedId, { ...this.chats.get(resolvedId), ...chat });
         this._updateSingleChatOverview(resolvedId);
       }
+      this.isDirty = true;
     });
 
     ev.on('chats.update', (updates) => {
@@ -88,6 +116,7 @@ class BaileysStore {
           this._updateSingleChatOverview(resolvedId);
         }
       }
+      this.isDirty = true;
     });
 
     ev.on('chats.delete', (ids) => {
@@ -103,6 +132,7 @@ class BaileysStore {
         this.chatsOverview.delete(resolvedId);
         this.messages.delete(resolvedId);
       }
+      this.isDirty = true;
     });
 
     // Handle contact updates
@@ -127,6 +157,7 @@ class BaileysStore {
         const existing = this.contacts.get(resolvedId) || {};
         this.contacts.set(resolvedId, { ...existing, ...contact });
       }
+      this.isDirty = true;
       this._invalidateContactsCache();
     });
 
@@ -151,6 +182,7 @@ class BaileysStore {
         const existing = this.contacts.get(resolvedId) || {};
         this.contacts.set(resolvedId, { ...existing, ...contact });
       }
+      this.isDirty = true;
       this._invalidateContactsCache();
     });
 
@@ -183,10 +215,11 @@ class BaileysStore {
           }
         }
       }
+      this.isDirty = true;
       this._invalidateContactsCache();
     });
 
-    // Handle message updates - OPTIMIZED
+    // Handle message updates - OPTIMIZED WITH STRICT MEMORY CAPPING
     ev.on('messages.set', ({ messages, isLatest }) => {
       for (const msg of messages) {
         // Skip null/invalid messages
@@ -224,12 +257,10 @@ class BaileysStore {
           }
         }
         
-        if (!this.messages.has(resolvedId)) {
-          this.messages.set(resolvedId, new Map());
-        }
-        this.messages.get(resolvedId).set(msg.key.id, msg);
+        this._storeMessage(resolvedId, msg);
         this._updateSingleChatOverview(resolvedId, msg);
       }
+      this.isDirty = true;
     });
 
     ev.on('messages.upsert', ({ messages, type }) => {
@@ -269,12 +300,10 @@ class BaileysStore {
           }
         }
         
-        if (!this.messages.has(resolvedId)) {
-          this.messages.set(resolvedId, new Map());
-        }
-        this.messages.get(resolvedId).set(msg.key.id, msg);
+        this._storeMessage(resolvedId, msg);
         this._updateSingleChatOverview(resolvedId, msg);
       }
+      this.isDirty = true;
     });
 
     ev.on('messages.update', (updates) => {
@@ -296,6 +325,7 @@ class BaileysStore {
           const existing = chatMessages.get(key.id);
           if (existing) {
             chatMessages.set(key.id, { ...existing, ...update });
+            this.isDirty = true;
           }
         }
       }
@@ -321,6 +351,7 @@ class BaileysStore {
             chatMessages.delete(key.id);
             // Also delete associated media file
             this._deleteMediaFile(key.id);
+            this.isDirty = true;
           }
         }
       }
@@ -331,6 +362,7 @@ class BaileysStore {
       for (const group of groups) {
         this.groupMetadata.set(group.id, group);
       }
+      this.isDirty = true;
     });
 
     ev.on('groups.update', (updates) => {
@@ -338,6 +370,7 @@ class BaileysStore {
         const existing = this.groupMetadata.get(update.id);
         if (existing) {
           this.groupMetadata.set(update.id, { ...existing, ...update });
+          this.isDirty = true;
         }
       }
     });
@@ -359,6 +392,7 @@ class BaileysStore {
           predefinedId: label.predefinedId || null
         });
       }
+      this.isDirty = true;
     });
 
     ev.on('labels.association', ({ association, type }) => {
@@ -373,11 +407,13 @@ class BaileysStore {
 
       if (type === 'add') {
         this.labelAssociations.get(chatId).add(labelId);
+        this.isDirty = true;
       } else if (type === 'remove') {
         this.labelAssociations.get(chatId).delete(labelId);
         if (this.labelAssociations.get(chatId).size === 0) {
           this.labelAssociations.delete(chatId);
         }
+        this.isDirty = true;
       }
     });
   }
@@ -569,10 +605,10 @@ class BaileysStore {
     const { limit = 100, offset = 0, search = '' } = options;
     
     let contacts = Array.from(this.contacts.values())
-      .filter(c => c.id.endsWith('@c.us'))
+      .filter(c => c.id && (c.id.endsWith('@c.us') || c.id.endsWith('@s.whatsapp.net')))
       .map(c => ({
         id: c.id,
-        name: c.name || c.notify || c.id.replace('@c.us', ''),
+        name: c.name || c.notify || c.id.replace('@c.us', '').replace('@s.whatsapp.net', ''),
         notify: c.notify,
         verifiedName: c.verifiedName,
         profilePicture: this.profilePictures.get(c.id) || null
@@ -611,7 +647,14 @@ class BaileysStore {
    */
   getMessages(chatId, options = {}) {
     const { limit = 50, before = null } = options;
-    const chatMessages = this.messages.get(chatId);
+    let chatMessages = this.messages.get(chatId);
+    if (!chatMessages && chatId) {
+      if (chatId.endsWith('@c.us')) {
+        chatMessages = this.messages.get(chatId.replace('@c.us', '@s.whatsapp.net'));
+      } else if (chatId.endsWith('@s.whatsapp.net')) {
+        chatMessages = this.messages.get(chatId.replace('@s.whatsapp.net', '@c.us'));
+      }
+    }
     
     if (!chatMessages) return [];
     
@@ -638,7 +681,14 @@ class BaileysStore {
    * Get a specific message by ID from a chat
    */
   getMessage(chatId, messageId) {
-    const chatMessages = this.messages.get(chatId);
+    let chatMessages = this.messages.get(chatId);
+    if (!chatMessages && chatId) {
+      if (chatId.endsWith('@c.us')) {
+        chatMessages = this.messages.get(chatId.replace('@c.us', '@s.whatsapp.net'));
+      } else if (chatId.endsWith('@s.whatsapp.net')) {
+        chatMessages = this.messages.get(chatId.replace('@s.whatsapp.net', '@c.us'));
+      }
+    }
     if (!chatMessages) return null;
     return chatMessages.get(messageId) || null;
   }
@@ -666,6 +716,7 @@ class BaileysStore {
 
   /**
    * Safe JSON serialization (handles circular references and binary data)
+   * Uses compact JSON stringification to prevent high CPU and memory bloat
    */
   _safeSerialize(data) {
     const seen = new WeakSet();
@@ -675,7 +726,7 @@ class BaileysStore {
       if (value instanceof Uint8Array || value instanceof ArrayBuffer) {
         return undefined;
       }
-      if (Buffer.isBuffer && Buffer.isBuffer(value)) {
+      if ((Buffer.isBuffer && Buffer.isBuffer(value)) || (value && value.type === 'Buffer' && Array.isArray(value.data))) {
         return undefined;
       }
       
@@ -693,17 +744,21 @@ class BaileysStore {
       }
       
       return value;
-    }, 2);
+    });
   }
 
   /**
-   * Write store to file (for persistence) - FIXED JSON serialization
+   * Write store to file (synchronous atomic write, skips if !isDirty)
    */
-  writeToFile(filePath) {
+  writeToFile(filePath, force = false) {
     const fs = require('fs');
     const path = require('path');
     
     try {
+      if (!force && !this.isDirty && fs.existsSync(filePath)) {
+        return true;
+      }
+
       // Ensure directory exists
       const dir = path.dirname(filePath);
       if (!fs.existsSync(dir)) {
@@ -716,7 +771,7 @@ class BaileysStore {
         contacts: Array.from(this.contacts.entries()),
         messages: Array.from(this.messages.entries()).map(([chatId, msgs]) => [
           chatId,
-          Array.from(msgs.entries()).slice(-100) // Keep only last 100 messages per chat
+          Array.from(msgs.entries()).slice(-this.maxMessagesPerChat)
         ]),
         groupMetadata: Array.from(this.groupMetadata.entries()),
         profilePictures: Array.from(this.profilePictures.entries()),
@@ -741,10 +796,68 @@ class BaileysStore {
       }
       fs.renameSync(tempPath, filePath);
       
+      this.isDirty = false;
       return true;
     } catch (error) {
       console.error('Error writing store to file:', error.message);
       return false;
+    }
+  }
+
+  /**
+   * Asynchronously write store to file without blocking Node.js event loop
+   */
+  async writeToFileAsync(filePath, force = false) {
+    const fs = require('fs');
+    const path = require('path');
+    
+    if (this._isWriting) return true;
+    if (!force && !this.isDirty && fs.existsSync(filePath)) {
+      return true;
+    }
+
+    this._isWriting = true;
+    try {
+      const dir = path.dirname(filePath);
+      await fs.promises.mkdir(dir, { recursive: true });
+
+      const data = {
+        chats: Array.from(this.chats.entries()),
+        contacts: Array.from(this.contacts.entries()),
+        messages: Array.from(this.messages.entries()).map(([chatId, msgs]) => [
+          chatId,
+          Array.from(msgs.entries()).slice(-this.maxMessagesPerChat)
+        ]),
+        groupMetadata: Array.from(this.groupMetadata.entries()),
+        profilePictures: Array.from(this.profilePictures.entries()),
+        lidMap: Array.from(this.lidMap.entries()),
+        labels: Array.from(this.labels.entries()),
+        labelAssociations: Array.from(this.labelAssociations.entries()).map(([chatId, labelSet]) => [
+          chatId,
+          Array.from(labelSet)
+        ])
+      };
+
+      const jsonContent = this._safeSerialize(data);
+      const tempPath = filePath + '.tmp';
+
+      await fs.promises.writeFile(tempPath, jsonContent, 'utf8');
+
+      try {
+        if (fs.existsSync(filePath)) {
+          await fs.promises.unlink(filePath);
+        }
+      } catch (e) {}
+
+      await fs.promises.rename(tempPath, filePath);
+
+      this.isDirty = false;
+      return true;
+    } catch (error) {
+      console.error('Error writing store to file (async):', error.message);
+      return false;
+    } finally {
+      this._isWriting = false;
     }
   }
 
@@ -843,6 +956,7 @@ class BaileysStore {
       // Rebuild overview cache after restore (uses clean JID keys)
       this._rebuildOverviewCache();
       
+      this.isDirty = false;
       return true;
     } catch (error) {
       console.error('Error reading store from file:', error.message);
@@ -867,6 +981,7 @@ class BaileysStore {
     this.mediaFiles.clear();
     this.labels.clear();
     this.labelAssociations.clear();
+    this.isDirty = false;
   }
 
   /**
@@ -942,6 +1057,7 @@ class BaileysStore {
       this.labelAssociations.set(chatId, new Set());
     }
     this.labelAssociations.get(chatId).add(labelId);
+    this.isDirty = true;
   }
 
   /**
@@ -952,6 +1068,7 @@ class BaileysStore {
     if (labelSet) {
       labelSet.delete(labelId);
       if (labelSet.size === 0) this.labelAssociations.delete(chatId);
+      this.isDirty = true;
     }
   }
 
@@ -960,6 +1077,7 @@ class BaileysStore {
    */
   registerMediaFile(messageId, filePath) {
     this.mediaFiles.set(messageId, filePath);
+    this.isDirty = true;
   }
 
   /**
@@ -978,6 +1096,7 @@ class BaileysStore {
         // Silent fail
       }
       this.mediaFiles.delete(messageId);
+      this.isDirty = true;
     }
   }
 
@@ -996,17 +1115,36 @@ class BaileysStore {
       }
     }
     this.mediaFiles.clear();
+    this.isDirty = true;
   }
 
   /**
    * Cleanup old media files (keep only last N messages per chat)
+   * Skips sorting if no media files exist to protect Node.js event loop
    */
   cleanupOldMedia(maxMessagesPerChat = 100) {
     const fs = require('fs');
+
+    // Also trim any excess in-memory messages per chat to ensure RAM stays strictly bounded
+    for (const [, chatMessages] of this.messages) {
+      if (chatMessages.size > maxMessagesPerChat) {
+        const excess = chatMessages.size - maxMessagesPerChat;
+        const iter = chatMessages.keys();
+        for (let i = 0; i < excess; i++) {
+          chatMessages.delete(iter.next().value);
+        }
+        this.isDirty = true;
+      }
+    }
+
+    if (this.mediaFiles.size === 0) {
+      return;
+    }
+
     const messagesToKeep = new Set();
     
     // Collect message IDs that should be kept
-    for (const [chatId, chatMessages] of this.messages) {
+    for (const [, chatMessages] of this.messages) {
       const msgs = Array.from(chatMessages.values())
         .filter(m => m && m.messageTimestamp)
         .sort((a, b) => {
@@ -1035,6 +1173,7 @@ class BaileysStore {
           // Silent fail
         }
         this.mediaFiles.delete(messageId);
+        this.isDirty = true;
       }
     }
   }
@@ -1147,6 +1286,8 @@ class BaileysStore {
     } catch (e) {
       console.error(`Error migrating LID data for ${normalizedLid}:`, e.message);
     }
+
+    this.isDirty = true;
   }
 
   /**

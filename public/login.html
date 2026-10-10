@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatery - Sign In</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1E9DFF',
+                            50: '#F0F8FF',
+                            100: '#E0F1FF',
+                            200: '#BAE1FF',
+                            300: '#85CAFF',
+                            400: '#4AB0FF',
+                            500: '#1E9DFF',
+                            600: '#0083E6',
+                            700: '#0065B3',
+                            800: '#004A85',
+                            900: '#002F57',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons (CDN) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- SweetAlert2 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        .swal2-popup.swal-light {
+            background: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            color: #0F172A !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+    </style>
+</head>
+
+<body class="bg-[#F8FAFC] text-slate-800 font-sans min-h-screen flex items-center justify-center p-4 selection:bg-primary/20 selection:text-primary-700">
+
+    <div class="w-full max-w-md">
+        <!-- Logo Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-blue-600 text-white shadow-lg shadow-primary/25 mb-4">
+                <i data-lucide="message-square" class="w-7 h-7"></i>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900">Chatery Gateway</h1>
+            <p class="text-xs text-slate-500 mt-1">Multi-Device WhatsApp Gateway & Dashboard v2.0</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 space-y-6">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900">Sign In to Dashboard</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Enter credentials from your server configuration</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="errorMessage" class="hidden p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-500"></i>
+                <span id="errorText">Invalid username or password</span>
+            </div>
+
+            <form id="loginForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Username</label>
+                    <div class="relative">
+                        <div class="absolute left-3.5 top-3 text-slate-400">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                        </div>
+                        <input type="text" id="username" required autocomplete="username" placeholder="Enter username" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl pl-10 pr-3.5 py-3 outline-none transition-colors">
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Password</label>
+                    <div class="relative">
+                        <div class="absolute left-3.5 top-3 text-slate-400">
+                            <i data-lucide="lock" class="w-4 h-4"></i>
+                        </div>
+                        <input type="password" id="password" required autocomplete="current-password" placeholder="Enter password" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl pl-10 pr-10 py-3 outline-none transition-colors">
+                        <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600">
+                            <i id="eyeIcon" data-lucide="eye" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" id="btnSubmit" class="w-full mt-2 py-3 bg-primary hover:bg-primary-600 active:scale-[0.99] text-white font-semibold text-xs rounded-xl shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <span>Sign In</span>
+                </button>
+            </form>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <span class="flex items-center gap-1.5">
+                    <i data-lucide="shield" class="w-3.5 h-3.5 text-primary"></i>
+                    <span>Secure Gateway Session</span>
+                </span>
+                <a href="/" target="_blank" class="hover:text-primary transition-colors flex items-center gap-1">
+                    <span>API Docs</span>
+                    <i data-lucide="external-link" class="w-3 h-3"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="text-center text-[11px] text-slate-400 mt-6 space-y-1 select-none">
+            <p>&copy; <span id="currentYear"></span> <a href="https://github.com/farinchan" target="_blank" class="text-primary hover:underline">Fajri Rinaldi Chan</a>. All rights reserved.</p>
+            <p>Sponsored by <a href="https://nagastra.org/" target="_blank" rel="noopener noreferrer" class="text-slate-500 hover:text-primary font-medium">PT Nagari Sastra Group</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('currentYear').textContent = new Date().getFullYear();
+            lucide.createIcons();
+            document.getElementById('username').focus();
+        });
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            lucide.createIcons();
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const errBanner = document.getElementById('errorMessage');
+            const errText = document.getElementById('errorText');
+            const btn = document.getElementById('btnSubmit');
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+
+            if (!username || !password) return;
+
+            errBanner.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Signing in...</span>';
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/dashboard/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    sessionStorage.setItem('dashboard_auth', 'authenticated');
+                    if (data.apiKey) {
+                        sessionStorage.setItem('api_key', data.apiKey);
+                    }
+
+                    // Determine redirect URL from query string
+                    const params = new URLSearchParams(window.location.search);
+                    const redirect = params.get('redirect') || '/dashboard';
+
+                    window.location.href = redirect;
+                } else {
+                    errText.textContent = data.message || 'Invalid username or password';
+                    errBanner.classList.remove('hidden');
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            } catch (err) {
+                errText.textContent = 'Connection error: ' + err.message;
+                errBanner.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="log-in" class="w-4 h-4"></i><span>Sign In</span>';
+                lucide.createIcons();
+            }
+        }
+    </script>
+</body>
+
+</html>

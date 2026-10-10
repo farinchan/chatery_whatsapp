@@ -5,15 +5,17 @@ const options = {
         openapi: '3.0.0',
         info: {
             title: 'Chatery WhatsApp API',
-            version: '1.0.0',
+            version: '2.0.0',
             description: `
 A powerful WhatsApp API backend built with Express.js and Baileys library.
 
 ## Quick Links
 - [🎛️ Dashboard](/dashboard) - Admin Dashboard with API Tester
-- [🔌 WebSocket Test](/ws-test) - Test real-time WebSocket events
+- [💬 WhatsApp Web](/wa-web) - WhatsApp Web Client
 - [📄 OpenAPI JSON](/api-docs.json) - Download API specification
 
+## 🏢 Official Sponsor
+- [PT Nagari Sastra Group](https://nagastra.org/) - Official Sponsor
 
 ## Features
 - Multi-Session Support

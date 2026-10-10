@@ -1,0 +1,2230 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatery Web - WhatsApp Gateway</title>
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#1E9DFF',
+                            50: '#F0F8FF',
+                            100: '#E0F1FF',
+                            200: '#BAE1FF',
+                            300: '#85CAFF',
+                            400: '#4AB0FF',
+                            500: '#1E9DFF',
+                            600: '#0083E6',
+                            700: '#0065B3',
+                            800: '#004A85',
+                            900: '#002F57',
+                        },
+                        wa: {
+                            bg: '#F0F2F5',
+                            sidebar: '#FFFFFF',
+                            sidebarHeader: '#F0F2F5',
+                            chatBg: '#EFEAE2',
+                            chatHeader: '#F0F2F5',
+                            bubbleOut: '#D9F2FF',
+                            bubbleIn: '#FFFFFF',
+                            border: '#E2E8F0',
+                            input: '#FFFFFF',
+                            muted: '#64748B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons (CDN) - Crisp Universal SVG Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Socket.IO Client (CDN) -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- QRCode Generator (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+
+    <!-- Highlight.js (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+
+    <!-- SweetAlert2 (CDN) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* Subtle Pattern for Chat Wallpaper (Light Mode) */
+        .chat-wallpaper {
+            background-color: #EFEAE2;
+            background-image: radial-gradient(#CBD5E1 0.75px, transparent 0.75px), radial-gradient(#CBD5E1 0.75px, #EFEAE2 0.75px);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+        }
+
+        /* SweetAlert2 Light Theme Customization */
+        .swal2-popup.swal-dark,
+        .swal2-popup.swal-light {
+            background: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            color: #0F172A !important;
+            border-radius: 1rem !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
+            font-family: 'Inter', sans-serif !important;
+        }
+        .swal2-title {
+            color: #0F172A !important;
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
+        }
+        .swal2-html-container {
+            color: #64748B !important;
+            font-size: 0.9rem !important;
+        }
+        .swal2-confirm.btn-swal-confirm {
+            background: #1E9DFF !important;
+            color: #ffffff !important;
+            border-radius: 0.5rem !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1.25rem !important;
+        }
+        .swal2-cancel.btn-swal-cancel {
+            background: #F1F5F9 !important;
+            color: #64748B !important;
+            border-radius: 0.5rem !important;
+            font-weight: 600 !important;
+            padding: 0.5rem 1.25rem !important;
+        }
+    </style>
+</head>
+
+<body class="bg-wa-bg text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-primary/20 selection:text-primary">
+
+    <!-- ==================== TOP NAVIGATION BAR ==================== -->
+    <header class="h-14 bg-white border-b border-wa-border px-4 flex items-center justify-between z-30 select-none shrink-0 shadow-xs">
+        
+        <!-- Left: Logo & Nav Links -->
+        <div class="flex items-center gap-3">
+            <a href="/dashboard" class="flex items-center gap-2.5 group">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center text-white shadow-sm shadow-primary/20">
+                    <i data-lucide="message-square" class="w-4 h-4"></i>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm tracking-tight text-slate-900 group-hover:text-primary transition-colors">Chatery</span>
+                    <span class="px-1.5 py-0.5 text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 rounded-md">v2.0.0</span>
+                </div>
+            </a>
+
+            <!-- Navigation Bar Tabs -->
+            <nav class="flex items-center gap-1 ml-2 pl-3 border-l border-wa-border">
+                <a href="/dashboard" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-wa-muted hover:text-slate-900 hover:bg-slate-100 transition-colors">
+                    <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                    <span>Dashboard & Sessions</span>
+                </a>
+                <a href="/wa-web" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-primary/10 text-primary border border-primary/25 transition-colors">
+                    <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+                    <span>WhatsApp Web</span>
+                </a>
+            </nav>
+
+            <!-- Session Selector -->
+            <div class="flex items-center gap-1.5 sm:gap-2 ml-1 pl-2 sm:pl-3 border-l border-wa-border">
+                <div class="relative">
+                    <select id="sessionSelector" onchange="switchSession(this.value)" class="bg-slate-50 text-xs font-medium text-slate-700 border border-wa-border rounded-lg pl-2 sm:pl-2.5 pr-6 sm:pr-7 py-1.5 focus:outline-none focus:border-primary appearance-none cursor-pointer max-w-[130px] sm:max-w-[180px] md:max-w-[220px] truncate" title="Pilih Sesi WhatsApp Aktif">
+                        <option value="">Belum ada sesi</option>
+                    </select>
+                    <div class="absolute right-2 top-2 pointer-events-none text-wa-muted">
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+
+                <!-- Session Status Badge -->
+                <div id="sessionStatusPill" class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 border border-wa-border text-[11px] text-wa-muted">
+                    <span id="sessionStatusDot" class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    <span id="sessionStatusText" class="font-medium text-slate-700">Disconnected</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Actions & Tools -->
+        <div class="flex items-center gap-1.5">
+
+            <!-- Pair / Scan QR Button -->
+            <button onclick="openCurrentSessionQr()" id="btnScanQr" class="hidden flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 rounded-lg text-xs font-semibold transition-colors" title="Pindai QR Code WhatsApp">
+                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Scan QR</span>
+            </button>
+
+            <!-- Toggle API Explorer Drawer -->
+            <button onclick="toggleApiDrawer()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-primary hover:text-primary-700 bg-primary/10 hover:bg-primary/20 border border-primary/25 rounded-lg transition-colors" title="Interactive REST API Tester">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">API Tester</span>
+            </button>
+
+            <!-- Toggle Live Activity Drawer -->
+            <button onclick="toggleActivityDrawer()" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-wa-muted hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-wa-border rounded-lg transition-colors" title="Live WebSocket Events">
+                <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
+                <span id="unreadEventsBadge" class="hidden text-[10px] bg-primary text-white font-bold px-1.5 rounded-full">0</span>
+            </button>
+
+            <!-- Swagger Docs -->
+            <a href="/" target="_blank" class="p-2 text-wa-muted hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="OpenAPI Documentation">
+                <i data-lucide="book-open" class="w-4 h-4"></i>
+            </a>
+
+            <!-- Logout -->
+            <button onclick="logout()" class="p-2 text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Logout Dashboard">
+                <i data-lucide="log-out" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== MAIN WHATSAPP WEB WORKSPACE ==================== -->
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- ==================== LEFT PANEL: CHATS LIST (Sidebar) ==================== -->
+        <aside class="w-full md:w-80 lg:w-96 bg-white border-r border-wa-border flex flex-col shrink-0 select-none">
+            
+            <!-- Sidebar Header -->
+            <div class="h-16 px-4 bg-wa-sidebarHeader flex items-center justify-between border-b border-wa-border">
+                <div class="flex items-center gap-3">
+                    <div id="currentUserAvatar" class="w-9 h-9 rounded-full bg-primary/10 text-primary border border-primary/25 flex items-center justify-center font-bold text-xs ring-2 ring-slate-100">
+                        U
+                    </div>
+                    <div class="min-w-0">
+                        <div id="currentUserName" class="font-semibold text-xs text-slate-900 truncate max-w-[130px] sm:max-w-[160px]">My WhatsApp</div>
+                        <div id="currentUserPhone" class="text-[11px] text-wa-muted truncate max-w-[130px] sm:max-w-[160px]">Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Chat Actions -->
+                <div class="flex items-center gap-1">
+                    <button onclick="openNewChatModal()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Pesan Baru">
+                        <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="loadChatsOverview()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Muat Ulang Percakapan">
+                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="openNewGroupModal()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Buat Grup">
+                        <i data-lucide="users-round" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search & Filters Bar -->
+            <div class="p-3 border-b border-wa-border space-y-2 bg-white">
+                <div class="relative">
+                    <input type="text" id="chatSearchInput" oninput="filterChatList(this.value)" placeholder="Search or start new chat" class="w-full bg-slate-100 text-xs text-slate-800 border border-wa-border rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-primary focus:bg-white transition-colors">
+                    <div class="absolute left-2.5 top-2.5 text-wa-muted">
+                        <i data-lucide="search" class="w-3.5 h-3.5"></i>
+                    </div>
+                </div>
+
+                <!-- Chat Type Filters -->
+                <div class="flex items-center gap-1 text-[11px]">
+                    <button onclick="setChatFilter('all')" class="chat-filter-btn px-2.5 py-1 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20" data-filter="all">All</button>
+                    <button onclick="setChatFilter('unread')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-slate-800 hover:bg-slate-100" data-filter="unread">Unread</button>
+                    <button onclick="setChatFilter('personal')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-slate-800 hover:bg-slate-100" data-filter="personal">Personal</button>
+                    <button onclick="setChatFilter('groups')" class="chat-filter-btn px-2.5 py-1 rounded-full text-wa-muted hover:text-slate-800 hover:bg-slate-100" data-filter="groups">Groups</button>
+                </div>
+            </div>
+
+            <!-- Chat Conversation List -->
+            <div id="chatsContainer" class="flex-1 overflow-y-auto divide-y divide-wa-border/60 bg-white">
+                <!-- Chat items populated dynamically -->
+                <div class="text-center py-16 text-wa-muted">
+                    <i data-lucide="message-square" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
+                    <p class="text-xs">No conversations loaded</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== RIGHT PANEL: ACTIVE CHAT CONVERSATION ==================== -->
+        <main class="flex-1 flex flex-col bg-wa-bg overflow-hidden relative">
+
+            <!-- EMPTY STATE (When no chat is selected, matching WhatsApp Web) -->
+            <div id="emptyChatScreen" class="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 text-center select-none bg-wa-bg">
+                <div class="w-20 h-20 rounded-3xl bg-white border border-wa-border flex items-center justify-center mb-6 shadow-md shadow-slate-200">
+                    <i data-lucide="message-square" class="w-10 h-10 text-primary"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Chatery WhatsApp Web</h2>
+                <p class="text-xs text-wa-muted max-w-sm leading-relaxed mb-6">
+                    Send and receive messages in real time with high reliability. Powered by Express.js, Baileys v7, and Socket.IO.
+                </p>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="openNewChatModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 transition-all">
+                        <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+                        <span>Start Conversation</span>
+                    </button>
+                    <button onclick="toggleApiDrawer()" class="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-wa-border text-slate-700 text-xs font-semibold rounded-xl shadow-sm transition-colors">
+                        <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+                        <span>Open API Tester</span>
+                    </button>
+                </div>
+
+                <div class="mt-12 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-60">
+                    <i data-lucide="lock" class="w-3 h-3"></i>
+                    <span>End-to-end encrypted synchronization</span>
+                </div>
+            </div>
+
+            <!-- ACTIVE CHAT VIEW (Rendered when a chat is clicked) -->
+            <div id="activeChatScreen" class="flex-1 flex flex-col h-full hidden">
+                
+                <!-- Chat Header -->
+                <div class="h-16 px-4 bg-wa-chatHeader border-b border-wa-border flex items-center justify-between shrink-0 select-none z-10">
+                    <div class="flex items-center gap-3">
+                        <div id="activeChatAvatar" class="w-10 h-10 rounded-full bg-slate-100 border border-wa-border flex items-center justify-center font-bold text-sm text-primary ring-2 ring-white shrink-0">
+                            C
+                        </div>
+                        <div class="min-w-0">
+                            <div id="activeChatTitle" class="font-semibold text-sm text-slate-900 truncate max-w-[200px] sm:max-w-md">Contact Name</div>
+                            <div id="activeChatSubtitle" class="text-xs text-wa-muted truncate">Active conversation</div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Header Options -->
+                    <div class="flex items-center gap-1">
+                        <button onclick="pinActiveChat()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Pin Conversation">
+                            <i data-lucide="pin" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="archiveActiveChat()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Archive Conversation">
+                            <i data-lucide="archive" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="muteActiveChat()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Mute Notifications">
+                            <i data-lucide="bell-off" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="markActiveChatRead()" class="p-2 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Mark as Read">
+                            <i data-lucide="check-check" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Thread Scroll Area -->
+                <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-3 chat-wallpaper">
+                    <!-- Populated dynamically -->
+                </div>
+
+                <!-- Chat Input Bar -->
+                <div class="p-3 bg-wa-chatHeader border-t border-wa-border flex items-end gap-2 shrink-0 select-none z-10">
+                    
+                    <!-- Media / Attachment Options Toggle -->
+                    <div class="relative">
+                        <button onclick="toggleAttachMenu()" id="btnAttach" class="p-2.5 text-wa-muted hover:text-slate-800 hover:bg-slate-200/60 rounded-full transition-colors" title="Attach Media">
+                            <i data-lucide="paperclip" class="w-5 h-5"></i>
+                        </button>
+
+                        <!-- Attach Dropdown Menu -->
+                        <div id="attachMenu" class="absolute bottom-12 left-0 w-48 bg-white border border-wa-border rounded-xl shadow-xl p-1.5 hidden flex-col gap-1 z-30">
+                            <button onclick="openMediaModal('image')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="image" class="w-4 h-4 text-primary"></i>
+                                <span>Send Image</span>
+                            </button>
+                            <button onclick="openMediaModal('video')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="video" class="w-4 h-4 text-cyan-500"></i>
+                                <span>Send Video</span>
+                            </button>
+                            <button onclick="openMediaModal('document')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i>
+                                <span>Send Document</span>
+                            </button>
+                            <button onclick="openMediaModal('audio')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="mic" class="w-4 h-4 text-rose-500"></i>
+                                <span>Send Audio / PTT</span>
+                            </button>
+                            <button onclick="openMediaModal('sticker')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="smile" class="w-4 h-4 text-purple-500"></i>
+                                <span>Send Sticker</span>
+                            </button>
+                            <button onclick="openMediaModal('location')" class="flex items-center gap-2.5 px-3 py-2 text-xs text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors w-full text-left">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-emerald-500"></i>
+                                <span>Send Location</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Text Message Input Box -->
+                    <div class="flex-1 bg-white border border-wa-border rounded-xl px-3.5 py-2 flex items-center gap-2 shadow-xs">
+                        <textarea id="messageTextInput" rows="1" onkeydown="handleInputKeydown(event)" placeholder="Type a message..." class="w-full bg-transparent text-sm text-slate-800 placeholder-wa-muted focus:outline-none resize-none max-h-32 leading-relaxed"></textarea>
+                    </div>
+
+                    <!-- Send Message Button -->
+                    <button onclick="sendChatMessage()" id="btnSendMessage" class="w-10 h-10 rounded-xl bg-primary hover:bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary/20 transition-all shrink-0" title="Send Message">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- ==================== SLIDE-OVER: INTERACTIVE API TESTER ==================== -->
+        <aside id="apiDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-[500px] lg:w-[560px] bg-white border-l border-wa-border shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="h-14 px-5 bg-slate-50 border-b border-wa-border flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+                    <h3 class="font-bold text-sm text-slate-900">Interactive API Tester</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="formatRequestBody()" class="text-xs text-slate-600 hover:text-slate-900 px-2.5 py-1 bg-white rounded-lg border border-wa-border shadow-2xs">Format JSON</button>
+                    <button onclick="toggleApiDrawer()" class="p-1.5 text-wa-muted hover:text-slate-900 rounded-lg">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-5 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">Select Endpoint</label>
+                    <select id="apiEndpoint" onchange="updateRequestBody()" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                        <optgroup label="Direct Messaging">
+                            <option value="POST|/api/whatsapp/chats/send-text">POST /chats/send-text - Send text</option>
+                            <option value="POST|/api/whatsapp/chats/send-image">POST /chats/send-image - Send image</option>
+                            <option value="POST|/api/whatsapp/chats/send-video">POST /chats/send-video - Send video</option>
+                            <option value="POST|/api/whatsapp/chats/send-document">POST /chats/send-document - Send document</option>
+                            <option value="POST|/api/whatsapp/chats/send-audio">POST /chats/send-audio - Send voice / audio</option>
+                            <option value="POST|/api/whatsapp/chats/send-sticker">POST /chats/send-sticker - Send sticker</option>
+                            <option value="POST|/api/whatsapp/chats/send-location">POST /chats/send-location - Send location</option>
+                            <option value="POST|/api/whatsapp/chats/send-contact">POST /chats/send-contact - Send contact card</option>
+                            <option value="POST|/api/whatsapp/chats/send-poll">POST /chats/send-poll - Send poll</option>
+                            <option value="POST|/api/whatsapp/chats/send-reaction">POST /chats/send-reaction - Send reaction</option>
+                            <option value="POST|/api/whatsapp/chats/delete-message">POST /chats/delete-message - Revoke message</option>
+                            <option value="POST|/api/whatsapp/chats/pin-message">POST /chats/pin-message - Pin message</option>
+                            <option value="POST|/api/whatsapp/chats/star-message">POST /chats/star-message - Star message</option>
+                            <option value="POST|/api/whatsapp/chats/pin">POST /chats/pin - Pin chat</option>
+                            <option value="POST|/api/whatsapp/chats/archive">POST /chats/archive - Archive chat</option>
+                            <option value="POST|/api/whatsapp/chats/mute">POST /chats/mute - Mute chat</option>
+                            <option value="POST|/api/whatsapp/chats/presence">POST /chats/presence - Typing presence</option>
+                            <option value="POST|/api/whatsapp/chats/check-number">POST /chats/check-number - Verify number</option>
+                            <option value="POST|/api/whatsapp/chats/profile-picture">POST /chats/profile-picture - Get avatar</option>
+                        </optgroup>
+                        <optgroup label="Bulk Messaging">
+                            <option value="POST|/api/whatsapp/chats/send-bulk">POST /chats/send-bulk - Bulk text</option>
+                            <option value="POST|/api/whatsapp/chats/send-bulk-image">POST /chats/send-bulk-image - Bulk image</option>
+                            <option value="POST|/api/whatsapp/chats/send-bulk-document">POST /chats/send-bulk-document - Bulk doc</option>
+                            <option value="GET|/api/whatsapp/chats/bulk-status/{jobId}">GET /chats/bulk-status/:jobId - Job status</option>
+                            <option value="POST|/api/whatsapp/chats/bulk-jobs">POST /chats/bulk-jobs - List jobs</option>
+                        </optgroup>
+                        <optgroup label="Contacts & Profiles">
+                            <option value="POST|/api/whatsapp/contacts">POST /contacts - Contact list</option>
+                            <option value="POST|/api/whatsapp/contacts/status">POST /contacts/status - Bio status</option>
+                            <option value="POST|/api/whatsapp/contacts/business-profile">POST /contacts/business-profile - Business info</option>
+                            <option value="POST|/api/whatsapp/contacts/block">POST /contacts/block - Block contact</option>
+                            <option value="POST|/api/whatsapp/contacts/blocklist">POST /contacts/blocklist - Blocklist</option>
+                            <option value="POST|/api/whatsapp/profile/status">POST /profile/status - Update bio</option>
+                            <option value="POST|/api/whatsapp/profile/name">POST /profile/name - Update name</option>
+                        </optgroup>
+                        <optgroup label="Chat History & Read State">
+                            <option value="POST|/api/whatsapp/chats/overview">POST /chats/overview - Overview</option>
+                            <option value="POST|/api/whatsapp/chats/messages">POST /chats/messages - Message log</option>
+                            <option value="POST|/api/whatsapp/chats/info">POST /chats/info - Chat details</option>
+                            <option value="POST|/api/whatsapp/chats/mark-read">POST /chats/mark-read - Mark read</option>
+                        </optgroup>
+                        <optgroup label="Groups">
+                            <option value="POST|/api/whatsapp/groups">POST /groups - List groups</option>
+                            <option value="POST|/api/whatsapp/groups/create">POST /groups/create - Create group</option>
+                            <option value="POST|/api/whatsapp/groups/metadata">POST /groups/metadata - Metadata</option>
+                            <option value="POST|/api/whatsapp/groups/invite-info">POST /groups/invite-info - Invite preview</option>
+                            <option value="POST|/api/whatsapp/groups/participants/add">POST /groups/participants/add - Add members</option>
+                            <option value="POST|/api/whatsapp/groups/participants/remove">POST /groups/participants/remove - Remove members</option>
+                            <option value="POST|/api/whatsapp/groups/subject">POST /groups/subject - Update title</option>
+                            <option value="POST|/api/whatsapp/groups/description">POST /groups/description - Update desc</option>
+                            <option value="POST|/api/whatsapp/groups/invite-code">POST /groups/invite-code - Invite code</option>
+                        </optgroup>
+                        <optgroup label="Sessions & Diagnostics">
+                            <option value="GET|/api/whatsapp/sessions">GET /sessions - List sessions</option>
+                            <option value="GET|/api/whatsapp/sessions/{sessionId}/status">GET /sessions/:id/status - Status</option>
+                            <option value="GET|/api/whatsapp/sessions/{sessionId}/qr">GET /sessions/:id/qr - QR JSON</option>
+                            <option value="POST|/api/whatsapp/sessions/{sessionId}/connect">POST /sessions/:id/connect - Connect</option>
+                            <option value="GET|/api/websocket/stats">GET /websocket/stats - Stats</option>
+                            <option value="GET|/api/health">GET /health - Healthcheck</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div id="sessionIdGroup" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Session ID Parameter</label>
+                    <input type="text" id="apiSessionId" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                </div>
+
+                <div id="jobIdGroup" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Job ID Parameter</label>
+                    <input type="text" id="apiJobId" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary">
+                </div>
+
+                <div id="bodyGroup">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">JSON Payload</label>
+                    <textarea id="apiBody" rows="6" class="w-full bg-slate-900 text-xs font-mono text-emerald-400 border border-slate-700 rounded-xl p-3 focus:outline-none focus:border-primary"></textarea>
+                </div>
+
+                <div id="apiHelp" class="text-xs text-slate-600 bg-slate-50 border border-wa-border rounded-xl p-3"></div>
+
+                <button onclick="sendApiRequest()" id="btnSendApi" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                    <span>Send API Request</span>
+                </button>
+
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Output Response</label>
+                        <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-600 border border-wa-border">200 OK</span>
+                    </div>
+                    <pre class="bg-slate-900 border border-slate-700 rounded-xl p-3 overflow-x-auto max-h-56"><code id="apiResponse" class="language-json font-mono text-xs text-slate-200">Ready for execution.</code></pre>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== SLIDE-OVER: LIVE ACTIVITY STREAM ==================== -->
+        <aside id="activityDrawer" class="fixed top-14 right-0 bottom-0 w-full sm:w-96 bg-white border-l border-wa-border shadow-2xl z-40 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="h-14 px-4 bg-slate-50 border-b border-wa-border flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i>
+                    <h3 class="font-bold text-sm text-slate-900">Live Activity Stream</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="clearEvents()" class="text-xs text-slate-600 hover:text-slate-900 px-2.5 py-1 bg-white hover:bg-slate-100 rounded-lg border border-wa-border shadow-2xs">Clear</button>
+                    <button onclick="toggleActivityDrawer()" class="p-1.5 text-wa-muted hover:text-slate-900 rounded-lg">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="eventsLog" class="flex-1 overflow-y-auto p-3 space-y-2 font-mono text-xs bg-slate-50">
+                <div class="text-center py-16 text-wa-muted font-sans">
+                    <i data-lucide="radio" class="w-6 h-6 mx-auto mb-2 opacity-40"></i>
+                    <p class="text-xs">Listening for Socket.IO events...</p>
+                </div>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- NEW CHAT MODAL -->
+    <div id="newChatModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm text-slate-900">Start New Conversation</h3>
+                <button onclick="closeNewChatModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Target Phone Number</label>
+                    <input type="text" id="newChatPhone" placeholder="628123456789" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary">
+                    <p class="text-[11px] text-wa-muted mt-1">Country code prefix without leading zeros or plus</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Initial Message (Optional)</label>
+                    <textarea id="newChatInitialMsg" rows="2" placeholder="Hello!" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary"></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <button onclick="closeNewChatModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="submitNewChat()" class="flex-1 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25">Open Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW GROUP MODAL -->
+    <div id="newGroupModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="font-bold text-sm text-slate-900">Create WhatsApp Group</h3>
+                <button onclick="closeNewGroupModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Group Subject / Title *</label>
+                    <input type="text" id="newGroupName" placeholder="Support Team" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3 py-2.5 focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Participant Phone Numbers *</label>
+                    <textarea id="newGroupParticipants" rows="2" placeholder="628123456789, 628987654321" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl p-2.5 focus:outline-none focus:border-primary"></textarea>
+                    <p class="text-[11px] text-wa-muted mt-1">Comma-separated phone numbers</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <button onclick="closeNewGroupModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="submitNewGroup()" class="flex-1 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25">Create Group</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEND MEDIA MODAL -->
+    <div id="mediaModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 id="mediaModalTitle" class="font-bold text-sm text-slate-900">Send Media Attachment</h3>
+                <button onclick="closeMediaModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div id="mediaModalFields" class="space-y-3 text-xs">
+                <!-- Dynamically configured based on media type -->
+            </div>
+
+            <div class="flex items-center gap-2 pt-1">
+                <button onclick="closeMediaModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Cancel</button>
+                <button onclick="submitMediaSend()" class="flex-1 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25">Send Attachment</button>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- QR SCAN MODAL -->
+    <div id="qrModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-wa-border">
+                <div class="flex items-center gap-2 text-left">
+                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center">
+                        <i data-lucide="qr-code" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-900">Scan WhatsApp QR</h3>
+                        <p id="qrSessionLabel" class="text-xs text-wa-muted font-mono">Session: -</p>
+                    </div>
+                </div>
+                <button onclick="closeQrModal()" class="text-wa-muted hover:text-slate-800 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div id="qrContainer" class="bg-slate-50 p-4 rounded-xl flex items-center justify-center min-h-[250px] border border-wa-border shadow-inner relative overflow-hidden">
+                <div class="text-slate-500 text-xs flex flex-col items-center gap-2">
+                    <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-primary"></i>
+                    <span>Menghubungkan ke WhatsApp...</span>
+                </div>
+            </div>
+
+            <div class="text-[11px] text-slate-600 text-left bg-slate-50 p-3 rounded-xl border border-wa-border space-y-1">
+                <div class="font-semibold text-slate-800">Petunjuk Tautkan Perangkat:</div>
+                <div>1. Buka aplikasi WhatsApp di HP</div>
+                <div>2. Masuk ke Perangkat Tertaut &gt; Tautkan Perangkat</div>
+                <div>3. Pindai kode QR yang tampil di atas</div>
+            </div>
+
+            <button onclick="closeQrModal()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl">Done</button>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white border border-wa-border w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-5">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-md shadow-primary/10">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-base text-slate-900">Chatery Dashboard Login</h3>
+                <p class="text-xs text-wa-muted">Enter credentials to unlock web gateway</p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Username</label>
+                    <input type="text" id="loginUsername" placeholder="admin" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">API Key (Optional)</label>
+                    <input type="password" id="loginApiKey" placeholder="X-Api-Key" class="w-full bg-white text-xs text-slate-800 border border-wa-border rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-primary">
+                </div>
+                <div id="loginError" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-2.5"></div>
+            </div>
+
+            <button onclick="handleLogin()" id="btnLogin" class="w-full py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/25 transition-all">
+                Sign In
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== CORE JAVASCRIPT ==================== -->
+    <script>
+        const API_BASE = '/api/whatsapp';
+        let socket = null;
+        let sessions = [];
+        let activeSessionId = null;
+        let activeChat = null; // { id, name, isGroup, phone }
+        let chatList = [];
+        let activeChatFilter = 'all';
+        let currentMediaType = null;
+        let apiKey = sessionStorage.getItem('api_key') || '';
+
+        // Toast Helper
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: { popup: 'swal-dark', confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' }
+        });
+
+        function notify(type, message) {
+            Toast.fire({ icon: type === 'error' ? 'error' : (type === 'success' ? 'success' : 'info'), title: message });
+        }
+
+        function getApiHeaders(includeContentType = true) {
+            const h = {};
+            if (includeContentType) h['Content-Type'] = 'application/json';
+            if (apiKey) h['X-Api-Key'] = apiKey;
+            return h;
+        }
+
+        async function apiFetch(url, options = {}) {
+            if (!apiKey) {
+                await attemptAutoLogin();
+            }
+            let headers = getApiHeaders(options.method && options.method !== 'GET');
+            options.headers = { ...headers, ...options.headers };
+            let response = await fetch(url, options);
+            if (response.status === 401) {
+                const refreshed = await attemptAutoLogin();
+                if (refreshed) {
+                    headers = getApiHeaders(options.method && options.method !== 'GET');
+                    options.headers = { ...headers, ...options.headers };
+                    response = await fetch(url, options);
+                }
+            }
+            return response;
+        }
+
+        // Authentication Handlers
+        function checkAuth() {
+            return sessionStorage.getItem('dashboard_auth') === 'authenticated';
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginModal').classList.add('flex');
+            document.getElementById('loginUsername').focus();
+            lucide.createIcons();
+        }
+
+        async function fetchSession() {
+            try {
+                const res = await fetch('/api/dashboard/session');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.authenticated) {
+                        apiKey = data.apiKey || sessionStorage.getItem('api_key') || '';
+                        sessionStorage.setItem('api_key', apiKey);
+                        sessionStorage.setItem('dashboard_auth', 'authenticated');
+                        return true;
+                    }
+                }
+            } catch (e) {
+                console.warn('Session verification error:', e);
+            }
+            return false;
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+            const k = document.getElementById('loginApiKey').value.trim();
+            const err = document.getElementById('loginError');
+            const btn = document.getElementById('btnLogin');
+
+            if (!u || !p) {
+                err.textContent = 'Please enter username and password';
+                err.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
+            try {
+                const res = await fetch('/api/dashboard/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    sessionStorage.setItem('dashboard_auth', 'authenticated');
+                    apiKey = k || data.apiKey || '';
+                    if (apiKey) {
+                        sessionStorage.setItem('api_key', apiKey);
+                    }
+                    document.getElementById('loginModal').classList.add('hidden');
+                    document.getElementById('loginModal').classList.remove('flex');
+                    notify('success', 'Logged in successfully');
+                    initApp();
+                } else {
+                    err.textContent = data.message || 'Invalid credentials';
+                    err.classList.remove('hidden');
+                }
+            } catch (e) {
+                err.textContent = 'Network failure: ' + e.message;
+                err.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+
+        async function logout() {
+            Swal.fire({
+                title: 'Sign Out',
+                text: 'End your session on Chatery Web?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sign Out',
+                cancelButtonText: 'Cancel',
+                customClass: { popup: 'swal-dark', confirmButton: 'btn-swal-confirm', cancelButton: 'btn-swal-cancel' }
+            }).then(async (res) => {
+                if (res.isConfirmed) {
+                    try {
+                        await fetch('/api/dashboard/logout', { method: 'POST' });
+                    } catch {}
+                    sessionStorage.removeItem('dashboard_auth');
+                    sessionStorage.removeItem('api_key');
+                    window.location.href = '/login';
+                }
+            });
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', async () => {
+            const hasSession = await fetchSession();
+            if (hasSession) {
+                initApp();
+            } else {
+                window.location.href = '/login?redirect=/wa-web';
+            }
+            lucide.createIcons();
+        });
+
+        function initApp() {
+            connectWebSocket();
+            loadSessions();
+            updateRequestBody();
+
+            // Auto-refresh chats every 25 seconds
+            setInterval(() => {
+                if (activeSessionId) {
+                    loadChatsOverview(true);
+                }
+            }, 25000);
+        }
+
+        // WebSocket Setup
+        function connectWebSocket() {
+            socket = io(window.location.origin);
+
+            socket.on('connect', () => {
+                addEvent('connection', 'Socket connected to server');
+                if (activeSessionId) {
+                    socket.emit('subscribe', activeSessionId);
+                }
+            });
+
+            socket.on('disconnect', () => {
+                addEvent('error', 'Socket disconnected');
+            });
+
+            socket.on('qr', (data) => {
+                addEvent('qr', `QR code received for ${data.sessionId}`);
+                if (data.sessionId === activeSessionId || data.sessionId === currentQrTargetId) {
+                    if (qrPollInterval) clearInterval(qrPollInterval);
+                    showQrCode(data.sessionId, data.qrCode);
+                    updateSessionStatusDisplay('qr_ready');
+                }
+            });
+
+            socket.on('connection.update', (data) => {
+                addEvent('connection', `${data.sessionId}: ${data.status}`);
+                if (data.sessionId === activeSessionId || data.sessionId === currentQrTargetId) {
+                    updateSessionStatusDisplay(data.status);
+                    if (data.status === 'connected') {
+                        closeQrModal();
+                        notify('success', `Session "${data.sessionId}" connected!`);
+                        loadChatsOverview();
+                    }
+                }
+                loadSessions(true);
+            });
+
+            socket.on('message', (data) => {
+                const msg = data.message;
+                const from = msg?.senderName || msg?.senderPhone || msg?.sender || msg?.from || 'Unknown';
+                const text = (typeof msg?.content === 'string' ? msg?.content : '') || msg?.text || msg?.caption || '[Attachment]';
+                addEvent('message', `From ${from}: ${text.substring(0, 35)}...`);
+
+                // Update chats overview list
+                loadChatsOverview(true);
+
+                // If message belongs to active chat, append immediately
+                if (activeChat && msg && (msg.chatId === activeChat.id || msg.sender === activeChat.id || msg.from === activeChat.id)) {
+                    appendMessageToThread(msg);
+                }
+            });
+
+            socket.on('message.sent', (data) => {
+                const msg = data.message;
+                const to = msg?.chatId || msg?.to || 'unknown';
+                addEvent('message.sent', `Sent to ${to}`);
+                loadChatsOverview(true);
+
+                if (activeChat && msg && (msg.chatId === activeChat.id || msg.to === activeChat.id)) {
+                    appendMessageToThread(msg);
+                }
+            });
+
+            socket.on('logged.out', (data) => {
+                addEvent('error', `Session ${data.sessionId} logged out`);
+                loadSessions();
+            });
+        }
+
+        // Sessions Loading & Switching
+        async function loadSessions(keepActive = false) {
+            try {
+                const res = await apiFetch(`${API_BASE}/sessions`);
+                const result = await res.json();
+
+                if (result.success) {
+                    sessions = result.data || [];
+                    renderSessionSelector(keepActive);
+                }
+            } catch (e) {
+                console.error('Failed to load sessions:', e);
+            }
+        }
+
+        function renderSessionSelector(keepActive = false) {
+            const select = document.getElementById('sessionSelector');
+            if (!select) return;
+
+            if (sessions.length === 0) {
+                select.innerHTML = '<option value="">(Belum ada sesi)</option>';
+                activeSessionId = null;
+                updateSessionStatusDisplay('disconnected');
+                document.getElementById('currentUserName').textContent = 'Belum Ada Sesi';
+                document.getElementById('currentUserPhone').textContent = 'Kelola di Dashboard';
+                document.getElementById('currentUserAvatar').textContent = '-';
+                renderEmptyScreenContent(null);
+                const container = document.getElementById('chatsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="text-center py-12 px-4 text-wa-muted select-none space-y-3">
+                            <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center mx-auto">
+                                <i data-lucide="layers" class="w-6 h-6"></i>
+                            </div>
+                            <h4 class="text-xs font-semibold text-slate-800">Belum Ada Sesi</h4>
+                            <p class="text-[11px] text-wa-muted">Buat dan kelola sesi WhatsApp di halaman Dashboard.</p>
+                            <a href="/dashboard" class="mt-2 px-3.5 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-sm transition-all inline-flex items-center gap-1.5">
+                                <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+                                <span>Buka Dashboard</span>
+                            </a>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
+                return;
+            }
+
+            const current = activeSessionId;
+            select.innerHTML = sessions.map(s => `
+                <option value="${s.sessionId}" ${s.sessionId === current ? 'selected' : ''}>
+                    ${s.name || s.sessionId} (${s.status})
+                </option>
+            `).join('');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const requestedSession = urlParams.get('session');
+            const targetFromUrl = requestedSession ? sessions.find(s => s.sessionId === requestedSession) : null;
+
+            if (targetFromUrl) {
+                switchSession(targetFromUrl.sessionId);
+            } else if (!keepActive || !current || !sessions.find(s => s.sessionId === current)) {
+                // Default to first connected or first available
+                const preferred = sessions.find(s => s.status === 'connected') || sessions[0];
+                switchSession(preferred.sessionId);
+            } else {
+                select.value = current;
+                const active = sessions.find(s => s.sessionId === current);
+                if (active) updateSessionStatusDisplay(active.status, active);
+            }
+        }
+
+        function switchSession(sessionId) {
+            if (!sessionId || sessionId === '__new__') return;
+            activeSessionId = sessionId;
+
+            let session = sessions.find(s => s.sessionId === sessionId);
+            if (!session) {
+                session = { sessionId: sessionId, status: 'connecting', name: sessionId, phoneNumber: null };
+                sessions.push(session);
+            }
+
+            const select = document.getElementById('sessionSelector');
+            if (select) {
+                select.value = sessionId;
+            }
+
+            if (socket && socket.connected) {
+                socket.emit('subscribe', sessionId);
+            }
+
+            updateSessionStatusDisplay(session.status, session);
+            document.getElementById('currentUserName').textContent = session.name || session.sessionId;
+            document.getElementById('currentUserPhone').textContent = session.phoneNumber ? '+' + session.phoneNumber : (session.status === 'connected' ? 'Terhubung' : 'Belum Ditautkan');
+            document.getElementById('currentUserAvatar').textContent = (session.name || session.sessionId)[0].toUpperCase();
+
+            // Reset active chat and clear chatList so old chats don't leak
+            activeChat = null;
+            chatList = [];
+            document.getElementById('activeChatScreen').classList.add('hidden');
+            document.getElementById('emptyChatScreen').classList.remove('hidden');
+
+            renderEmptyScreenContent(session);
+
+            if (session.status === 'connected') {
+                loadChatsOverview();
+            } else {
+                renderDisconnectedChatsPlaceholder(session);
+            }
+        }
+
+        function renderEmptyScreenContent(session) {
+            const container = document.getElementById('emptyChatScreen');
+            if (!container) return;
+
+            if (!session || sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="w-20 h-20 rounded-3xl bg-white border border-wa-border flex items-center justify-center mb-6 shadow-md shadow-slate-200">
+                        <i data-lucide="layers" class="w-10 h-10 text-primary"></i>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Belum Ada Sesi WhatsApp</h2>
+                    <p class="text-xs text-wa-muted max-w-sm leading-relaxed mb-6">
+                        Belum ada sesi WhatsApp yang terdaftar. Buka halaman Dashboard untuk membuat dan menghubungkan akun WhatsApp Anda.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <a href="/dashboard" class="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 transition-all">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                            <span>Buka Dashboard & Manajemen Sesi</span>
+                        </a>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            if (session.status !== 'connected') {
+                container.innerHTML = `
+                    <div class="w-20 h-20 rounded-3xl bg-amber-50 border border-amber-200 flex items-center justify-center mb-6 shadow-md text-amber-600">
+                        <i data-lucide="qr-code" class="w-10 h-10"></i>
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold mb-3">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span>Sesi Belum Terhubung: ${escapeHtml(session.sessionId)}</span>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-800 mb-2">Tautkan Perangkat WhatsApp</h2>
+                    <p class="text-xs text-wa-muted max-w-md leading-relaxed mb-6">
+                        Sesi <span class="text-slate-900 font-mono font-semibold">${escapeHtml(session.sessionId)}</span> belum terhubung ke akun WhatsApp. Anda dapat memindai QR code di sini atau mengelolanya dari Dashboard.
+                    </p>
+                    <div class="flex items-center gap-3">
+                        <button onclick="openCurrentSessionQr('${escapeHtml(session.sessionId)}')" class="flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-500/20 transition-all">
+                            <i data-lucide="qr-code" class="w-4 h-4"></i>
+                            <span>Pindai Kode QR</span>
+                        </button>
+                        <a href="/dashboard" class="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 border border-wa-border text-slate-700 text-xs font-semibold rounded-xl transition-colors shadow-sm">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                            <span>Buka Dashboard</span>
+                        </a>
+                    </div>
+                    <div class="mt-8 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-70">
+                        <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                        <span>Koneksi aman multi-perangkat Baileys v7</span>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            // Default connected screen
+            container.innerHTML = `
+                <div class="w-20 h-20 rounded-3xl bg-white border border-wa-border flex items-center justify-center mb-6 shadow-md shadow-slate-200">
+                    <i data-lucide="message-square" class="w-10 h-10 text-primary"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 mb-2">Chatery WhatsApp Web</h2>
+                <p class="text-xs text-wa-muted max-w-sm leading-relaxed mb-6">
+                    Kirim dan terima pesan secara instan dan andal. Didukung oleh Express.js, Baileys v7, dan Socket.IO.
+                </p>
+
+                <div class="flex items-center gap-3">
+                    <button onclick="openNewChatModal()" class="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-600 text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 transition-all">
+                        <i data-lucide="message-square-plus" class="w-4 h-4"></i>
+                        <span>Mulai Percakapan</span>
+                    </button>
+                    <button onclick="toggleApiDrawer()" class="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 border border-wa-border text-slate-700 text-xs font-semibold rounded-xl transition-colors shadow-sm">
+                        <i data-lucide="terminal" class="w-4 h-4 text-primary"></i>
+                        <span>Buka API Tester</span>
+                    </button>
+                </div>
+
+                <div class="mt-12 text-[11px] text-wa-muted flex items-center gap-1.5 opacity-70">
+                    <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                    <span>Sinkronisasi terenkripsi end-to-end</span>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function renderDisconnectedChatsPlaceholder(session) {
+            const container = document.getElementById('chatsContainer');
+            if (!container) return;
+            container.innerHTML = `
+                <div class="text-center py-12 px-4 text-wa-muted select-none space-y-3">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto">
+                        <i data-lucide="qr-code" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-semibold text-slate-800">Sesi Belum Terhubung</h4>
+                        <p class="text-[11px] text-wa-muted mt-1 max-w-[220px] mx-auto">Pindai kode QR untuk menghubungkan akun WhatsApp dan memuat pesan.</p>
+                    </div>
+                    <div class="pt-2 flex flex-col gap-2 items-center">
+                        <button onclick="openCurrentSessionQr('${escapeHtml(session.sessionId)}')" class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 text-xs font-semibold rounded-xl transition-all inline-flex items-center gap-1.5">
+                            <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+                            <span>Pindai QR Code</span>
+                        </button>
+                        <a href="/dashboard" class="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                            <i data-lucide="layout-dashboard" class="w-3 h-3"></i>
+                            <span>Kelola Sesi di Dashboard</span>
+                        </a>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function updateSessionStatusDisplay(status, session = null) {
+            const dot = document.getElementById('sessionStatusDot');
+            const txt = document.getElementById('sessionStatusText');
+            const qrBtn = document.getElementById('btnScanQr');
+
+            if (status === 'connected') {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                txt.textContent = 'Connected';
+                qrBtn.classList.add('hidden');
+            } else if (status === 'qr_ready') {
+                dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+                txt.textContent = 'Scan QR';
+                qrBtn.classList.remove('hidden');
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-rose-400';
+                txt.textContent = 'Offline';
+                qrBtn.classList.remove('hidden');
+            }
+        }
+
+        // Chats Overview & Thread Loading
+        async function loadChatsOverview(silent = false) {
+            if (!activeSessionId) return;
+
+            const session = sessions.find(s => s.sessionId === activeSessionId);
+            if (session && session.status !== 'connected') {
+                chatList = [];
+                renderDisconnectedChatsPlaceholder(session);
+                return;
+            }
+
+            try {
+                const res = await apiFetch(`${API_BASE}/chats/overview`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, limit: 100 })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    chatList = result.data?.chats || (Array.isArray(result.data) ? result.data : []);
+                    renderChatList();
+                } else {
+                    if (session && session.status !== 'connected') {
+                        renderDisconnectedChatsPlaceholder(session);
+                    }
+                }
+            } catch (e) {
+                if (!silent) console.error('Error loading chats overview:', e);
+            }
+        }
+
+        function renderChatList() {
+            const container = document.getElementById('chatsContainer');
+            const searchVal = document.getElementById('chatSearchInput').value.toLowerCase().trim();
+
+            let filtered = chatList.filter(chat => {
+                if (activeChatFilter === 'unread' && (!chat.unreadCount || chat.unreadCount <= 0)) return false;
+                if (activeChatFilter === 'personal' && chat.isGroup) return false;
+                if (activeChatFilter === 'groups' && !chat.isGroup) return false;
+                if (searchVal) {
+                    const name = (chat.name || '').toLowerCase();
+                    const id = (chat.id || '').toLowerCase();
+                    const phone = (chat.phone || '').toLowerCase();
+                    return name.includes(searchVal) || id.includes(searchVal) || phone.includes(searchVal);
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 text-wa-muted font-sans select-none">
+                        <i data-lucide="message-square" class="w-8 h-8 mx-auto mb-2 opacity-30"></i>
+                        <p class="text-xs">No conversations found</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(chat => {
+                const isSelected = activeChat && activeChat.id === chat.id;
+                const title = chat.name || chat.phone || chat.id.split('@')[0];
+                const initial = title ? title[0].toUpperCase() : '?';
+                const time = (chat.lastMessageTimestamp || chat.conversationTimestamp)
+                    ? formatTimestamp(chat.lastMessageTimestamp || chat.conversationTimestamp)
+                    : '';
+                const preview = (typeof chat.lastMessage === 'string'
+                    ? chat.lastMessage
+                    : (chat.lastMessage?.preview || 'No messages')) || 'No messages';
+                const fromMe = chat.lastMessage?.fromMe;
+
+                return `
+                <div onclick="selectChat('${encodeURIComponent(JSON.stringify(chat))}')" class="px-3.5 py-3 flex items-center gap-3 cursor-pointer transition-colors ${
+                    isSelected ? 'bg-primary/10 border-l-2 border-primary' : 'hover:bg-slate-50'
+                }">
+                    <div class="w-11 h-11 rounded-full bg-slate-100 border border-wa-border flex items-center justify-center font-bold text-sm text-primary shrink-0 relative overflow-hidden">
+                        ${chat.profilePicture ? `<img src="${chat.profilePicture}" class="w-full h-full rounded-full object-cover" onerror="this.style.display='none'">` : initial}
+                        ${chat.isGroup ? `<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center text-[10px] text-wa-muted border border-wa-border shadow-2xs"><i data-lucide="users" class="w-2.5 h-2.5"></i></span>` : ''}
+                    </div>
+
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="font-semibold text-xs text-slate-800 truncate max-w-[160px]">${escapeHtml(title)}</span>
+                            <span class="text-[10px] text-wa-muted whitespace-nowrap">${time}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs text-wa-muted">
+                            <div class="flex items-center gap-1 truncate text-[11px] max-w-[190px]">
+                                ${fromMe ? `<i data-lucide="check-check" class="w-3 h-3 text-primary shrink-0"></i>` : ''}
+                                <span class="truncate text-slate-500">${escapeHtml(preview)}</span>
+                            </div>
+                            ${chat.unreadCount > 0 ? `
+                                <span class="px-1.5 py-0.5 rounded-full bg-primary text-white text-[10px] font-bold shrink-0">
+                                    ${chat.unreadCount}
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function setChatFilter(filter) {
+            activeChatFilter = filter;
+            document.querySelectorAll('.chat-filter-btn').forEach(btn => {
+                const isMatch = btn.dataset.filter === filter;
+                btn.className = `chat-filter-btn px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
+                    isMatch ? 'bg-primary/10 text-primary font-semibold border border-primary/20' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`;
+            });
+            renderChatList();
+        }
+
+        function filterChatList() {
+            renderChatList();
+        }
+
+        // Active Chat Selection & Message Loading
+        async function selectChat(encodedChatObj) {
+            const chat = JSON.parse(decodeURIComponent(encodedChatObj));
+            activeChat = chat;
+
+            // Update UI headers
+            document.getElementById('emptyChatScreen').classList.add('hidden');
+            document.getElementById('activeChatScreen').classList.remove('hidden');
+
+            const title = chat.name || chat.phone || chat.id.split('@')[0];
+            const initial = title ? title[0].toUpperCase() : '?';
+            document.getElementById('activeChatTitle').textContent = title;
+            document.getElementById('activeChatSubtitle').textContent = chat.isGroup 
+                ? 'Group Conversation' 
+                : (chat.phone ? '+' + chat.phone : chat.id.split('@')[0]);
+
+            const avatarEl = document.getElementById('activeChatAvatar');
+            if (chat.profilePicture) {
+                avatarEl.innerHTML = `<img src="${chat.profilePicture}" class="w-full h-full rounded-full object-cover" onerror="this.parentElement.textContent='${initial}'">`;
+            } else {
+                avatarEl.textContent = initial;
+            }
+
+            // Clear unread badge locally
+            chat.unreadCount = 0;
+            renderChatList();
+
+            // Load Messages
+            await loadChatMessages(chat.id);
+
+            // Mark Read in Backend
+            markActiveChatRead(true);
+        }
+
+        async function loadChatMessages(chatId) {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = `
+                <div class="flex items-center justify-center py-20 text-wa-muted text-xs">
+                    <i data-lucide="loader-2" class="w-5 h-5 animate-spin mr-2 text-primary"></i>
+                    <span>Loading conversation history...</span>
+                </div>
+            `;
+            lucide.createIcons();
+
+            try {
+                const res = await apiFetch(`${API_BASE}/chats/messages`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, chatId, limit: 50 })
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    const messages = result.data?.messages || (Array.isArray(result.data) ? result.data : []);
+                    // API returns newest first (descending). Reverse to display chronologically (oldest top, newest bottom)
+                    renderMessages(messages.slice().reverse());
+                } else {
+                    container.innerHTML = `<div class="text-center py-16 text-rose-400 text-xs">${result.message || 'Error loading messages'}</div>`;
+                }
+            } catch (e) {
+                container.innerHTML = `<div class="text-center py-16 text-rose-400 text-xs">Failed to load messages</div>`;
+            }
+        }
+
+        function renderMessages(messages) {
+            const container = document.getElementById('messagesContainer');
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-20 text-wa-muted text-xs font-sans">
+                        <i data-lucide="message-square" class="w-7 h-7 mx-auto mb-2 opacity-30"></i>
+                        <p>No messages recorded yet in this chat.</p>
+                        <p class="text-[11px] mt-1">Send a message below to start chatting.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => renderSingleMessageBubble(msg)).join('');
+            lucide.createIcons();
+            scrollChatToBottom();
+        }
+
+        function renderSingleMessageBubble(msg) {
+            const fromMe = Boolean(msg.fromMe === true || msg.fromMe === 'true' || msg.key?.fromMe === true);
+            const time = msg.timestamp ? formatTimestamp(msg.timestamp) : '';
+            const bubbleBg = fromMe 
+                ? 'bg-wa-bubbleOut text-slate-900 rounded-2xl rounded-tr-none border border-primary/20 shadow-xs' 
+                : 'bg-wa-bubbleIn text-slate-900 rounded-2xl rounded-tl-none border border-wa-border shadow-xs';
+
+            let mediaContent = '';
+            if (msg.type === 'image') {
+                if (msg.mediaUrl) {
+                    mediaContent = `<div class="mb-1.5"><img src="${msg.mediaUrl}" class="rounded-lg max-h-64 max-w-xs object-cover border border-black/10" onerror="this.parentElement.innerHTML='<span class=\\'text-wa-muted text-[11px]\\'>[Photo attachment]</span>'"></div>`;
+                } else {
+                    mediaContent = `<div class="mb-1.5 flex items-center gap-1.5 text-wa-muted text-xs"><i data-lucide="image" class="w-4 h-4 text-primary"></i><span>Photo</span></div>`;
+                }
+            } else if (msg.type === 'video') {
+                if (msg.mediaUrl) {
+                    mediaContent = `<div class="mb-1.5"><video src="${msg.mediaUrl}" controls class="rounded-lg max-h-64 max-w-xs border border-black/10"></video></div>`;
+                } else {
+                    mediaContent = `<div class="mb-1.5 flex items-center gap-1.5 text-wa-muted text-xs"><i data-lucide="video" class="w-4 h-4 text-primary"></i><span>Video</span></div>`;
+                }
+            } else if (msg.type === 'audio' || msg.type === 'ptt') {
+                if (msg.mediaUrl) {
+                    mediaContent = `<div class="mb-1.5"><audio src="${msg.mediaUrl}" controls class="h-8 max-w-[220px]"></audio></div>`;
+                } else {
+                    mediaContent = `<div class="mb-1.5 flex items-center gap-1.5 text-wa-muted text-xs"><i data-lucide="mic" class="w-4 h-4 text-primary"></i><span>Voice Note / Audio</span></div>`;
+                }
+            } else if (msg.type === 'document') {
+                mediaContent = `
+                    <div class="flex items-center gap-2 p-2 rounded-lg bg-black/5 mb-1.5 border border-slate-200">
+                        <i data-lucide="file-text" class="w-5 h-5 text-amber-500 shrink-0"></i>
+                        <div class="min-w-0 text-xs">
+                            <div class="truncate font-medium text-slate-800">${escapeHtml(msg.filename || msg.fileName || 'Document')}</div>
+                            ${msg.mediaUrl ? `<a href="${msg.mediaUrl}" target="_blank" class="text-primary hover:underline text-[11px] font-medium">Download</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            } else if (msg.type === 'sticker') {
+                if (msg.mediaUrl) {
+                    mediaContent = `<div class="mb-1"><img src="${msg.mediaUrl}" class="w-32 h-32 object-contain"></div>`;
+                } else {
+                    mediaContent = `<div class="text-wa-muted text-xs flex items-center gap-1.5"><i data-lucide="smile" class="w-4 h-4 text-primary"></i><span>Sticker</span></div>`;
+                }
+            } else if (msg.type === 'location' && msg.content) {
+                const lat = msg.content.latitude;
+                const lng = msg.content.longitude;
+                mediaContent = `
+                    <div class="p-2 rounded-lg bg-black/5 mb-1.5 border border-slate-200">
+                        <div class="flex items-center gap-1.5 font-semibold text-xs text-primary mb-1">
+                            <i data-lucide="map-pin" class="w-4 h-4"></i>
+                            <span>${escapeHtml(msg.content.name || 'Location')}</span>
+                        </div>
+                        ${msg.content.address ? `<div class="text-[11px] text-slate-600 mb-1">${escapeHtml(msg.content.address)}</div>` : ''}
+                        <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" class="text-primary hover:underline text-[11px] font-medium flex items-center gap-1">
+                            View on Google Maps <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                `;
+            } else if (msg.type === 'contact' && msg.content) {
+                mediaContent = `
+                    <div class="p-2.5 rounded-lg bg-black/5 mb-1.5 border border-slate-200 flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-primary font-bold text-xs shrink-0">
+                            <i data-lucide="user" class="w-4 h-4"></i>
+                        </div>
+                        <div class="min-w-0 text-xs">
+                            <div class="font-semibold truncate text-slate-800">${escapeHtml(msg.content.displayName || 'Contact')}</div>
+                            <div class="text-[10px] text-slate-500">Contact card</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const rawText = (typeof msg.content === 'string' ? msg.content : '') || msg.text || msg.caption || '';
+            const text = rawText ? `<div class="leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(rawText)}</div>` : '';
+
+            const senderDisplay = !fromMe && (msg.senderName || msg.pushName || (msg.senderPhone ? '+' + msg.senderPhone : null));
+            const msgId = msg.id || ('temp_' + (msg.timestamp || Math.random()));
+
+            return `
+            <div class="w-full flex ${fromMe ? 'justify-end' : 'justify-start'}" data-msg-id="${escapeHtml(msgId)}">
+                <div class="flex flex-col max-w-[85%] sm:max-w-md lg:max-w-lg ${fromMe ? 'items-end ml-auto' : 'items-start mr-auto'}">
+                    <div class="px-3.5 py-2 text-xs shadow-sm ${bubbleBg} relative group">
+                        ${senderDisplay ? `<div class="text-[10px] font-bold text-primary mb-1">${escapeHtml(senderDisplay)}</div>` : ''}
+                        ${mediaContent}
+                        ${text}
+                        <div class="flex items-center justify-end gap-1.5 text-[10px] ${fromMe ? 'text-slate-500' : 'text-slate-400'} mt-1 select-none">
+                            <span>${time}</span>
+                            ${fromMe ? `<i data-lucide="check-check" class="w-3.5 h-3.5 text-primary"></i>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
+        function appendMessageToThread(msg) {
+            const container = document.getElementById('messagesContainer');
+            // Remove empty placeholder if any
+            if (container.children.length === 1 && container.children[0].classList.contains('text-center')) {
+                container.innerHTML = '';
+            }
+
+            // Avoid duplicate rendering
+            if (msg.id) {
+                const existing = container.querySelector(`[data-msg-id="${msg.id}"]`);
+                if (existing) return;
+            }
+
+            const item = document.createElement('div');
+            item.innerHTML = renderSingleMessageBubble(msg);
+            if (item.firstElementChild) {
+                container.appendChild(item.firstElementChild);
+                lucide.createIcons();
+                scrollChatToBottom();
+            }
+        }
+
+        function scrollChatToBottom() {
+            const container = document.getElementById('messagesContainer');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Sending Chat Messages
+        async function sendChatMessage() {
+            if (!activeSessionId || !activeChat) return;
+
+            const input = document.getElementById('messageTextInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Optimistic render
+            const tempId = 'temp_' + Date.now();
+            const tempMsg = {
+                id: tempId,
+                fromMe: true,
+                content: message,
+                text: message,
+                timestamp: Math.floor(Date.now() / 1000)
+            };
+            appendMessageToThread(tempMsg);
+
+            try {
+                const res = await apiFetch(`${API_BASE}/chats/send-text`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        sessionId: activeSessionId,
+                        chatId: activeChat.id,
+                        message: message
+                    })
+                });
+                const result = await res.json();
+                if (!result.success) {
+                    notify('error', result.message || 'Send failed');
+                } else {
+                    if (result.data?.messageId) {
+                        const tempEl = document.querySelector(`[data-msg-id="${tempId}"]`);
+                        if (tempEl) tempEl.setAttribute('data-msg-id', result.data.messageId);
+                    }
+                    loadChatsOverview(true);
+                }
+            } catch (e) {
+                notify('error', 'Network error: ' + e.message);
+            }
+        }
+
+        function handleInputKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        // Media Send Flow
+        function toggleAttachMenu() {
+            const menu = document.getElementById('attachMenu');
+            menu.classList.toggle('hidden');
+            menu.classList.toggle('flex');
+            lucide.createIcons();
+        }
+
+        function openMediaModal(type) {
+            currentMediaType = type;
+            toggleAttachMenu();
+            const modal = document.getElementById('mediaModal');
+            const title = document.getElementById('mediaModalTitle');
+            const fields = document.getElementById('mediaModalFields');
+
+            const typeTitles = {
+                image: 'Send Image',
+                video: 'Send Video',
+                document: 'Send Document',
+                audio: 'Send Audio / Voice Note',
+                sticker: 'Send Sticker',
+                location: 'Send Location'
+            };
+            title.textContent = typeTitles[type] || 'Send Attachment';
+
+            if (type === 'image') {
+                fields.innerHTML = `
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Image Direct URL *</label><input type="url" id="mUrl" placeholder="https://example.com/photo.jpg" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Caption (Optional)</label><input type="text" id="mCaption" placeholder="Photo caption" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                `;
+            } else if (type === 'video') {
+                fields.innerHTML = `
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">MP4 Video URL *</label><input type="url" id="mUrl" placeholder="https://example.com/video.mp4" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Caption (Optional)</label><input type="text" id="mCaption" placeholder="Video caption" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <label class="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-700"><input type="checkbox" id="mGif" class="rounded border-slate-300 text-primary focus:ring-primary/20"><span>Loop as GIF</span></label>
+                `;
+            } else if (type === 'document') {
+                fields.innerHTML = `
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Document File URL *</label><input type="url" id="mUrl" placeholder="https://example.com/file.pdf" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Display Filename *</label><input type="text" id="mFilename" placeholder="Contract.pdf" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                `;
+            } else if (type === 'audio') {
+                fields.innerHTML = `
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">OGG Opus Audio URL *</label><input type="url" id="mUrl" placeholder="https://example.com/voice.ogg" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    <label class="flex items-center gap-2 cursor-pointer pt-1 text-xs text-slate-700"><input type="checkbox" id="mPtt" checked class="rounded border-slate-300 text-primary focus:ring-primary/20"><span>Push to Talk (Voice Note)</span></label>
+                `;
+            } else if (type === 'sticker') {
+                fields.innerHTML = `
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">WebP Sticker URL *</label><input type="url" id="mUrl" placeholder="https://example.com/sticker.webp" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                `;
+            } else if (type === 'location') {
+                fields.innerHTML = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Latitude *</label><input type="number" step="any" id="mLat" placeholder="-6.2088" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                        <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Longitude *</label><input type="number" step="any" id="mLng" placeholder="106.8456" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                    </div>
+                    <div><label class="block mb-1 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">Location Name</label><input type="text" id="mLocName" placeholder="Jakarta, Indonesia" class="w-full bg-slate-50 focus:bg-white text-xs text-slate-800 border border-slate-200 focus:border-primary rounded-xl p-2.5 outline-none transition-colors"></div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeMediaModal() {
+            document.getElementById('mediaModal').classList.add('hidden');
+            document.getElementById('mediaModal').classList.remove('flex');
+        }
+
+        async function submitMediaSend() {
+            if (!activeSessionId || !activeChat || !currentMediaType) return;
+
+            let endpoint = '';
+            let body = { sessionId: activeSessionId, chatId: activeChat.id };
+
+            if (currentMediaType === 'image') {
+                endpoint = '/chats/send-image';
+                body.imageUrl = document.getElementById('mUrl').value.trim();
+                body.caption = document.getElementById('mCaption')?.value.trim() || '';
+            } else if (currentMediaType === 'video') {
+                endpoint = '/chats/send-video';
+                body.videoUrl = document.getElementById('mUrl').value.trim();
+                body.caption = document.getElementById('mCaption')?.value.trim() || '';
+                body.gifPlayback = document.getElementById('mGif')?.checked || false;
+            } else if (currentMediaType === 'document') {
+                endpoint = '/chats/send-document';
+                body.documentUrl = document.getElementById('mUrl').value.trim();
+                body.filename = document.getElementById('mFilename')?.value.trim() || 'Document';
+            } else if (currentMediaType === 'audio') {
+                endpoint = '/chats/send-audio';
+                body.audioUrl = document.getElementById('mUrl').value.trim();
+                body.ptt = document.getElementById('mPtt')?.checked || false;
+            } else if (currentMediaType === 'sticker') {
+                endpoint = '/chats/send-sticker';
+                body.stickerUrl = document.getElementById('mUrl').value.trim();
+            } else if (currentMediaType === 'location') {
+                endpoint = '/chats/send-location';
+                body.latitude = parseFloat(document.getElementById('mLat').value);
+                body.longitude = parseFloat(document.getElementById('mLng').value);
+                body.name = document.getElementById('mLocName')?.value.trim() || '';
+            }
+
+            closeMediaModal();
+            notify('info', 'Sending attachment...');
+
+            try {
+                const res = await apiFetch(`${API_BASE}${endpoint}`, {
+                    method: 'POST',
+                    body: JSON.stringify(body)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    notify('success', 'Attachment dispatched successfully');
+                    loadChatMessages(activeChat.id);
+                } else {
+                    notify('error', result.message || 'Dispatch failed');
+                }
+            } catch (e) {
+                notify('error', 'Error: ' + e.message);
+            }
+        }
+
+        // Conversation Action Bar (Pin, Archive, Mute, Mark Read)
+        async function markActiveChatRead(silent = false) {
+            if (!activeSessionId || !activeChat) return;
+            try {
+                await apiFetch(`${API_BASE}/chats/mark-read`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, chatId: activeChat.id })
+                });
+                if (!silent) notify('success', 'Chat marked as read');
+            } catch (e) {}
+        }
+
+        async function pinActiveChat() {
+            if (!activeSessionId || !activeChat) return;
+            try {
+                const res = await apiFetch(`${API_BASE}/chats/pin`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, chatId: activeChat.id, pin: true })
+                });
+                const result = await res.json();
+                notify(result.success ? 'success' : 'error', result.message || 'Pin action triggered');
+            } catch (e) {}
+        }
+
+        async function archiveActiveChat() {
+            if (!activeSessionId || !activeChat) return;
+            try {
+                const res = await apiFetch(`${API_BASE}/chats/archive`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, chatId: activeChat.id, archive: true })
+                });
+                const result = await res.json();
+                notify(result.success ? 'success' : 'error', result.message || 'Archive action triggered');
+            } catch (e) {}
+        }
+
+        async function muteActiveChat() {
+            if (!activeSessionId || !activeChat) return;
+            try {
+                const res = await apiFetch(`${API_BASE}/chats/mute`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, chatId: activeChat.id, duration: 28800000 })
+                });
+                const result = await res.json();
+                notify(result.success ? 'success' : 'error', result.message || 'Mute action triggered');
+            } catch (e) {}
+        }
+
+        // Modals Management
+        function openNewChatModal() {
+            document.getElementById('newChatModal').classList.remove('hidden');
+            document.getElementById('newChatModal').classList.add('flex');
+            document.getElementById('newChatPhone').focus();
+            lucide.createIcons();
+        }
+
+        function closeNewChatModal() {
+            document.getElementById('newChatModal').classList.add('hidden');
+            document.getElementById('newChatModal').classList.remove('flex');
+            document.getElementById('newChatPhone').value = '';
+            document.getElementById('newChatInitialMsg').value = '';
+        }
+
+        async function submitNewChat() {
+            const phone = document.getElementById('newChatPhone').value.trim();
+            const msg = document.getElementById('newChatInitialMsg').value.trim();
+            if (!phone) {
+                notify('error', 'Phone number is required');
+                return;
+            }
+
+            const cleanPhone = phone.replace(/[^0-9]/g, '');
+            const targetJid = cleanPhone.includes('@') ? cleanPhone : `${cleanPhone}@s.whatsapp.net`;
+            closeNewChatModal();
+
+            // Set active chat immediately
+            selectChat(encodeURIComponent(JSON.stringify({
+                id: targetJid,
+                name: cleanPhone,
+                isGroup: false
+            })));
+
+            if (msg) {
+                document.getElementById('messageTextInput').value = msg;
+                sendChatMessage();
+            }
+        }
+
+        function openNewGroupModal() {
+            document.getElementById('newGroupModal').classList.remove('hidden');
+            document.getElementById('newGroupModal').classList.add('flex');
+            document.getElementById('newGroupName').focus();
+            lucide.createIcons();
+        }
+
+        function closeNewGroupModal() {
+            document.getElementById('newGroupModal').classList.add('hidden');
+            document.getElementById('newGroupModal').classList.remove('flex');
+            document.getElementById('newGroupName').value = '';
+            document.getElementById('newGroupParticipants').value = '';
+        }
+
+        async function submitNewGroup() {
+            const name = document.getElementById('newGroupName').value.trim();
+            const participantsText = document.getElementById('newGroupParticipants').value.trim();
+            if (!name || !participantsText) {
+                notify('error', 'Group title and participants are required');
+                return;
+            }
+
+            const participants = participantsText.split(',').map(p => p.trim().replace(/[^0-9]/g, '')).filter(Boolean);
+            closeNewGroupModal();
+            notify('info', 'Creating group...');
+
+            try {
+                const res = await apiFetch(`${API_BASE}/groups/create`, {
+                    method: 'POST',
+                    body: JSON.stringify({ sessionId: activeSessionId, name, participants })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    notify('success', 'Group created successfully');
+                    loadChatsOverview();
+                } else {
+                    notify('error', result.message || 'Creation failed');
+                }
+            } catch (e) {
+                notify('error', 'Group creation error: ' + e.message);
+            }
+        }
+
+
+
+        // QR Code Handling with Polling
+        async function openCurrentSessionQr(targetId = null) {
+            const sId = targetId || activeSessionId;
+            if (!sId) {
+                notify('error', 'Silakan buat atau pilih sesi di halaman Dashboard terlebih dahulu');
+                return;
+            }
+
+            currentQrTargetId = sId;
+            if (activeSessionId !== sId) {
+                switchSession(sId);
+            }
+
+            document.getElementById('qrSessionLabel').textContent = `Session: ${sId}`;
+            document.getElementById('qrContainer').innerHTML = `
+                <div class="text-slate-400 text-xs flex flex-col items-center gap-2 py-8">
+                    <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-primary"></i>
+                    <span class="font-medium text-slate-800">Menghubungkan ke WhatsApp...</span>
+                    <span class="text-[11px] text-slate-500">Menunggu kode QR dari server...</span>
+                </div>
+            `;
+            document.getElementById('qrModal').classList.remove('hidden');
+            document.getElementById('qrModal').classList.add('flex');
+            lucide.createIcons();
+
+            // Subscribe via WebSocket
+            if (socket && socket.connected) {
+                socket.emit('subscribe', sId);
+            }
+
+            if (qrPollInterval) clearInterval(qrPollInterval);
+            qrPollCount = 0;
+
+            const fetchQr = async () => {
+                qrPollCount++;
+                try {
+                    const res = await apiFetch(`${API_BASE}/sessions/${sId}/qr`);
+                    const result = await res.json();
+
+                    if (result.success && result.data) {
+                        if (result.data.status === 'connected' || result.message === 'Already connected to WhatsApp') {
+                            if (qrPollInterval) clearInterval(qrPollInterval);
+                            closeQrModal();
+                            notify('success', `Sesi "${sId}" berhasil terhubung!`);
+                            await loadSessions(true);
+                            switchSession(sId);
+                            return;
+                        }
+
+                        if (result.data.qrCode) {
+                            if (qrPollInterval) clearInterval(qrPollInterval);
+                            showQrCode(sId, result.data.qrCode);
+                            return;
+                        }
+                    }
+
+                    if (qrPollCount > 30) {
+                        if (qrPollInterval) clearInterval(qrPollInterval);
+                        document.getElementById('qrContainer').innerHTML = `
+                            <div class="text-xs text-rose-500 text-center py-6 space-y-2">
+                                <p>QR generation timed out.</p>
+                                <button onclick="openCurrentSessionQr('${sId}')" class="px-3 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-xs font-semibold">
+                                    Coba Lagi
+                                </button>
+                            </div>
+                        `;
+                        lucide.createIcons();
+                    }
+                } catch (e) {}
+            };
+
+            fetchQr();
+            qrPollInterval = setInterval(fetchQr, 1500);
+        }
+
+        function showQrCode(sessionId, qrData) {
+            document.getElementById('qrSessionLabel').textContent = `Session: ${sessionId}`;
+            const container = document.getElementById('qrContainer');
+
+            if (qrData.startsWith('data:image')) {
+                container.innerHTML = `<img src="${qrData}" alt="WhatsApp QR Code" class="w-60 h-60 object-contain rounded-xl shadow">`;
+            } else {
+                container.innerHTML = '<canvas id="qrCanvasWeb" class="w-60 h-60"></canvas>';
+                const canvas = document.getElementById('qrCanvasWeb');
+                if (window.QRCode && canvas) {
+                    QRCode.toCanvas(canvas, qrData, { width: 240, margin: 1 });
+                }
+            }
+            document.getElementById('qrModal').classList.remove('hidden');
+            document.getElementById('qrModal').classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeQrModal() {
+            if (qrPollInterval) {
+                clearInterval(qrPollInterval);
+                qrPollInterval = null;
+            }
+            document.getElementById('qrModal').classList.add('hidden');
+            document.getElementById('qrModal').classList.remove('flex');
+            currentQrTargetId = null;
+        }
+
+        // Slide-Over Drawers (API Tester & Activity)
+        function toggleApiDrawer() {
+            const drawer = document.getElementById('apiDrawer');
+            drawer.classList.toggle('translate-x-full');
+            lucide.createIcons();
+        }
+
+        function toggleActivityDrawer() {
+            const drawer = document.getElementById('activityDrawer');
+            drawer.classList.toggle('translate-x-full');
+            document.getElementById('unreadEventsBadge').classList.add('hidden');
+            lucide.createIcons();
+        }
+
+        // Live Activity Event Logging
+        let unreadEvents = 0;
+        function addEvent(type, content) {
+            const log = document.getElementById('eventsLog');
+            const time = new Date().toLocaleTimeString();
+
+            if (log.children.length === 1 && log.children[0].classList.contains('text-center')) {
+                log.innerHTML = '';
+            }
+
+            const badgeColor =
+                type === 'connection' ? 'bg-primary/10 text-primary border-primary/20' :
+                type === 'message' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                type === 'message.sent' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' :
+                type === 'qr' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                'bg-rose-500/10 text-rose-400 border-rose-500/20';
+
+            const item = document.createElement('div');
+            item.className = 'p-2 rounded-lg bg-wa-input border border-wa-border text-xs flex items-start gap-2';
+            item.innerHTML = `
+                <span class="text-[10px] text-wa-muted font-mono whitespace-nowrap mt-0.5">${time}</span>
+                <span class="px-1.5 py-0.5 text-[9px] font-semibold uppercase rounded border ${badgeColor} whitespace-nowrap">${type}</span>
+                <span class="text-slate-700 font-sans break-all text-[11px]">${content}</span>
+            `;
+
+            log.insertBefore(item, log.firstChild);
+            while (log.children.length > 80) log.removeChild(log.lastChild);
+
+            if (document.getElementById('activityDrawer').classList.contains('translate-x-full')) {
+                unreadEvents++;
+                const badge = document.getElementById('unreadEventsBadge');
+                badge.textContent = unreadEvents;
+                badge.classList.remove('hidden');
+            }
+        }
+
+        function clearEvents() {
+            document.getElementById('eventsLog').innerHTML = `
+                <div class="text-center py-16 text-wa-muted font-sans">
+                    <i data-lucide="radio" class="w-6 h-6 mx-auto mb-2 opacity-30"></i>
+                    <p class="text-xs">Listening for Socket.IO events...</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // Interactive API Tester Logic
+        function formatRequestBody() {
+            const area = document.getElementById('apiBody');
+            try {
+                const parsed = JSON.parse(area.value);
+                area.value = JSON.stringify(parsed, null, 2);
+                notify('success', 'JSON formatted');
+            } catch (e) {
+                notify('error', 'Malformed JSON: ' + e.message);
+            }
+        }
+
+        function updateRequestBody() {
+            const endpoint = document.getElementById('apiEndpoint').value;
+            const [method, path] = endpoint.split('|');
+            const sessionIdGroup = document.getElementById('sessionIdGroup');
+            const jobIdGroup = document.getElementById('jobIdGroup');
+            const bodyGroup = document.getElementById('bodyGroup');
+            const bodyTextarea = document.getElementById('apiBody');
+            const apiHelp = document.getElementById('apiHelp');
+
+            const sid = activeSessionId || '';
+            const targetChat = activeChat?.id || '628123456789';
+
+            sessionIdGroup.classList.toggle('hidden', !path.includes('{sessionId}'));
+            jobIdGroup.classList.toggle('hidden', !path.includes('{jobId}'));
+
+            let body = {};
+            let showBody = true;
+            let helpText = '';
+
+            // Direct Messaging
+            if (path.includes('/chats/send-text')) {
+                body = { sessionId: sid, chatId: targetChat, message: 'Hello from Chatery!' };
+                helpText = 'Dispatches text message. Pass typingTime (ms) to simulate typing presence.';
+            } else if (path.includes('/chats/send-image')) {
+                body = { sessionId: sid, chatId: targetChat, imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Sample Photo' };
+                helpText = 'Dispatches image from direct public URL with optional caption.';
+            } else if (path.includes('/chats/send-video')) {
+                body = { sessionId: sid, chatId: targetChat, videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4', caption: 'Sample Video', gifPlayback: false };
+                helpText = 'Dispatches MP4 video file from public URL.';
+            } else if (path.includes('/chats/send-document')) {
+                body = { sessionId: sid, chatId: targetChat, documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Contract.pdf' };
+                helpText = 'Dispatches document file (PDF, Docx, etc.) with custom filename.';
+            } else if (path.includes('/chats/send-audio')) {
+                body = { sessionId: sid, chatId: targetChat, audioUrl: 'https://files.freemusicarchive.org/storage-freemusicarchive-org/music/no_curator/Tours/Enthusiast/Tours_-_01_-_Enthusiast.ogg', ptt: true };
+                helpText = 'Dispatches audio or PTT (Push To Talk / voice note).';
+            } else if (path.includes('/chats/send-sticker')) {
+                body = { sessionId: sid, chatId: targetChat, stickerUrl: 'https://raw.githubusercontent.com/WhatsApp/stickers/master/iOS/Sticker/1.webp' };
+                helpText = 'Dispatches WebP sticker file.';
+            } else if (path.includes('/chats/send-location')) {
+                body = { sessionId: sid, chatId: targetChat, latitude: -6.2088, longitude: 106.8456, name: 'Jakarta, Indonesia', address: 'Central Jakarta' };
+                helpText = 'Dispatches GPS location pin with coordinates and label.';
+            } else if (path.includes('/chats/send-contact')) {
+                body = { sessionId: sid, chatId: targetChat, contact: { displayName: 'John Doe', vcard: 'BEGIN:VCARD\nVERSION:3.0\nFN:John Doe\nTEL;waid=628123456789:+62 812-345-6789\nEND:VCARD' } };
+                helpText = 'Dispatches vCard contact details.';
+            } else if (path.includes('/chats/send-poll')) {
+                body = { sessionId: sid, chatId: targetChat, pollName: 'Lunch Choice?', options: ['Pizza', 'Burger', 'Sushi'], selectableCount: 1 };
+                helpText = 'Dispatches interactive voting poll.';
+            } else if (path.includes('/chats/send-reaction')) {
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0', emoji: '👍' };
+                helpText = 'Applies reaction to message. Empty string removes reaction.';
+            } else if (path.includes('/chats/delete-message')) {
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0' };
+                helpText = 'Revokes/deletes message for everyone.';
+            } else if (path.includes('/chats/pin-message')) {
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0', duration: 86400 };
+                helpText = 'Pins a message inside the chat for a duration in seconds.';
+            } else if (path.includes('/chats/star-message')) {
+                body = { sessionId: sid, chatId: targetChat, messageId: '3EB0B430A2B52B67D0', star: true };
+                helpText = 'Stars or unstars target message.';
+            } else if (path.includes('/chats/pin')) {
+                body = { sessionId: sid, chatId: targetChat, pin: true };
+                helpText = 'Pins or unpins the conversation in the chat list.';
+            } else if (path.includes('/chats/archive')) {
+                body = { sessionId: sid, chatId: targetChat, archive: true };
+                helpText = 'Archives or unarchives the conversation.';
+            } else if (path.includes('/chats/mute')) {
+                body = { sessionId: sid, chatId: targetChat, mute: 86400 };
+                helpText = 'Mutes chat notifications for duration in seconds (null or 0 to unmute).';
+            } else if (path.includes('/chats/presence')) {
+                body = { sessionId: sid, chatId: targetChat, presence: 'composing' };
+                helpText = 'Updates chat presence: composing, recording, available, unavailable.';
+            } else if (path.includes('/chats/check-number')) {
+                body = { sessionId: sid, phone: '628123456789' };
+                helpText = 'Verifies whether a phone number is registered on WhatsApp.';
+            } else if (path.includes('/chats/profile-picture')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Retrieves profile photo avatar URL for given contact or group.';
+            // Bulk Messaging
+            } else if (path.includes('/chats/send-bulk-image')) {
+                body = { sessionId: sid, recipients: ['628123456789'], imageUrl: 'https://images.unsplash.com/photo-1579202673506-ca3ce28943ef', caption: 'Broadcast Image', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk image broadcast to multiple recipients.';
+            } else if (path.includes('/chats/send-bulk-document')) {
+                body = { sessionId: sid, recipients: ['628123456789'], documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf', filename: 'Doc.pdf', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk document broadcast.';
+            } else if (path.includes('/chats/send-bulk')) {
+                body = { sessionId: sid, recipients: ['628123456789', '628987654321'], message: 'Broadcast Message', delayMs: 1500 };
+                helpText = 'Dispatches asynchronous bulk text broadcast to multiple recipients.';
+            } else if (path.includes('/chats/bulk-jobs')) {
+                body = { sessionId: sid };
+                helpText = 'Lists recent asynchronous background broadcast jobs.';
+            // Contacts & Profiles
+            } else if (path.includes('/contacts/status')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Fetches contact "About / Bio" status text.';
+            } else if (path.includes('/contacts/business-profile')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
+                helpText = 'Fetches WhatsApp Business profile info (description, email, website).';
+            } else if (path.includes('/contacts/blocklist')) {
+                body = { sessionId: sid };
+                helpText = 'Fetches all blocked contacts for this account.';
+            } else if (path.includes('/contacts/block')) {
+                body = { sessionId: sid, jid: '628123456789@s.whatsapp.net', action: 'block' };
+                helpText = 'Blocks or unblocks a contact.';
+            } else if (path.includes('/profile/status')) {
+                body = { sessionId: sid, status: 'Available' };
+                helpText = 'Updates account status bio message.';
+            } else if (path.includes('/profile/name')) {
+                body = { sessionId: sid, name: 'Chatery Account' };
+                helpText = 'Updates account display name push name.';
+            } else if (path.includes('/contacts')) {
+                body = { sessionId: sid, limit: 50 };
+                helpText = 'Fetches contact address book list.';
+            // Chat History
+            } else if (path.includes('/chats/overview')) {
+                body = { sessionId: sid, limit: 50 };
+                helpText = 'Fetches list of active conversations with last messages and avatars.';
+            } else if (path.includes('/chats/messages')) {
+                body = { sessionId: sid, chatId: targetChat, limit: 50 };
+                helpText = 'Fetches message history log for target chat.';
+            } else if (path.includes('/chats/info')) {
+                body = { sessionId: sid, chatId: targetChat };
+                helpText = 'Retrieves conversation metadata and overview details.';
+            } else if (path.includes('/chats/mark-read')) {
+                body = { sessionId: sid, chatId: targetChat };
+                helpText = 'Marks target conversation as read.';
+            // Groups
+            } else if (path.includes('/groups/create')) {
+                body = { sessionId: sid, subject: 'New Group', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Creates a new group with specified participants.';
+            } else if (path.includes('/groups/metadata')) {
+                body = { sessionId: sid, groupId: '1203630@g.us' };
+                helpText = 'Fetches group details, participant list, and permissions.';
+            } else if (path.includes('/groups/invite-info')) {
+                body = { sessionId: sid, code: 'XXXXXX' };
+                helpText = 'Fetches group info preview using an invite code.';
+            } else if (path.includes('/groups/participants/add')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Adds participants to group.';
+            } else if (path.includes('/groups/participants/remove')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', participants: ['628123456789@s.whatsapp.net'] };
+                helpText = 'Removes participants from group.';
+            } else if (path.includes('/groups/subject')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', subject: 'Updated Title' };
+                helpText = 'Updates group subject title.';
+            } else if (path.includes('/groups/description')) {
+                body = { sessionId: sid, groupId: '1203630@g.us', description: 'Updated Description' };
+                helpText = 'Updates group description.';
+            } else if (path.includes('/groups/invite-code')) {
+                body = { sessionId: sid, groupId: '1203630@g.us' };
+                helpText = 'Generates or retrieves group invite link code.';
+            } else if (path.includes('/groups')) {
+                body = { sessionId: sid };
+                helpText = 'Lists all groups the account belongs to.';
+            // Fallback & GET
+            } else if (method === 'GET') {
+                showBody = false;
+                helpText = 'GET request does not require request payload.';
+            } else {
+                body = { sessionId: sid };
+                helpText = 'API endpoint documentation reference.';
+            }
+
+            bodyGroup.classList.toggle('hidden', !showBody);
+            bodyTextarea.value = showBody ? JSON.stringify(body, null, 2) : '';
+            apiHelp.innerHTML = helpText;
+        }
+
+        async function sendApiRequest() {
+            const endpoint = document.getElementById('apiEndpoint').value;
+            let [method, path] = endpoint.split('|');
+            const bodyText = document.getElementById('apiBody').value;
+            const responseBox = document.getElementById('apiResponse');
+            const badge = document.getElementById('responseStatusBadge');
+            const btn = document.getElementById('btnSendApi');
+
+            if (path.includes('{sessionId}')) {
+                const s = document.getElementById('apiSessionId').value.trim() || activeSessionId;
+                if (!s) { notify('error', 'Session ID required'); return; }
+                path = path.replace('{sessionId}', s);
+            }
+
+            if (path.includes('{jobId}')) {
+                const j = document.getElementById('apiJobId').value.trim();
+                if (!j) { notify('error', 'Job ID required'); return; }
+                path = path.replace('{jobId}', j);
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Executing...</span>';
+            badge.classList.add('hidden');
+            responseBox.textContent = 'Executing request...';
+            lucide.createIcons();
+
+            try {
+                const options = { method, headers: getApiHeaders(true) };
+                if (method !== 'GET' && method !== 'DELETE' && bodyText) {
+                    options.body = bodyText;
+                }
+
+                const res = await fetch(path, options);
+                const result = await res.json();
+
+                badge.textContent = `${res.status} ${res.statusText}`;
+                badge.className = `px-2 py-0.5 text-[10px] font-bold rounded-md ${res.ok ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`;
+                badge.classList.remove('hidden');
+
+                responseBox.textContent = JSON.stringify(result, null, 2);
+                hljs.highlightElement(responseBox);
+                notify(res.ok ? 'success' : 'error', result.message || 'Request executed');
+            } catch (e) {
+                responseBox.textContent = JSON.stringify({ error: e.message }, null, 2);
+                hljs.highlightElement(responseBox);
+                notify('error', e.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i><span>Send API Request</span>';
+                lucide.createIcons();
+            }
+        }
+
+        // Utility Helpers
+        function formatTimestamp(ts) {
+            if (!ts) return '';
+            const date = new Date(typeof ts === 'number' && ts < 10000000000 ? ts * 1000 : ts);
+            const now = new Date();
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(str) {
+            return (str || '').replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
+        }
+
+        // Global Esc Shortcut
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeNewChatModal();
+                closeNewGroupModal();
+                closeMediaModal();
+                closeQrModal();
+                const drawer = document.getElementById('apiDrawer');
+                if (!drawer.classList.contains('translate-x-full')) drawer.classList.add('translate-x-full');
+                const actDrawer = document.getElementById('activityDrawer');
+                if (!actDrawer.classList.contains('translate-x-full')) actDrawer.classList.add('translate-x-full');
+            }
+        });
+    </script>
+</body>
+
+</html>
