@@ -37,6 +37,18 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Prevent search engine indexing globally (Google, Bing, etc.)
+app.use((req, res, next) => {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+    next();
+});
+
+// Robots.txt to prevent search engine crawling
+app.get('/robots.txt', (req, res) => {
+    res.type('text/plain');
+    res.send('User-agent: *\nDisallow: /\n');
+});
+
 // Serve static files from public folder (for media access)
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 
@@ -73,7 +85,8 @@ const swaggerUiOptions = {
         .swagger-ui .info .title { color: #25D366 }
     `,
     customSiteTitle: 'Chatery WhatsApp API - Documentation',
-    customfavIcon: '/media/favicon.ico'
+    customfavIcon: '/media/favicon.ico',
+    customRobots: 'noindex, nofollow, noarchive, nosnippet'
 };
 
 // API Documentation (Swagger UI) at root

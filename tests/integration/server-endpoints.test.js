@@ -53,6 +53,33 @@ describe('Server Endpoints Integration Tests', () => {
         });
     });
 
+    describe('Search Engine Anti-Indexing (Robots & Noindex)', () => {
+        it('should return robots.txt with Disallow: /', async () => {
+            const res = await apiRequest(baseUrl, '/robots.txt', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 200);
+            assert.ok(res.text.includes('User-agent: *'));
+            assert.ok(res.text.includes('Disallow: /'));
+        });
+
+        it('should include X-Robots-Tag header on responses to prevent Google indexing', async () => {
+            const res = await apiRequest(baseUrl, '/login', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 200);
+            const xRobots = res.headers.get('x-robots-tag');
+            assert.ok(xRobots && xRobots.includes('noindex'));
+        });
+
+        it('should include noindex meta tags on Swagger UI page', async () => {
+            const res = await apiRequest(baseUrl, '/', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 200);
+            assert.ok(res.text.includes('name="robots"') && res.text.includes('noindex'));
+            const xRobots = res.headers.get('x-robots-tag');
+            assert.ok(xRobots && xRobots.includes('noindex'));
+        });
+    });
+
     describe('POST /api/dashboard/login', () => {
         it('should login successfully with valid credentials', async () => {
             const validUsername = process.env.DASHBOARD_USERNAME || 'admin';
