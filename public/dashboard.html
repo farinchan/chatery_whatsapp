@@ -814,10 +814,19 @@
 
         // WebSocket Setup
         function connectWebSocket() {
-            socket = io(window.location.origin);
+            socket = io(window.location.origin, {
+                auth: {
+                    apiKey: apiKey || sessionStorage.getItem('api_key') || ''
+                }
+            });
 
             socket.on('connect', () => {
                 addEvent('connection', 'Socket connected to server');
+            });
+
+            socket.on('connect_error', (err) => {
+                addEvent('error', `Socket auth error: ${err.message}`);
+                console.warn('WebSocket connection error:', err.message);
             });
 
             socket.on('disconnect', () => {
@@ -871,12 +880,13 @@
                     }
                 }
 
-                // 2. Fetch WebSocket Stats
+                // 2. Fetch WebSocket Stats (authenticated via apiFetch)
                 try {
-                    const wsRes = await fetch('/api/websocket/stats');
+                    const wsRes = await apiFetch('/api/websocket/stats');
                     const wsData = await wsRes.json();
                     if (wsData.success && wsData.data) {
-                        document.getElementById('statWsClients').textContent = `${wsData.data.totalClients || 0} clients connected`;
+                        const total = wsData.data.totalConnections !== undefined ? wsData.data.totalConnections : (wsData.data.totalClients || 0);
+                        document.getElementById('statWsClients').textContent = `${total} clients connected`;
                     }
                 } catch (e) {}
 

@@ -1,6 +1,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const { startTestServer, apiRequest } = require('./test-helper');
+const { createAuthToken } = require('../../src/middleware/dashboard-auth');
 
 describe('Server Endpoints Integration Tests', () => {
     let testServer;
@@ -122,8 +123,38 @@ describe('Server Endpoints Integration Tests', () => {
     });
 
     describe('GET /api/websocket/stats', () => {
-        it('should return WebSocket statistics data structure', async () => {
+        it('should return 401 Unauthorized when requesting stats without authentication', async () => {
+            const res = await apiRequest(baseUrl, '/api/websocket/stats', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 401);
+            assert.strictEqual(res.data.success, false);
+            assert.strictEqual(res.data.message, 'Unauthorized: Authentication required');
+        });
+
+        it('should return 403 Forbidden when requesting stats with invalid API key', async () => {
+            const res = await apiRequest(baseUrl, '/api/websocket/stats', { apiKey: 'invalid_key_123' });
+
+            assert.strictEqual(res.status, 403);
+            assert.strictEqual(res.data.success, false);
+            assert.strictEqual(res.data.message, 'Invalid API key');
+        });
+
+        it('should return 200 and WebSocket statistics data structure when valid API key is provided', async () => {
             const res = await apiRequest(baseUrl, '/api/websocket/stats');
+
+            assert.strictEqual(res.status, 200);
+            assert.strictEqual(res.data.success, true);
+            assert.ok(res.data.data !== undefined);
+            assert.strictEqual(typeof res.data.data.totalConnections, 'number');
+            assert.strictEqual(typeof res.data.data.sessionRooms, 'object');
+        });
+
+        it('should return 200 and WebSocket statistics when valid dashboard session cookie is provided', async () => {
+            const validToken = createAuthToken('admin');
+            const res = await apiRequest(baseUrl, '/api/websocket/stats', {
+                skipApiKey: true,
+                headers: { 'Cookie': `chatery_session=${validToken}` }
+            });
 
             assert.strictEqual(res.status, 200);
             assert.strictEqual(res.data.success, true);

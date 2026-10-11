@@ -48,21 +48,24 @@ function verifyAuthToken(token) {
 }
 
 /**
- * Parses a specific cookie value from the request Cookie header
- * @param {import('express').Request} req 
+ * Parses a specific cookie value from a request object or Cookie header string
+ * @param {import('express').Request|string} reqOrString 
  * @param {string} name 
  * @returns {string|null}
  */
-function parseCookie(req, name) {
-    const cookieHeader = req.headers.cookie;
+function parseCookie(reqOrString, name) {
+    const cookieHeader = typeof reqOrString === 'string' 
+        ? reqOrString 
+        : reqOrString?.headers?.cookie;
     if (!cookieHeader) return null;
     const match = cookieHeader.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
     return match ? decodeURIComponent(match[2]) : null;
 }
 
 /**
- * Middleware to protect Dashboard & WA-Web HTML pages.
- * Redirects unauthenticated browser requests to /login.
+ * Middleware to protect Dashboard & WA-Web HTML pages and stats endpoints.
+ * Accepts either valid dashboard session cookie/token or valid X-Api-Key.
+ * Redirects unauthenticated browser requests to /login, returns 401/403 for API routes.
  */
 function dashboardAuthGuard(req, res, next) {
     const token = parseCookie(req, 'chatery_session') || req.headers['x-auth-token'];
@@ -70,25 +73,39 @@ function dashboardAuthGuard(req, res, next) {
     // Also allow direct API key authentication
     const apiKey = req.headers['x-api-key'] || req.query.apiKey;
     const configuredApiKey = process.env.API_KEY;
-    if (configuredApiKey && apiKey === configuredApiKey) {
+    const hasConfiguredApiKey = !!(configuredApiKey && configuredApiKey !== '' && configuredApiKey !== 'your_api_key_here');
+
+    // 1. If valid API key provided, allow
+    if (hasConfiguredApiKey && apiKey && apiKey === configuredApiKey) {
         return next();
     }
 
+    // 2. If valid dashboard session token provided, allow
     const verified = verifyAuthToken(token);
     if (verified) {
         req.auth = verified;
         return next();
     }
 
-    // Check if JSON request or API route
+    // 3. If invalid API key was provided on API route, return 403
+    if (hasConfiguredApiKey && apiKey && apiKey !== configuredApiKey) {
+        if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+            return res.status(403).json({
+                success: false,
+                message: 'Invalid API key'
+            });
+        }
+    }
+
+    // 4. Check if JSON request or API route
     if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
         return res.status(401).json({
             success: false,
-            message: 'Unauthorized: Session login required'
+            message: 'Unauthorized: Authentication required'
         });
     }
 
-    // Browser navigation: redirect to /login
+    // 5. Browser navigation: redirect to /login
     const redirectUrl = req.originalUrl || '/dashboard';
     return res.redirect(`/login?redirect=${encodeURIComponent(redirectUrl)}`);
 }

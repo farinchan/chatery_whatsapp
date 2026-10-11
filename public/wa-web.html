@@ -860,13 +860,22 @@
 
         // WebSocket Setup
         function connectWebSocket() {
-            socket = io(window.location.origin);
+            socket = io(window.location.origin, {
+                auth: {
+                    apiKey: apiKey || sessionStorage.getItem('api_key') || ''
+                }
+            });
 
             socket.on('connect', () => {
                 addEvent('connection', 'Socket connected to server');
                 if (activeSessionId) {
                     socket.emit('subscribe', activeSessionId);
                 }
+            });
+
+            socket.on('connect_error', (err) => {
+                addEvent('error', `Socket auth error: ${err.message}`);
+                console.warn('WebSocket connection error:', err.message);
             });
 
             socket.on('disconnect', () => {

@@ -1847,12 +1847,18 @@ Connect to WebSocket server at `ws://localhost:3000`
 
 ### Connection
 
+When `API_KEY` is configured in your `.env`, WebSocket clients must authenticate at connection time using either the `auth` object, the `x-api-key` header, or a valid session cookie.
+
 ```javascript
 import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:3000', {
+  auth: {
+    apiKey: 'your_api_key_here'
+  }
+});
 
-// Subscribe to a session
+// Subscribe to a session (requires authenticated connection)
 socket.emit('subscribe', 'mysession');
 
 // Unsubscribe from a session
@@ -1884,7 +1890,11 @@ socket.emit('unsubscribe', 'mysession');
 ### Example: Listen for Messages
 
 ```javascript
-const socket = io('http://localhost:3000');
+const socket = io('http://localhost:3000', {
+  auth: {
+    apiKey: 'your_api_key_here'
+  }
+});
 
 socket.on('connect', () => {
   console.log('Connected to WebSocket');
@@ -2013,8 +2023,11 @@ Set `events: ["all"]` to receive all events, or specify individual events per we
 
 ### WebSocket Stats
 
+Requires `X-Api-Key` header (if configured in `.env`) or active dashboard session.
+
 ```http
 GET /api/websocket/stats
+X-Api-Key: your_api_key_here
 ```
 
 **Response:**

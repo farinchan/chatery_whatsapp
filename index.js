@@ -167,8 +167,8 @@ app.post('/api/dashboard/logout', (req, res) => {
     });
 });
 
-// WebSocket Stats
-app.get('/api/websocket/stats', (req, res) => {
+// WebSocket Stats (Protected with API Key / Dashboard Session)
+app.get('/api/websocket/stats', dashboardAuthGuard, (req, res) => {
     res.json({
         success: true,
         data: wsManager.getStats()
