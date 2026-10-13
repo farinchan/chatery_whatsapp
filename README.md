@@ -136,15 +136,16 @@ docker-compose down
 | `docker-compose restart` | Restart container |
 | `docker-compose build --no-cache` | Rebuild image |
 
-#### Docker Volumes
+#### Docker Volumes & Data Persistence
 
-The following data is persisted across container restarts:
+Data sesi WhatsApp dan media disimpan langsung ke direktori host project (Host Bind Mounts) sehingga dapat dilihat, dicadangkan, dan diedit langsung di folder project:
 
-| Volume | Path | Description |
-|--------|------|-------------|
-| `chatery_sessions` | `/app/sessions` | WhatsApp session data |
-| `chatery_media` | `/app/public/media` | Received media files |
-| `chatery_store` | `/app/store` | Message history store |
+| Host Directory | Container Path | Description |
+|---|---|---|
+| `./sessions` | `/app/sessions` | WhatsApp session credentials, `config.json`, dan `store.json` (chat history) |
+| `./public/media` | `/app/public/media` | File media yang diunduh (foto, video, audio, dokumen) |
+
+---
 
 ## ⚙ Configuration
 

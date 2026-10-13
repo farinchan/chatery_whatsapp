@@ -21,12 +21,12 @@ services:
       - MAX_MESSAGES_PER_CHAT=${MAX_MESSAGES_PER_CHAT:-100}
       - NODE_OPTIONS=--openssl-legacy-provider --max-old-space-size=2048
     volumes:
-      # Persist WhatsApp sessions
-      - chatery_sessions:/app/sessions
-      # Persist received media files
-      - chatery_media:/app/public/media
-      # Persist message store
-      - chatery_store:/app/store
+      # Host bind mount for WhatsApp sessions (creds, config.json, and store.json)
+      # Stored and directly visible in host project folder ./sessions
+      - ./sessions:/app/sessions
+      # Host bind mount for received media files
+      # Stored and directly visible in host project folder ./public/media
+      - ./public/media:/app/public/media
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -40,14 +40,6 @@ services:
         max-file: "3"
     networks:
       - chatery-network
-
-volumes:
-  chatery_sessions:
-    driver: local
-  chatery_media:
-    driver: local
-  chatery_store:
-    driver: local
 
 networks:
   chatery-network:

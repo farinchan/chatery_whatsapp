@@ -17,10 +17,10 @@ FROM node:20-alpine
 # Add labels
 LABEL maintainer="Fajri Rinaldi Chan <fajri@gariskode.com>"
 LABEL description="Chatery WhatsApp API - Multi-session WhatsApp API"
-LABEL version="1.0.0"
+LABEL version="2.0.1"
 
-# Install runtime compatibility library
-RUN apk add --no-cache libc6-compat
+# Install runtime compatibility library and su-exec for safe privilege dropping
+RUN apk add --no-cache libc6-compat su-exec
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S chatery && \
@@ -34,12 +34,10 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application files
 COPY . .
 
-# Create directories for sessions and media with proper permissions
-RUN mkdir -p /app/sessions /app/public/media /app/store && \
+# Setup entrypoint script and initial directories
+RUN chmod +x /app/docker-entrypoint.sh && \
+    mkdir -p /app/sessions /app/public/media && \
     chown -R chatery:chatery /app
-
-# Switch to non-root user
-USER chatery
 
 # Expose port
 EXPOSE 3000
@@ -50,6 +48,9 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Configure default Node.js memory and OpenSSL provider
 ENV NODE_OPTIONS="--openssl-legacy-provider --max-old-space-size=2048"
+
+# Entrypoint automatically manages bind-mount permissions and runs as chatery user
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 # Start the application
 CMD ["node", "index.js"]
