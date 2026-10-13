@@ -955,6 +955,77 @@
 
 /**
  * @swagger
+ * /api/whatsapp/contacts/add:
+ *   post:
+ *     tags: [Contacts]
+ *     summary: Add or save contact
+ *     description: |
+ *       Add or update a contact in WhatsApp address book.
+ *       Optionally sync contact to primary phone's native address book with `syncContactToPhone` (default: false).
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - sessionId
+ *               - phone
+ *               - name
+ *             properties:
+ *               sessionId:
+ *                 type: string
+ *                 example: mysession
+ *               phone:
+ *                 type: string
+ *                 example: 628123456789
+ *                 description: Phone number or JID
+ *               name:
+ *                 type: string
+ *                 example: Budi Santoso
+ *                 description: Contact display name / full name
+ *               firstName:
+ *                 type: string
+ *                 example: Budi
+ *                 description: Contact first name (optional)
+ *               syncContactToPhone:
+ *                 type: boolean
+ *                 default: false
+ *                 example: false
+ *                 description: Whether to sync contact to primary phone native address book (default false)
+ *     responses:
+ *       200:
+ *         description: Contact added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Contact added successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: 628123456789@s.whatsapp.net
+ *                     phone:
+ *                       type: string
+ *                       example: 628123456789
+ *                     name:
+ *                       type: string
+ *                       example: Budi Santoso
+ *                     syncContactToPhone:
+ *                       type: boolean
+ *                       example: false
+ */
+
+/**
+ * @swagger
  * /api/whatsapp/contacts/status:
  *   post:
  *     tags: [Contacts]

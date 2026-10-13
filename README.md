@@ -1243,6 +1243,48 @@ Get all contacts stored in the session store with optional pagination and search
 | `offset` | number | Optional. Pagination offset (default: 0) |
 | `search` | string | Optional. Search query for contact name, phone number, or ID |
 
+#### Add / Save Contact
+```http
+POST /contacts/add
+```
+
+Add or update a contact in the WhatsApp address book. Supports syncing contact to the primary phone's native address book (Google Contacts / iCloud) via `syncContactToPhone` (default is `false`).
+
+> **Note:** Endpoint alias `/contacts/save` is also supported.
+
+**Body:**
+```json
+{
+  "sessionId": "mysession",
+  "phone": "628123456789",
+  "name": "Budi Santoso",
+  "firstName": "Budi",
+  "syncContactToPhone": false
+}
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `sessionId` | string | Required. Session ID |
+| `phone` | string | Required. Phone number (e.g. `628123456789`) |
+| `name` | string | Required. Contact full name or display name |
+| `firstName` | string | Optional. Contact first name |
+| `syncContactToPhone` | boolean | Optional. Whether to sync contact to primary phone native address book (default: `false`). Alias: `syncToPhone` |
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Contact added successfully",
+  "data": {
+    "id": "628123456789@s.whatsapp.net",
+    "phone": "628123456789",
+    "name": "Budi Santoso",
+    "syncContactToPhone": false
+  }
+}
+```
+
 #### Get Contact Status / Bio
 ```http
 POST /contacts/status
