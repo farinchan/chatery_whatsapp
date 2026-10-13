@@ -4,6 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet">
     <title>Chatery Web - WhatsApp Gateway</title>
 
     <!-- Google Fonts: Inter & JetBrains Mono -->
@@ -858,13 +860,22 @@
 
         // WebSocket Setup
         function connectWebSocket() {
-            socket = io(window.location.origin);
+            socket = io(window.location.origin, {
+                auth: {
+                    apiKey: apiKey || sessionStorage.getItem('api_key') || ''
+                }
+            });
 
             socket.on('connect', () => {
                 addEvent('connection', 'Socket connected to server');
                 if (activeSessionId) {
                     socket.emit('subscribe', activeSessionId);
                 }
+            });
+
+            socket.on('connect_error', (err) => {
+                addEvent('error', `Socket auth error: ${err.message}`);
+                console.warn('WebSocket connection error:', err.message);
             });
 
             socket.on('disconnect', () => {

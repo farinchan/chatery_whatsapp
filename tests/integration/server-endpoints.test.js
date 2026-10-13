@@ -1,6 +1,7 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
 const { startTestServer, apiRequest } = require('./test-helper');
+const { createAuthToken } = require('../../src/middleware/dashboard-auth');
 
 describe('Server Endpoints Integration Tests', () => {
     let testServer;
@@ -53,6 +54,33 @@ describe('Server Endpoints Integration Tests', () => {
         });
     });
 
+    describe('Search Engine Anti-Indexing (Robots & Noindex)', () => {
+        it('should return robots.txt with Disallow: /', async () => {
+            const res = await apiRequest(baseUrl, '/robots.txt', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 200);
+            assert.ok(res.text.includes('User-agent: *'));
+            assert.ok(res.text.includes('Disallow: /'));
+        });
+
+        it('should include X-Robots-Tag header on responses to prevent Google indexing', async () => {
+            const res = await apiRequest(baseUrl, '/login', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 200);
+            const xRobots = res.headers.get('x-robots-tag');
+            assert.ok(xRobots && xRobots.includes('noindex'));
+        });
+
+        it('should include noindex meta tags on Swagger UI page', async () => {
+            const res = await apiRequest(baseUrl, '/', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 200);
+            assert.ok(res.text.includes('name="robots"') && res.text.includes('noindex'));
+            const xRobots = res.headers.get('x-robots-tag');
+            assert.ok(xRobots && xRobots.includes('noindex'));
+        });
+    });
+
     describe('POST /api/dashboard/login', () => {
         it('should login successfully with valid credentials', async () => {
             const validUsername = process.env.DASHBOARD_USERNAME || 'admin';
@@ -95,8 +123,38 @@ describe('Server Endpoints Integration Tests', () => {
     });
 
     describe('GET /api/websocket/stats', () => {
-        it('should return WebSocket statistics data structure', async () => {
+        it('should return 401 Unauthorized when requesting stats without authentication', async () => {
+            const res = await apiRequest(baseUrl, '/api/websocket/stats', { skipApiKey: true });
+
+            assert.strictEqual(res.status, 401);
+            assert.strictEqual(res.data.success, false);
+            assert.strictEqual(res.data.message, 'Unauthorized: Authentication required');
+        });
+
+        it('should return 403 Forbidden when requesting stats with invalid API key', async () => {
+            const res = await apiRequest(baseUrl, '/api/websocket/stats', { apiKey: 'invalid_key_123' });
+
+            assert.strictEqual(res.status, 403);
+            assert.strictEqual(res.data.success, false);
+            assert.strictEqual(res.data.message, 'Invalid API key');
+        });
+
+        it('should return 200 and WebSocket statistics data structure when valid API key is provided', async () => {
             const res = await apiRequest(baseUrl, '/api/websocket/stats');
+
+            assert.strictEqual(res.status, 200);
+            assert.strictEqual(res.data.success, true);
+            assert.ok(res.data.data !== undefined);
+            assert.strictEqual(typeof res.data.data.totalConnections, 'number');
+            assert.strictEqual(typeof res.data.data.sessionRooms, 'object');
+        });
+
+        it('should return 200 and WebSocket statistics when valid dashboard session cookie is provided', async () => {
+            const validToken = createAuthToken('admin');
+            const res = await apiRequest(baseUrl, '/api/websocket/stats', {
+                skipApiKey: true,
+                headers: { 'Cookie': `chatery_session=${validToken}` }
+            });
 
             assert.strictEqual(res.status, 200);
             assert.strictEqual(res.data.success, true);

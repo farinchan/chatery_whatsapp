@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const http = require('http');
 const { EventEmitter } = require('events');
 const wsManager = require('../../src/services/websocket/WebSocketManager');
+const { createAuthToken } = require('../../src/middleware/dashboard-auth');
 
 describe('WebSocketManager', () => {
     const WebSocketManagerClass = wsManager.constructor;
@@ -277,6 +278,198 @@ describe('WebSocketManager', () => {
             assert.equal(broadcastedEvents[0].event, 'system.announcement');
             assert.equal(broadcastedEvents[0].payload.text, 'Server maintenance');
             assert.ok(broadcastedEvents[0].payload.timestamp);
+        });
+    });
+
+    describe('WebSocket Authentication & Security', () => {
+        let originalApiKey;
+
+        beforeEach(() => {
+            originalApiKey = process.env.API_KEY;
+        });
+
+        afterEach(() => {
+            if (originalApiKey !== undefined) {
+                process.env.API_KEY = originalApiKey;
+            } else {
+                delete process.env.API_KEY;
+            }
+        });
+
+        it('should allow open access when process.env.API_KEY is unset or empty', () => {
+            delete process.env.API_KEY;
+            const res1 = manager._authenticateSocket({ handshake: { auth: {} } });
+            assert.equal(res1.authenticated, true);
+            assert.equal(res1.type, 'open');
+
+            process.env.API_KEY = '';
+            const res2 = manager._authenticateSocket({ handshake: { auth: {} } });
+            assert.equal(res2.authenticated, true);
+            assert.equal(res2.type, 'open');
+
+            process.env.API_KEY = 'your_api_key_here';
+            const res3 = manager._authenticateSocket({ handshake: { auth: {} } });
+            assert.equal(res3.authenticated, true);
+            assert.equal(res3.type, 'open');
+        });
+
+        it('should allow mock socket without handshake in testing environment', () => {
+            process.env.API_KEY = 'secret-key-123';
+            const res = manager._authenticateSocket({});
+            assert.equal(res.authenticated, true);
+            assert.equal(res.type, 'mock');
+        });
+
+        it('should reject connection when API_KEY is set and no credentials are provided', () => {
+            process.env.API_KEY = 'secret-key-123';
+            const res = manager._authenticateSocket({ handshake: { auth: {}, headers: {}, query: {} } });
+            assert.equal(res.authenticated, false);
+            assert.equal(res.error, 'Unauthorized: Authentication required');
+        });
+
+        it('should reject connection when invalid API key is provided', () => {
+            process.env.API_KEY = 'secret-key-123';
+            const res = manager._authenticateSocket({ handshake: { auth: { apiKey: 'wrong-key' } } });
+            assert.equal(res.authenticated, false);
+            assert.equal(res.error, 'Forbidden: Invalid API key');
+        });
+
+        it('should authenticate successfully with valid API key via auth, header, or query', () => {
+            process.env.API_KEY = 'secret-key-123';
+
+            // Via auth.apiKey
+            const resAuth = manager._authenticateSocket({ handshake: { auth: { apiKey: 'secret-key-123' } } });
+            assert.equal(resAuth.authenticated, true);
+            assert.equal(resAuth.type, 'api_key');
+
+            // Via headers['x-api-key']
+            const resHeader = manager._authenticateSocket({ handshake: { headers: { 'x-api-key': 'secret-key-123' } } });
+            assert.equal(resHeader.authenticated, true);
+            assert.equal(resHeader.type, 'api_key');
+
+            // Via query.apiKey
+            const resQuery = manager._authenticateSocket({ handshake: { query: { apiKey: 'secret-key-123' } } });
+            assert.equal(resQuery.authenticated, true);
+            assert.equal(resQuery.type, 'api_key');
+        });
+
+        it('should authenticate successfully with valid dashboard session token via auth, header, or cookie', () => {
+            process.env.API_KEY = 'secret-key-123';
+            const validToken = createAuthToken('admin');
+
+            // Via auth.token
+            const resAuth = manager._authenticateSocket({ handshake: { auth: { token: validToken } } });
+            assert.equal(resAuth.authenticated, true);
+            assert.equal(resAuth.type, 'dashboard_session');
+            assert.equal(resAuth.user, 'admin');
+
+            // Via headers['x-auth-token']
+            const resHeader = manager._authenticateSocket({ handshake: { headers: { 'x-auth-token': validToken } } });
+            assert.equal(resHeader.authenticated, true);
+            assert.equal(resHeader.type, 'dashboard_session');
+
+            // Via cookie header
+            const resCookie = manager._authenticateSocket({
+                handshake: { headers: { cookie: `other_cookie=123; chatery_session=${validToken}; foo=bar` } }
+            });
+            assert.equal(resCookie.authenticated, true);
+            assert.equal(resCookie.type, 'dashboard_session');
+        });
+
+        it('should reject connection when dashboard token is expired or forged', () => {
+            process.env.API_KEY = 'secret-key-123';
+            const forgedToken = Buffer.from('admin:9999999999999:fake_hmac_hash').toString('base64url');
+
+            const res = manager._authenticateSocket({ handshake: { auth: { token: forgedToken } } });
+            assert.equal(res.authenticated, false);
+            assert.equal(res.error, 'Unauthorized: Invalid or expired session token');
+        });
+
+        it('should reject unauthenticated socket during Socket.IO handshake middleware', () => {
+            process.env.API_KEY = 'secret-key-123';
+            manager.initialize(httpServer);
+
+            const middleware = manager.io.of('/')._fns[0];
+            assert.ok(typeof middleware === 'function');
+
+            const unauthSocket = {
+                id: 'unauth_sock',
+                handshake: { auth: {}, headers: {}, query: {} }
+            };
+
+            let capturedErr;
+            middleware(unauthSocket, (err) => {
+                capturedErr = err;
+            });
+
+            assert.ok(capturedErr instanceof Error);
+            assert.equal(capturedErr.message, 'Unauthorized: Authentication required');
+            assert.equal(unauthSocket.authData, undefined);
+        });
+
+        it('should accept authenticated socket during Socket.IO handshake middleware and attach authData', () => {
+            process.env.API_KEY = 'secret-key-123';
+            manager.initialize(httpServer);
+
+            const middleware = manager.io.of('/')._fns[0];
+            const authSocket = {
+                id: 'auth_sock',
+                handshake: { auth: { apiKey: 'secret-key-123' } }
+            };
+
+            let nextCalled = false;
+            middleware(authSocket, (err) => {
+                assert.equal(err, undefined);
+                nextCalled = true;
+            });
+
+            assert.equal(nextCalled, true);
+            assert.ok(authSocket.authData);
+            assert.equal(authSocket.authData.authenticated, true);
+            assert.equal(authSocket.authData.type, 'api_key');
+        });
+
+        it('should reject subscribe and unsubscribe events when socket is unauthenticated', () => {
+            process.env.API_KEY = 'secret-key-123';
+            manager.initialize(httpServer);
+
+            class MockTestSocket extends EventEmitter {
+                constructor() {
+                    super();
+                    this.id = 'unauth_sub_sock';
+                    this.handshake = { auth: {} };
+                    this.authData = { authenticated: false };
+                    this.joinedRooms = new Set();
+                    this.emittedEvents = [];
+                    this.on('error', () => {});
+                }
+                join(room) { this.joinedRooms.add(room); }
+                leave(room) { this.joinedRooms.delete(room); }
+                emit(event, ...args) {
+                    this.emittedEvents.push({ event, args });
+                    return super.emit(event, ...args);
+                }
+            }
+
+            const socket = new MockTestSocket();
+            EventEmitter.prototype.emit.call(manager.io.of('/'), 'connection', socket);
+
+            // Attempt unauthenticated subscribe
+            socket.emit('subscribe', 'target_session_id');
+
+            const subErr = socket.emittedEvents.find(e => e.event === 'error');
+            assert.ok(subErr);
+            assert.equal(subErr.args[0].message, 'Unauthorized: Authentication required to subscribe to sessions');
+            assert.equal(socket.joinedRooms.has('session:target_session_id'), false);
+            assert.equal(manager.sessionRooms.has('target_session_id'), false);
+
+            // Attempt unauthenticated unsubscribe
+            socket.emittedEvents = [];
+            socket.emit('unsubscribe', 'target_session_id');
+
+            const unsubErr = socket.emittedEvents.find(e => e.event === 'error');
+            assert.ok(unsubErr);
+            assert.equal(unsubErr.args[0].message, 'Unauthorized: Authentication required');
         });
     });
 

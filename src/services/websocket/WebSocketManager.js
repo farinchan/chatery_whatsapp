@@ -1,4 +1,5 @@
 const { Server } = require('socket.io');
+const { verifyAuthToken, parseCookie } = require('../../middleware/dashboard-auth');
 
 /**
  * WebSocket Manager (Singleton)
@@ -27,9 +28,97 @@ class WebSocketManager {
             ...options
         });
 
+        this._setupAuthMiddleware();
         this._setupConnectionHandlers();
         console.log('🔌 WebSocket server initialized');
         return this.io;
+    }
+
+    /**
+     * Check if WebSocket authentication is required
+     * @returns {boolean}
+     */
+    _isAuthRequired() {
+        const configuredApiKey = process.env.API_KEY;
+        return !!(configuredApiKey && configuredApiKey !== '' && configuredApiKey !== 'your_api_key_here');
+    }
+
+    /**
+     * Extract API key and dashboard session token from socket handshake
+     * @param {import('socket.io').Socket} socket 
+     * @returns {{ apiKey: string|null, token: string|null }}
+     */
+    _extractCredentials(socket) {
+        const handshake = socket.handshake || {};
+        const auth = handshake.auth || {};
+        const headers = handshake.headers || {};
+        const query = handshake.query || {};
+
+        const apiKey = auth.apiKey || headers['x-api-key'] || query.apiKey || null;
+        let token = auth.token || headers['x-auth-token'] || query.token || null;
+
+        if (!token && headers.cookie) {
+            token = parseCookie(headers.cookie, 'chatery_session');
+        }
+
+        return { apiKey, token };
+    }
+
+    /**
+     * Authenticate socket during handshake or event processing
+     * @param {import('socket.io').Socket} socket 
+     * @returns {{ authenticated: boolean, type?: string, user?: string, error?: string }}
+     */
+    _authenticateSocket(socket) {
+        // If socket has no handshake (e.g. simulated mock socket in unit tests without handshake)
+        if (!socket.handshake) {
+            return { authenticated: true, type: 'mock' };
+        }
+
+        // If API_KEY is not configured, open access is allowed
+        if (!this._isAuthRequired()) {
+            return { authenticated: true, type: 'open' };
+        }
+
+        const { apiKey, token } = this._extractCredentials(socket);
+        const configuredApiKey = process.env.API_KEY;
+
+        // 1. API key authentication
+        if (apiKey) {
+            if (apiKey === configuredApiKey) {
+                return { authenticated: true, type: 'api_key' };
+            }
+            return { authenticated: false, error: 'Forbidden: Invalid API key' };
+        }
+
+        // 2. Dashboard session token authentication
+        if (token) {
+            const verified = verifyAuthToken(token);
+            if (verified) {
+                return { authenticated: true, type: 'dashboard_session', user: verified.username };
+            }
+            return { authenticated: false, error: 'Unauthorized: Invalid or expired session token' };
+        }
+
+        return { authenticated: false, error: 'Unauthorized: Authentication required' };
+    }
+
+    /**
+     * Setup authentication middleware on Socket.IO instance
+     */
+    _setupAuthMiddleware() {
+        this.io.use((socket, next) => {
+            const authResult = this._authenticateSocket(socket);
+            if (!authResult.authenticated) {
+                console.warn(`🔒 WebSocket connection rejected [${socket.id}]: ${authResult.error}`);
+                const err = new Error(authResult.error || 'Unauthorized: Authentication required');
+                err.data = { status: 401, error: authResult.error };
+                return next(err);
+            }
+
+            socket.authData = authResult;
+            next();
+        });
     }
 
     /**
@@ -41,6 +130,14 @@ class WebSocketManager {
 
             // Client subscribes to a session
             socket.on('subscribe', (sessionId) => {
+                if (this._isAuthRequired() && !socket.authData?.authenticated) {
+                    console.warn(`🔒 Unauthorized subscribe attempt from ${socket.id} for session: ${sessionId}`);
+                    socket.emit('error', { 
+                        message: 'Unauthorized: Authentication required to subscribe to sessions' 
+                    });
+                    return;
+                }
+
                 if (!sessionId) {
                     socket.emit('error', { message: 'Session ID is required' });
                     return;
@@ -64,6 +161,11 @@ class WebSocketManager {
 
             // Client unsubscribes from a session
             socket.on('unsubscribe', (sessionId) => {
+                if (this._isAuthRequired() && !socket.authData?.authenticated) {
+                    socket.emit('error', { message: 'Unauthorized: Authentication required' });
+                    return;
+                }
+
                 if (!sessionId) return;
 
                 socket.leave(`session:${sessionId}`);

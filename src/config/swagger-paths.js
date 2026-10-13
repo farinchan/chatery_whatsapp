@@ -31,8 +31,9 @@
  *   get:
  *     tags: [WebSocket]
  *     summary: Get WebSocket stats
- *     description: Get current WebSocket connection statistics
- *     security: []
+ *     description: Get current WebSocket connection statistics (requires API Key or Dashboard Session)
+ *     security:
+ *       - ApiKeyAuth: []
  *     responses:
  *       200:
  *         description: WebSocket statistics
@@ -48,8 +49,20 @@
  *                   properties:
  *                     totalConnections:
  *                       type: integer
- *                     rooms:
+ *                     sessionRooms:
  *                       type: object
+ *       401:
+ *         description: Unauthorized - Authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       403:
+ *         description: Forbidden - Invalid API key
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 
 /**
