@@ -121,6 +121,18 @@ function createMockSession(sessionId, overrides = {}) {
         async blockContact(phone, action = 'block') {
             return { success: true, message: `Contact ${action}ed`, data: { phone, action } };
         },
+        async addContact(phone, name, options = {}) {
+            return {
+                success: true,
+                message: 'Contact added successfully',
+                data: {
+                    id: `${phone.replace(/\D/g, '')}@s.whatsapp.net`,
+                    phone: phone.replace(/\D/g, ''),
+                    name,
+                    syncContactToPhone: options.syncContactToPhone !== undefined ? options.syncContactToPhone : (options.syncToPhone || false)
+                }
+            };
+        },
         async getBlocklist() {
             return { success: true, data: { blocklist: ['628999@s.whatsapp.net'], total: 1 } };
         },

@@ -1616,6 +1616,119 @@ class WhatsAppSession {
         }
     }
 
+    /**
+     * Add or update contact in WhatsApp address book
+     * @param {string} phone - Phone number or JID
+     * @param {string} name - Contact display name / full name
+     * @param {Object} [options] - Additional options
+     * @param {string} [options.firstName] - Contact first name
+     * @param {boolean} [options.syncContactToPhone=false] - Whether to sync contact to primary phone's native address book
+     * @returns {Promise<Object>}
+     */
+    async addContact(phone, name, options = {}) {
+        try {
+            if (!this.socket || this.connectionStatus !== 'connected') {
+                return { success: false, message: 'Session not connected' };
+            }
+
+            if (!phone || phone.trim() === '') {
+                return { success: false, message: 'Phone number cannot be empty' };
+            }
+
+            if (!name || name.trim() === '') {
+                return { success: false, message: 'Contact name cannot be empty' };
+            }
+
+            const formattedJid = this.formatPhoneNumber(phone);
+            const syncContactToPhone = Boolean(options.syncContactToPhone || options.syncToPhone || false);
+            const cleanName = name.trim();
+            const firstName = options.firstName || cleanName.split(' ')[0] || cleanName;
+
+            let targetJid = formattedJid;
+
+            // Verify if number exists on WhatsApp (optional check)
+            try {
+                const results = await this.socket.onWhatsApp(formattedJid);
+                if (Array.isArray(results) && results.length > 0 && results[0]?.exists) {
+                    targetJid = results[0].jid;
+                }
+            } catch (e) {
+                // If onWhatsApp check fails or times out, proceed with formattedJid
+            }
+
+            // Prepare Baileys ContactAction
+            const contactAction = {
+                fullName: cleanName,
+                firstName: firstName,
+                saveOnPrimaryAddressbook: syncContactToPhone
+            };
+
+            // Call Baileys addOrEditContact
+            if (typeof this.socket.addOrEditContact === 'function') {
+                await this.socket.addOrEditContact(targetJid, contactAction);
+            } else if (typeof this.socket.chatModify === 'function') {
+                await this.socket.chatModify({ contact: contactAction }, targetJid);
+            }
+
+            // Update in-memory store
+            if (this.store) {
+                const existing = this.store.contacts.get(targetJid) || {};
+                const contactData = {
+                    ...existing,
+                    id: targetJid,
+                    name: cleanName,
+                    notify: existing.notify || cleanName
+                };
+
+                this.store.contacts.set(targetJid, contactData);
+
+                // Also map @c.us format
+                if (targetJid.includes('@s.whatsapp.net')) {
+                    const cUsJid = targetJid.replace('@s.whatsapp.net', '@c.us');
+                    this.store.contacts.set(cUsJid, { ...contactData, id: cUsJid });
+                }
+
+                this.store.isDirty = true;
+                if (typeof this.store._invalidateContactsCache === 'function') {
+                    this.store._invalidateContactsCache();
+                }
+                if (typeof this.store._invalidateOverviewCache === 'function') {
+                    this.store._invalidateOverviewCache();
+                }
+            }
+
+            // Emit WebSocket event
+            const rawPhone = targetJid.split('@')[0];
+            wsManager.emitContactUpdate(this.sessionId, [{
+                id: targetJid,
+                name: cleanName,
+                phone: rawPhone
+            }]);
+
+            // Dispatch webhook
+            this._sendWebhook('contact.update', {
+                id: targetJid,
+                phone: rawPhone,
+                name: cleanName,
+                syncContactToPhone
+            });
+
+            return {
+                success: true,
+                message: 'Contact added successfully',
+                data: {
+                    id: targetJid,
+                    phone: rawPhone,
+                    name: cleanName,
+                    syncContactToPhone
+                }
+            };
+        } catch (error) {
+            console.error(`[${this.sessionId}] Error adding contact:`, error);
+            return { success: false, message: error.message };
+        }
+    }
+
     async blockContact(phone, action = 'block') {
         try {
             if (!this.socket || this.connectionStatus !== 'connected') {

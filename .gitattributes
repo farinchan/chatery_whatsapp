@@ -1,0 +1,3 @@
+# Ensure shell scripts always retain LF line endings across all platforms
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf

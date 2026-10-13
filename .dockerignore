@@ -25,11 +25,11 @@ docker-compose*.yml
 .env.local
 .env.*.local
 
-# Sessions and data (mounted as volumes)
-sessions/
-store/
+# Sessions and data (mounted as host volumes)
+sessions/*
+!sessions/.gitkeep
 
-# Media files (mounted as volume)
+# Media files (mounted as host volumes)
 public/media/*
 !public/media/.gitkeep
 

@@ -465,6 +465,53 @@ describe('Messaging & Bulk API Integration Tests', () => {
             assert.strictEqual(res.data.success, true);
         });
 
+        it('POST /contacts/add: should validate phone and name, and handle syncContactToPhone', async () => {
+            // Missing phone
+            const res1 = await apiRequest(baseUrl, '/api/whatsapp/contacts/add', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, name: 'Alice' }
+            });
+            assert.strictEqual(res1.status, 400);
+            assert.ok(res1.data.message.includes('phone'));
+
+            // Missing name
+            const res2 = await apiRequest(baseUrl, '/api/whatsapp/contacts/add', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789' }
+            });
+            assert.strictEqual(res2.status, 400);
+            assert.ok(res2.data.message.includes('name'));
+
+            // Valid with default syncContactToPhone (should be false)
+            const res3 = await apiRequest(baseUrl, '/api/whatsapp/contacts/add', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789', name: 'Alice Doe' }
+            });
+            assert.strictEqual(res3.status, 200);
+            assert.strictEqual(res3.data.success, true);
+            assert.strictEqual(res3.data.data.name, 'Alice Doe');
+            assert.strictEqual(res3.data.data.syncContactToPhone, false);
+
+            // Valid with explicit syncContactToPhone: true
+            const res4 = await apiRequest(baseUrl, '/api/whatsapp/contacts/add', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789', name: 'Bob Smith', syncContactToPhone: true }
+            });
+            assert.strictEqual(res4.status, 200);
+            assert.strictEqual(res4.data.success, true);
+            assert.strictEqual(res4.data.data.name, 'Bob Smith');
+            assert.strictEqual(res4.data.data.syncContactToPhone, true);
+
+            // Valid with alias syncToPhone: true
+            const res5 = await apiRequest(baseUrl, '/api/whatsapp/contacts/save', {
+                method: 'POST',
+                body: { sessionId: SESSION_ID, phone: '628123456789', name: 'Charlie', syncToPhone: true }
+            });
+            assert.strictEqual(res5.status, 200);
+            assert.strictEqual(res5.data.success, true);
+            assert.strictEqual(res5.data.data.syncContactToPhone, true);
+        });
+
         it('POST /profile/status: should validate status text', async () => {
             const res1 = await apiRequest(baseUrl, '/api/whatsapp/profile/status', {
                 method: 'POST',

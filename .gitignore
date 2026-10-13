@@ -3,6 +3,13 @@ node_modules/
 .DS_Store
 *.log
 auth_info/
-sessions/
-public/media/
+
+# WhatsApp sessions & store (persisted on host, ignored by git)
+sessions/*
+!sessions/.gitkeep
+
+# Downloaded media files (persisted on host, ignored by git)
+public/media/*
+!public/media/.gitkeep
+
 n8n-nodes-chatery-whatsapp/

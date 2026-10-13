@@ -560,6 +560,7 @@
                     </optgroup>
                     <optgroup label="Contacts & Profiles">
                         <option value="POST|/api/whatsapp/contacts">POST /contacts - Contact list</option>
+                        <option value="POST|/api/whatsapp/contacts/add">POST /contacts/add - Add contact</option>
                         <option value="POST|/api/whatsapp/contacts/status">POST /contacts/status - Bio status</option>
                         <option value="POST|/api/whatsapp/contacts/business-profile">POST /contacts/business-profile - Business info</option>
                         <option value="POST|/api/whatsapp/contacts/block">POST /contacts/block - Block contact</option>
@@ -1409,6 +1410,9 @@
                 body = { sessionId: sid };
                 helpText = 'Lists recent asynchronous background broadcast jobs.';
             // Contacts & Profiles
+            } else if (path.includes('/contacts/add')) {
+                body = { sessionId: sid, phone: '628123456789', name: 'Budi Santoso', syncContactToPhone: false };
+                helpText = 'Adds or updates a contact in WhatsApp address book (syncContactToPhone defaults to false).';
             } else if (path.includes('/contacts/status')) {
                 body = { sessionId: sid, jid: '628123456789@s.whatsapp.net' };
                 helpText = 'Fetches contact "About / Bio" status text.';

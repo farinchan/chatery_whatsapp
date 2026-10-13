@@ -1201,6 +1201,49 @@ router.post('/chats/profile-picture', checkSession, async (req, res) => {
     }
 });
 
+// Add or update contact in WhatsApp address book
+router.post(['/contacts/add', '/contacts/save'], checkSession, async (req, res) => {
+    try {
+        const { phone, phoneNumber, name, fullName, contactName, firstName, syncContactToPhone, syncToPhone } = req.body;
+        
+        const targetPhone = phone || phoneNumber;
+        const targetName = name || fullName || contactName;
+        const shouldSyncToPhone = syncContactToPhone !== undefined 
+            ? Boolean(syncContactToPhone) 
+            : Boolean(syncToPhone || false);
+
+        if (!targetPhone || targetPhone.toString().trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: phone'
+            });
+        }
+
+        if (!targetName || targetName.toString().trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required field: name'
+            });
+        }
+
+        const result = await req.session.addContact(targetPhone.toString(), targetName.toString(), {
+            firstName,
+            syncContactToPhone: shouldSyncToPhone
+        });
+
+        if (!result.success) {
+            return res.status(400).json(result);
+        }
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 // Get contact status / bio (About)
 router.post('/contacts/status', checkSession, async (req, res) => {
     try {
