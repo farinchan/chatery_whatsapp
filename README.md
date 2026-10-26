@@ -263,7 +263,8 @@ Dashboard requires login with username and password configured in `.env` file.
 
 ![Dashboard Screenshot](./screenshot/image.png)
 
-The dashboard provides a modern dark-themed interface:
+The dashboard provides a modern interface with light & dark themes:
+- **Light / Dark Theme** - Toggle from the header (sun/moon icon); follows the OS setting until you pick one, and the choice is remembered per browser
 - **Session Cards** - View all sessions with status indicators
 - **QR Modal** - Full-screen QR code for easy scanning
 - **Event Log** - Live scrolling event feed with timestamps

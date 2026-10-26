@@ -1,0 +1,179 @@
+/*
+ * Chatery theme tokens (light / dark).
+ * Values are space-separated RGB channels so Tailwind opacity modifiers
+ * (bg-slate-900/50, border-primary/20, ...) keep working. See theme.js.
+ */
+
+:root {
+    color-scheme: light;
+
+    /* Card / panel surface (used by bg-white, via-white, ring-white) */
+    --surface: 255 255 255;
+
+    --slate-50: 248 250 252;
+    --slate-100: 241 245 249;
+    --slate-200: 226 232 240;
+    --slate-300: 203 213 225;
+    --slate-400: 148 163 184;
+    --slate-500: 100 116 139;
+    --slate-600: 71 85 105;
+    --slate-700: 51 65 85;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+    --slate-950: 2 6 23;
+
+    --primary-700: 0 101 179;
+
+    --emerald-50: 236 253 245;
+    --emerald-100: 209 250 229;
+    --emerald-200: 167 243 208;
+    --emerald-300: 110 231 183;
+    --emerald-600: 5 150 105;
+    --emerald-700: 4 120 87;
+
+    --rose-50: 255 241 242;
+    --rose-100: 255 228 230;
+    --rose-200: 254 205 211;
+    --rose-300: 253 164 175;
+    --rose-600: 225 29 72;
+    --rose-700: 190 18 60;
+
+    --amber-50: 255 251 235;
+    --amber-100: 254 243 199;
+    --amber-200: 253 230 138;
+    --amber-300: 252 211 77;
+    --amber-600: 217 119 6;
+    --amber-700: 180 83 9;
+
+    --blue-50: 239 246 255;
+    --blue-100: 219 234 254;
+    --blue-200: 191 219 254;
+    --blue-300: 147 197 253;
+    --blue-700: 29 78 216;
+
+    --indigo-50: 238 242 255;
+    --indigo-100: 224 231 255;
+    --indigo-200: 199 210 254;
+    --indigo-300: 165 180 252;
+    --indigo-600: 79 70 229;
+    --indigo-700: 67 56 202;
+
+    --cyan-50: 236 254 255;
+    --cyan-100: 207 250 254;
+    --cyan-200: 165 243 252;
+    --cyan-300: 103 232 249;
+    --cyan-600: 8 145 178;
+    --cyan-700: 14 116 144;
+
+    --purple-50: 250 245 255;
+    --purple-100: 243 232 255;
+    --purple-200: 233 213 255;
+    --purple-300: 216 180 254;
+    --purple-600: 147 51 234;
+    --purple-700: 126 34 206;
+}
+
+/*
+ * Dark palette: slate scale is inverted (page < surface < raised < border),
+ * light status tints (50-300) become low-opacity tints over the dark surface,
+ * and dark status text (600/700) becomes the brighter 400/300 shade.
+ */
+html.dark {
+    color-scheme: dark;
+
+    --surface: 17 25 40;
+
+    --slate-50: 11 17 30;
+    --slate-100: 30 41 59;
+    --slate-200: 43 54 74;
+    --slate-300: 61 74 96;
+    --slate-400: 100 116 139;
+    --slate-500: 148 163 184;
+    --slate-600: 170 182 199;
+    --slate-700: 203 213 225;
+    --slate-800: 226 232 240;
+    --slate-900: 241 245 249;
+    --slate-950: 248 250 252;
+
+    --primary-700: 133 202 255;
+
+    --emerald-50: 17 44 51;
+    --emerald-100: 17 57 58;
+    --emerald-200: 17 76 68;
+    --emerald-300: 17 97 80;
+    --emerald-600: 52 211 153;
+    --emerald-700: 110 231 183;
+
+    --rose-50: 44 30 46;
+    --rose-100: 62 33 51;
+    --rose-200: 90 37 57;
+    --rose-300: 119 42 64;
+    --rose-600: 251 113 133;
+    --rose-700: 253 164 175;
+
+    --amber-50: 44 41 37;
+    --amber-100: 63 52 34;
+    --amber-200: 90 68 31;
+    --amber-300: 120 85 27;
+    --amber-600: 251 191 36;
+    --amber-700: 252 211 77;
+
+    --blue-50: 22 38 65;
+    --blue-100: 25 46 81;
+    --blue-200: 30 59 106;
+    --blue-300: 36 72 133;
+    --blue-700: 147 197 253;
+
+    --indigo-50: 27 34 64;
+    --indigo-100: 33 40 80;
+    --indigo-200: 43 50 104;
+    --indigo-300: 54 60 130;
+    --indigo-600: 129 140 248;
+    --indigo-700: 165 180 252;
+
+    --cyan-50: 16 44 61;
+    --cyan-100: 15 56 74;
+    --cyan-200: 13 75 95;
+    --cyan-300: 12 96 117;
+    --cyan-600: 34 211 238;
+    --cyan-700: 103 232 249;
+
+    --purple-50: 35 32 65;
+    --purple-100: 47 37 81;
+    --purple-200: 65 44 106;
+    --purple-300: 85 52 133;
+    --purple-600: 192 132 252;
+    --purple-700: 216 180 254;
+}
+
+/* SweetAlert2 built-in parts that the page styles do not cover */
+/* Toasts reuse .swal2-backdrop-show on a full-height container, so they must stay transparent */
+html.dark body:not(.swal2-toast-shown) .swal2-container.swal2-backdrop-show {
+    background: rgb(0 0 0 / 0.6);
+}
+html.dark .swal2-popup {
+    background: rgb(var(--surface));
+    color: rgb(var(--slate-800));
+}
+html.dark .swal2-input,
+html.dark .swal2-textarea,
+html.dark .swal2-select,
+html.dark .swal2-file {
+    background: rgb(var(--slate-50));
+    border-color: rgb(var(--slate-200));
+    color: rgb(var(--slate-800));
+}
+html.dark .swal2-validation-message {
+    background: rgb(var(--slate-100));
+    color: rgb(var(--slate-700));
+}
+html.dark .swal2-close:hover {
+    color: rgb(var(--rose-600));
+}
+html.dark .swal2-timer-progress-bar {
+    background: rgb(255 255 255 / 0.2);
+}
+html.dark div:where(.swal2-icon).swal2-success [class^=swal2-success-circular-line],
+html.dark div:where(.swal2-icon).swal2-success .swal2-success-fix {
+    background-color: rgb(var(--surface)) !important;
+}

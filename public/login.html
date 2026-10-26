@@ -15,11 +15,18 @@
 
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Theme (light / dark) -->
+    <link rel="stylesheet" href="/assets/theme.css">
+    <script src="/assets/theme.js"></script>
+
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
+                        ...chateryTheme.colors,
                         primary: {
                             DEFAULT: '#1E9DFF',
                             50: '#F0F8FF',
@@ -29,11 +36,15 @@
                             400: '#4AB0FF',
                             500: '#1E9DFF',
                             600: '#0083E6',
-                            700: '#0065B3',
+                            700: chateryTheme.token('primary-700'),
                             800: '#004A85',
                             900: '#002F57',
                         }
                     },
+                    backgroundColor: { white: chateryTheme.token('surface') },
+                    gradientColorStops: { white: chateryTheme.token('surface') },
+                    ringColor: { white: chateryTheme.token('surface') },
+                    borderColor: { DEFAULT: chateryTheme.token('slate-200') },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif']
                     }
@@ -50,9 +61,9 @@
 
     <style>
         .swal2-popup.swal-light {
-            background: #FFFFFF !important;
-            border: 1px solid #E2E8F0 !important;
-            color: #0F172A !important;
+            background: rgb(var(--surface)) !important;
+            border: 1px solid rgb(var(--slate-200)) !important;
+            color: rgb(var(--slate-900)) !important;
             border-radius: 1rem !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
             font-family: 'Inter', sans-serif !important;
@@ -60,7 +71,13 @@
     </style>
 </head>
 
-<body class="bg-[#F8FAFC] text-slate-800 font-sans min-h-screen flex items-center justify-center p-4 selection:bg-primary/20 selection:text-primary-700">
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex items-center justify-center p-4 selection:bg-primary/20 selection:text-primary-700">
+
+    <!-- Theme Toggle -->
+    <button onclick="toggleTheme()" class="fixed top-4 right-4 p-2 text-slate-500 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl shadow-sm transition-colors" title="Toggle Light / Dark Theme">
+        <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+        <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+    </button>
 
     <div class="w-full max-w-md">
         <!-- Logo Header -->
@@ -73,7 +90,7 @@
         </div>
 
         <!-- Login Card -->
-        <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 space-y-6">
+        <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-black/30 space-y-6">
             <div>
                 <h2 class="text-lg font-bold text-slate-900">Sign In to Dashboard</h2>
                 <p class="text-xs text-slate-500 mt-0.5">Enter credentials from your server configuration</p>
