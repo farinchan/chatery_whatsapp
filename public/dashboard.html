@@ -15,11 +15,18 @@
 
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Theme (light / dark) -->
+    <link rel="stylesheet" href="/assets/theme.css">
+    <script src="/assets/theme.js"></script>
+
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
+                        ...chateryTheme.colors,
                         primary: {
                             DEFAULT: '#1E9DFF',
                             50: '#F0F8FF',
@@ -29,7 +36,7 @@
                             400: '#4AB0FF',
                             500: '#1E9DFF',
                             600: '#0083E6',
-                            700: '#0065B3',
+                            700: chateryTheme.token('primary-700'),
                             800: '#004A85',
                             900: '#002F57',
                         },
@@ -46,6 +53,10 @@
                             muted: '#64748B'
                         }
                     },
+                    backgroundColor: { white: chateryTheme.token('surface') },
+                    gradientColorStops: { white: chateryTheme.token('surface') },
+                    ringColor: { white: chateryTheme.token('surface') },
+                    borderColor: { DEFAULT: chateryTheme.token('slate-200') },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace']
@@ -82,29 +93,29 @@
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-            background: #CBD5E1;
+            background: rgb(var(--slate-300));
             border-radius: 9999px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #94A3B8;
+            background: rgb(var(--slate-400));
         }
 
         /* SweetAlert2 Light Theme */
         .swal2-popup.swal-dark {
-            background: #FFFFFF !important;
-            border: 1px solid #E2E8F0 !important;
-            color: #0F172A !important;
+            background: rgb(var(--surface)) !important;
+            border: 1px solid rgb(var(--slate-200)) !important;
+            color: rgb(var(--slate-900)) !important;
             border-radius: 1rem !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08) !important;
             font-family: 'Inter', sans-serif !important;
         }
         .swal2-title {
-            color: #0F172A !important;
+            color: rgb(var(--slate-900)) !important;
             font-size: 1.15rem !important;
             font-weight: 700 !important;
         }
         .swal2-html-container {
-            color: #64748B !important;
+            color: rgb(var(--slate-500)) !important;
             font-size: 0.9rem !important;
         }
         .swal2-confirm.btn-swal-confirm {
@@ -115,9 +126,9 @@
             padding: 0.5rem 1.25rem !important;
         }
         .swal2-cancel.btn-swal-cancel {
-            background: #F1F5F9 !important;
-            border: 1px solid #E2E8F0 !important;
-            color: #475569 !important;
+            background: rgb(var(--slate-100)) !important;
+            border: 1px solid rgb(var(--slate-200)) !important;
+            color: rgb(var(--slate-600)) !important;
             border-radius: 0.5rem !important;
             font-weight: 600 !important;
             padding: 0.5rem 1.25rem !important;
@@ -125,7 +136,7 @@
     </style>
 </head>
 
-<body class="bg-[#F8FAFC] text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-primary/20 selection:text-primary-700">
+<body class="bg-slate-50 text-slate-800 font-sans h-screen w-screen overflow-hidden flex flex-col selection:bg-primary/20 selection:text-primary-700">
 
     <!-- ==================== TOP NAVIGATION BAR ==================== -->
     <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-30 select-none shrink-0 shadow-xs">
@@ -173,6 +184,12 @@
             <button onclick="toggleActivityDrawer()" class="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/70 border border-slate-200 rounded-lg transition-colors" title="Live WebSocket Events">
                 <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-600"></i>
                 <span id="unreadEventsBadge" class="hidden text-[10px] bg-primary text-white font-bold px-1.5 rounded-full">0</span>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button onclick="toggleTheme()" class="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors" title="Toggle Light / Dark Theme">
+                <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+                <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
             </button>
 
             <!-- Swagger Docs Link -->
@@ -404,7 +421,7 @@
     <!-- ==================== MODALS ==================== -->
 
     <!-- Create Session Modal -->
-    <div id="createSessionModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="createSessionModal" class="fixed inset-0 z-50 bg-ink-900/50 dark:bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div class="flex items-center gap-2.5">
@@ -461,7 +478,7 @@
     </div>
 
     <!-- QR Code Scan Modal -->
-    <div id="qrModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="qrModal" class="fixed inset-0 z-50 bg-ink-900/50 dark:bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center space-y-4">
             <div class="flex items-center justify-between pb-2 border-b border-slate-200">
                 <div class="flex items-center gap-2 text-left">
@@ -496,7 +513,7 @@
     </div>
 
     <!-- Session Config & Webhooks Modal -->
-    <div id="sessionConfigModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="sessionConfigModal" class="fixed inset-0 z-50 bg-ink-900/50 dark:bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
             <!-- Modal Header -->
             <div class="p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
@@ -670,7 +687,7 @@
                                 <i data-lucide="layers" class="w-3.5 h-3.5 text-primary"></i>
                                 <span>HTTP Request Headers</span>
                             </div>
-                            <pre class="p-3 bg-slate-900 text-slate-100 font-mono text-[11px] overflow-x-auto">Content-Type: application/json
+                            <pre class="p-3 bg-ink-900 dark:bg-ink-950 text-ink-100 font-mono text-[11px] overflow-x-auto">Content-Type: application/json
 X-Webhook-Source: chatery-whatsapp-api
 X-Session-Id: &lt;sessionId&gt;
 X-Webhook-Event: &lt;event_name&gt;</pre>
@@ -681,7 +698,7 @@ X-Webhook-Event: &lt;event_name&gt;</pre>
                                 <i data-lucide="file-json" class="w-3.5 h-3.5 text-primary"></i>
                                 <span>Payload Event: message (Pesan Masuk)</span>
                             </div>
-                            <pre class="p-3 bg-slate-900 text-slate-100 font-mono text-[11px] overflow-x-auto">{
+                            <pre class="p-3 bg-ink-900 dark:bg-ink-950 text-ink-100 font-mono text-[11px] overflow-x-auto">{
   "event": "message",
   "sessionId": "CS_Support",
   "metadata": {
@@ -715,7 +732,7 @@ X-Webhook-Event: &lt;event_name&gt;</pre>
     </div>
 
     <!-- Login Modal -->
-    <div id="loginModal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div id="loginModal" class="fixed inset-0 z-50 bg-ink-900/50 dark:bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
         <div class="bg-white border border-slate-200 w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-5">
             <div class="text-center space-y-2">
                 <div class="w-12 h-12 rounded-2xl bg-primary/10 text-primary border border-primary/20 mx-auto flex items-center justify-center shadow-sm shadow-primary/20">
@@ -849,7 +866,7 @@ X-Webhook-Event: &lt;event_name&gt;</pre>
 
             <div id="bodyGroup">
                 <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">JSON Payload</label>
-                <textarea id="apiBody" rows="6" class="w-full bg-slate-900 text-xs font-mono text-emerald-400 border border-slate-700 rounded-xl p-3 focus:outline-none focus:border-primary"></textarea>
+                <textarea id="apiBody" rows="6" class="w-full bg-ink-900 dark:bg-ink-950 text-xs font-mono text-emerald-400 border border-ink-700 rounded-xl p-3 focus:outline-none focus:border-primary"></textarea>
             </div>
 
             <div id="apiHelp" class="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3"></div>
@@ -864,7 +881,7 @@ X-Webhook-Event: &lt;event_name&gt;</pre>
                     <label class="text-xs font-semibold text-slate-700 uppercase tracking-wider">Output Response</label>
                     <span id="responseStatusBadge" class="hidden px-2 py-0.5 text-[10px] font-bold rounded-md bg-slate-100 text-slate-600 border border-slate-200">200 OK</span>
                 </div>
-                <pre class="bg-slate-900 border border-slate-700 rounded-xl p-3 overflow-x-auto max-h-56"><code id="apiResponse" class="language-json font-mono text-xs text-slate-200">Ready for execution.</code></pre>
+                <pre class="bg-ink-900 dark:bg-ink-950 border border-ink-700 rounded-xl p-3 overflow-x-auto max-h-56"><code id="apiResponse" class="language-json font-mono text-xs text-ink-200">Ready for execution.</code></pre>
             </div>
         </div>
     </aside>
@@ -1473,9 +1490,9 @@ X-Webhook-Event: &lt;event_name&gt;</pre>
         function renderQrCode(qrData) {
             const container = document.getElementById('qrCanvasContainer');
             if (qrData.startsWith('data:image')) {
-                container.innerHTML = `<img src="${qrData}" alt="WhatsApp QR Code" class="w-56 h-56 object-contain rounded-xl shadow mx-auto">`;
+                container.innerHTML = `<img src="${qrData}" alt="WhatsApp QR Code" class="w-56 h-56 object-contain rounded-xl shadow mx-auto bg-ink-50 p-1.5">`;
             } else {
-                container.innerHTML = '<canvas id="qrCanvas" class="w-full h-full"></canvas>';
+                container.innerHTML = '<div class="inline-flex p-1.5 rounded-xl bg-ink-50"><canvas id="qrCanvas" class="w-full h-full"></canvas></div>';
                 const canvas = document.getElementById('qrCanvas');
                 if (window.QRCode && canvas) {
                     QRCode.toCanvas(canvas, qrData, {

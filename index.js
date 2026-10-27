@@ -52,6 +52,9 @@ app.get('/robots.txt', (req, res) => {
 // Serve static files from public folder (for media access)
 app.use('/media', express.static(path.join(__dirname, 'public', 'media')));
 
+// Serve shared dashboard assets (theme tokens & bootstrap script)
+app.use('/assets', express.static(path.join(__dirname, 'public', 'assets')));
+
 // Serve Login Page
 app.get('/login', (req, res) => {
     const token = parseCookie(req, 'chatery_session') || req.headers['x-auth-token'];
